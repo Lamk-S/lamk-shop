@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('presentaciones', function (Blueprint $table) {
             $table->id();
             $table->foreignId('caracteristica_id')->constrained('caracteristicas')->onDelete('cascade');
+            $table->string('sigla', 5);
             $table->timestamps();
         });
     }
