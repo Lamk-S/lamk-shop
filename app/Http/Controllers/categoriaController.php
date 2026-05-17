@@ -10,7 +10,7 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class categoriaController extends Controller
+class CategoriaController extends Controller
 {
     /**
      * Display a listing of the resource.

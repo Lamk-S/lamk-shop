@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('tipo_persona', 20);
             $table->tinyInteger('estado')->default(1);
             $table->foreignId('documento_id')->unique()->constrained('documentos')->onDelete('cascade');
+            $table->string('numero_documento', 20);
             $table->timestamps();
         });
     }

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 
 class Producto extends Model
 {
@@ -31,5 +33,20 @@ class Producto extends Model
 
     public function presentacione() {
         return $this->belongsTo(Presentacione::class);
+    }
+
+    protected $fillable = ['codigo', 'nombre', 'descripcion', 'fecha_vencimiento', 'marca_id', 'presentacione_id', 'img_path'];
+
+    public function handleUploadImage(UploadedFile $image)
+    {
+        $name = time() . '_' . $image->getClientOriginalName();
+
+        $image->storeAs(
+            'productos',
+            $name,
+            'public'
+        );
+
+        return $name;
     }
 }
