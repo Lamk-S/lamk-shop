@@ -7,12 +7,22 @@ use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
-class UserController extends Controller
+class UserController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-user|crear-user|editar-user|eliminar-user', only: ['index']),
+            new Middleware('permission:crear-user', only: ['create', 'store']),
+            new Middleware('permission:editar-user', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-user', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

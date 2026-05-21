@@ -8,10 +8,20 @@ use App\Models\Caracteristica;
 use App\Models\Marca;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class MarcaController extends Controller
+class MarcaController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-marca|crear-marca|editar-marca|eliminar-marca', only: ['index']),
+            new Middleware('permission:crear-marca', only: ['create', 'store']),
+            new Middleware('permission:editar-marca', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-marca', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

@@ -9,10 +9,20 @@ use App\Models\Persona;
 use App\Models\Proveedore;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class ProveedorController extends Controller
+class ProveedorController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-proveedore|crear-proveedore|editar-proveedore|eliminar-proveedore', only: ['index']),
+            new Middleware('permission:crear-proveedore', only: ['create', 'store']),
+            new Middleware('permission:editar-proveedore', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-proveedore', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

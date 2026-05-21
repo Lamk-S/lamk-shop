@@ -9,10 +9,20 @@ use App\Models\Producto;
 use App\Models\Proveedore;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class CompraController extends Controller
+class CompraController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-compra|crear-compra|mostrar-compra|eliminar-compra', only: ['index']),
+            new Middleware('permission:crear-compra', only: ['create', 'store']),
+            new Middleware('permission:mostrar-compra', only: ['show']),
+            new Middleware('permission:eliminar-compra', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */
