@@ -1,13 +1,8 @@
 @extends('template')
 
-@section('title', 'Realizar compra')
+@section('title', 'Realizar venta')
 
 @push('css')
-<style>
-    #descripcion {
-        resize: none;
-    }
-</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -15,21 +10,22 @@
 
 @section('content')
 <div class="container-fluid px-4">
-    <h1 class="mt-4 text-center">Realizar Compra</h1>
+    <h1 class="mt-4 text-center">Realizar Venta</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="{{ route('panel') }}">Inicio</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('compras.index') }}">Compras</a></li>
-        <li class="breadcrumb-item active">Crear compra</li>
+        <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}">Ventas</a></li>
+        <li class="breadcrumb-item active">Crear venta</li>
     </ol>
 </div>
-<form action="{{ route('compras.store') }}" method="post">
+
+<form action="{{ route('ventas.store') }}" method="post">
     @csrf
     <div class="container-fluid mt-4">
         <div class="row gy-4">
-            <!-- Compra producto -->
+            <!-- Venta producto -->
             <div class="col-md-8">
                 <div class="text-white bg-primary p-1 text-center">
-                    Detalles de la compra
+                    Detalles de la venta
                 </div>
                 <div class="p-3 border border-3 border-primary">
                     <div class="row">
@@ -37,9 +33,21 @@
                         <div class="col-md-12 mb-2">
                             <select name="producto_id" id="producto_id" class="form-control selectpicker" data-live-search="true" data-size="4" title="Busque un producto aquí">
                                 @foreach ($productos as $item)
-                                    <option value="{{ $item->id }}">{{ $item->codigo.' '.$item->nombre }}</option>
+                                    <option value="{{ $item->id }}-{{ $item->stock }}-{{ $item->precio_venta }}">{{ $item->codigo.' '.$item->nombre }}</option>
                                 @endforeach
                             </select>
+                        </div>
+
+                        <!-- Stock -->
+                        <div class="d-flex justify-content-end mb-4">
+                            <div class="col-md-6 mb-2">
+                                <div class="row">
+                                    <label for="stock" class="form-label col-sm-4">En stock:</label>
+                                    <div class="col-sm-8">
+                                        <input disabled type="text" name="stock" id="stock" class="form-control">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Cantidad -->
@@ -48,16 +56,16 @@
                             <input type="number" name="cantidad" id="cantidad" class="form-control">
                         </div>
 
-                        <!-- Precio de compra -->
-                        <div class="col-md-4 mb-2">
-                            <label for="precio_compra" class="form-label">Precio de compra:</label>
-                            <input type="number" name="precio_compra" id="precio_compra" class="form-control" step="0.1">
-                        </div>
-
                         <!-- Precio de venta -->
                         <div class="col-md-4 mb-2">
                             <label for="precio_venta" class="form-label">Precio de venta:</label>
-                            <input type="number" name="precio_venta" id="precio_venta" class="form-control" step="0.1">
+                            <input disabled type="number" name="precio_venta" id="precio_venta" class="form-control" step="0.1">
+                        </div>
+
+                        <!-- Descuento -->
+                        <div class="col-md-4 mb-2">
+                            <label for="descuento" class="form-label">Descuento:</label>
+                            <input type="number" name="descuento" id="descuento" class="form-control">
                         </div>
 
                         <!-- Botón para agregar -->
@@ -65,7 +73,7 @@
                             <button id="btn_agregar" class="btn btn-primary" type="button">Agregar</button>
                         </div>
 
-                        <!-- Tabla para el detalle de la compra -->
+                        <!-- Tabla para el detalle de la venta -->
                         <div class="col-md-12">
                             <div class="table-responsive">
                                 <table id="tabla_detalle" class="table table-hover">
@@ -74,8 +82,8 @@
                                             <th class="text-white">#</th>
                                             <th class="text-white">Producto</th>
                                             <th class="text-white">Cantidad</th>
-                                            <th class="text-white">Precio compra</th>
                                             <th class="text-white">Precio venta</th>
+                                            <th class="text-white">Descuento</th>
                                             <th class="text-white">Subtotal</th>
                                             <th></th>
                                         </tr>
@@ -84,7 +92,7 @@
                                     <tfoot>
                                         <tr>
                                             <th></th>
-                                            <th colspan="4">Sumas</th>
+                                            <th colspan="4">Suma</th>
                                             <th colspan="2"><span id="sumas">0</span></th>
                                         </tr>
                                         <tr>
@@ -103,28 +111,28 @@
                         </div>
 
                         <div class="col-md-12 mb-2">
-                            <button id="cancelar" type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancelar compra</button>
+                            <button id="cancelar" type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancelar venta</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Producto -->
+            <!-- Venta -->
             <div class="col-md-4">
                 <div class="text-white bg-success p-1 text-center">
                     Datos generales
                 </div>
                 <div class="p-3 border border-3 border-success">
                     <div class="row">
-                        <!-- Proveedor -->
+                        <!-- Cliente -->
                         <div class="col-md-12 mb-2">
-                            <label for="proveedore_id" class="form-label">Proveedor:</label>
-                            <select name="proveedore_id" id="proveedore_id" class="form-control selectpicker show-tick" data-live-search="true" title="Selecciona" data-size="4">
-                                @foreach ( $proveedores as $item )
+                            <label for="cliente_id" class="form-label">Cliente:</label>
+                            <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick" data-live-search="true" title="Selecciona" data-size="4">
+                                @foreach ( $clientes as $item )
                                     <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
                                 @endforeach
                             </select>
-                            @error('proveedore_id')
+                            @error('cliente_id')
                                 <small class="text-danger">{{ '*'.$messsage }}</small>
                             @enderror
                         </div>
@@ -171,6 +179,9 @@
                             <input type="hidden" name="fecha_hora" value="{{ $fecha_hora }}">
                         </div>
 
+                        <!-- User -->
+                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+
                         <!-- Botones -->
                         <div class="col-md-12 mb-2 text-center">
                             <button type="submit" class="btn btn-success" id="guardar">Guardar</button>
@@ -181,7 +192,7 @@
         </div>
     </div>
 
-    <!-- Modal para cancelar la compra -->
+    <!-- Modal para cancelar la venta -->
     <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -190,11 +201,11 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    ¿Seguro que quieres cancelar la compra?
+                    ¿Seguro que quieres cancelar la venta?
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button id="btnCancelarCompra" type="button" class="btn btn-danger" data-bs-dismiss="modal">Confirmar</button>
+                    <button id="btnCancelarVenta" type="button" class="btn btn-danger" data-bs-dismiss="modal">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -205,13 +216,17 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 <script>
-    $(document).ready(function () {
+    $(document).ready(function() {
+        $('#producto_id').change(function () {
+            mostrarValores();
+        });
+
         $('#btn_agregar').click(function () {
             agregarProducto();
         });
 
-        $('#btnCancelarCompra').click(function () {
-            cancelarCompra();
+        $('#btnCancelarVenta').click(function () {
+            cancelarVenta();
         });
 
         disableButtons();
@@ -227,18 +242,40 @@
     // Constantes
     const impuesto = 18;
 
-    function agregarProducto() {
-        let idProducto = $('#producto_id').val();
-        let nameProducto = $('#producto_id option:selected').text();
-        let cantidad = parseInt($('#cantidad').val());
-        let precioCompra = parseFloat($('#precio_compra').val());
-        let precioVenta = parseFloat($('#precio_venta').val());
+    function mostrarValores() {
+        let value = $('#producto_id').val();
 
-        // Validar producto
-        if (!idProducto) {
+        if (!value) {
+            $('#stock').val('');
+            $('#precio_venta').val('');
+            return;
+        }
+
+        let dataProducto = value.split('-');
+
+        $('#stock').val(dataProducto[1]);
+        $('#precio_venta').val(dataProducto[2]);
+    }
+
+    function agregarProducto() {
+        let value = $('#producto_id').val();
+
+        if (!value) {
             showModal('Seleccione un producto');
             return;
         }
+
+        let dataProducto = value.split('-');
+
+        // Obtener valores
+        let idProducto = dataProducto[0];
+        let stock = parseFloat(dataProducto[1]);
+        let precioVenta = parseFloat(dataProducto[2]);
+
+        let nameProducto = $('#producto_id option:selected').text();
+
+        let cantidad = parseInt($('#cantidad').val());
+        let descuento = parseFloat($('#descuento').val()) || 0;
 
         // Validaciones
         if (!cantidad || cantidad <= 0) {
@@ -251,30 +288,36 @@
             return;
         }
 
-        if (!precioCompra || precioCompra <= 0) {
-            showModal('Precio de compra inválido');
+        if (descuento < 0) {
+            showModal('Descuento inválido');
             return;
         }
 
-        if (!precioVenta || precioVenta <= 0) {
-            showModal('Precio de venta inválido');
-            return;
-        }
+        // Validar cantidad acumulada del mismo producto
+        let cantidadAgregada = 0;
 
-        // Validar lógica de precios
-        if (precioVenta <= precioCompra) {
-            showModal('El precio de venta debe ser mayor al de compra');
+        $('input[name="arrayidproducto[]"]').each(function(index) {
+            if ($(this).val() == idProducto) {
+                cantidadAgregada += parseInt(
+                    $('input[name="arraycantidad[]"]').eq(index).val()
+                );
+            }
+        });
+
+        let stockDisponible = stock - cantidadAgregada;
+
+        if (cantidad > stockDisponible) {
+            showModal('Stock insuficiente');
             return;
         }
 
         // Calcular subtotal
-        subTotal[cont] = round(cantidad * precioCompra);
+        subTotal[cont] = round((cantidad * precioVenta) - descuento);
 
         sumas = round(sumas + subTotal[cont]);
         igv = round((sumas * impuesto) / 100);
         total = round(sumas + igv);
 
-        // Crear fila
         let fila = `
             <tr id="fila${cont}">
                 <th class="fila-numero"></th>
@@ -287,18 +330,16 @@
                     ${cantidad}
                 </td>
                 <td>
-                    <input type="hidden" name="arraypreciocompra[]" value="${precioCompra}">
-                    ${precioCompra}
-                </td>
-                <td>
                     <input type="hidden" name="arrayprecioventa[]" value="${precioVenta}">
                     ${precioVenta}
                 </td>
                 <td>
-                    ${subTotal[cont]}
+                    <input type="hidden" name="arraydescuento[]" value="${descuento}">
+                    ${descuento}
                 </td>
+                <td>${subTotal[cont]}</td>
                 <td>
-                    <button
+                    <button 
                         class="btn btn-danger"
                         type="button"
                         onclick="eliminarProducto(${cont})">
@@ -306,37 +347,21 @@
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </td>
-
             </tr>
         `;
 
-        // Insertar fila en tbody
+        // Agregar al tbody
         $('#tabla_detalle tbody').append(fila);
         reordenarFilas();
 
+        // Actualizar totales
         actualizarTotales();
         limpiarCampos();
         cont++;
         disableButtons();
     }
 
-    function eliminarProducto(indice) {
-        // Restar subtotal
-        sumas = round(sumas - subTotal[indice]);
-
-        igv = round((sumas * impuesto) / 100);
-        total = round(sumas + igv);
-
-        // Eliminar fila
-        $('#fila' + indice).remove();
-
-        actualizarTotales();
-        disableButtons();
-        limpiarCampos();
-        reordenarFilas();
-    }
-
-    function cancelarCompra() {
+    function cancelarVenta() {
         // Limpiar tbody
         $('#tabla_detalle tbody').empty();
 
@@ -350,7 +375,21 @@
         actualizarTotales();
         limpiarCampos();
         disableButtons();
-        showModal('Compra cancelada', 'success');
+        showModal('Venta cancelada', 'success');
+    }
+
+    function eliminarProducto(indice) {
+        sumas = round(sumas - subTotal[indice]);
+        igv = round((sumas * impuesto) / 100);
+        total = round(sumas + igv);
+        // Eliminar fila
+        $('#fila' + indice).remove();
+
+        actualizarTotales();
+        disableButtons();
+        limpiarCampos();
+        // Reordenar numeración visual
+        reordenarFilas();
     }
 
     function actualizarTotales() {
@@ -366,7 +405,6 @@
             $('#guardar').hide();
             $('#cancelar').hide();
         } else {
-
             $('#guardar').show();
             $('#cancelar').show();
         }
@@ -375,8 +413,9 @@
     function limpiarCampos() {
         $('#producto_id').selectpicker('val', '');
         $('#cantidad').val('');
-        $('#precio_compra').val('');
         $('#precio_venta').val('');
+        $('#descuento').val('');
+        $('#stock').val('');
     }
 
     function reordenarFilas() {
@@ -406,3 +445,4 @@
         });
     }
 </script>
+@endpush

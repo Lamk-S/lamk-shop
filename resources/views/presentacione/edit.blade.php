@@ -36,7 +36,11 @@
                     </div>
 
                     <div class="col-md-6">
-                        <x-forms.input id="sigla" required='true' :defaultValue='$presentacione->sigla' />
+                        <label for="sigla" class="form-label">Sigla:<span class="text-danger">*</span></label>
+                        <input required type="text" name="sigla" id="sigla" class="form-control" value="{{ old('sigla', $presentacione->sigla) }}">
+                        @error('sigla')
+                            <small class="text-danger">{{ '*' . $message }}</small>
+                        @enderror
                     </div>
 
                     <div class="col-12">

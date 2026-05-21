@@ -9,6 +9,8 @@ class Ventas extends Model
 {
     use HasFactory;
 
+    protected $fillable = ['fecha_hora', 'impuesto', 'numero_comprobante', 'total', 'cliente_id', 'user_id', 'comprobante_id'];
+
     public function cliente() {
         return $this->belongsTo(Cliente::class);
     }
@@ -22,7 +24,7 @@ class Ventas extends Model
     }
 
     public function productos() {
-        return $this->belongsToMany(Producto::class)
+        return $this->belongsToMany(Producto::class, 'producto_venta', 'venta_id', 'producto_id')
         ->withTimestamps()
         ->withPivot('cantidad', 'precio_venta', 'descuento');
     }

@@ -1,6 +1,6 @@
 @extends('template')
 
-@section('title', 'Compras')
+@section('title', 'Usuarios')
 
 @push('css-datatable')
 <link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
@@ -15,6 +15,7 @@
 @if(@session('success'))
 <script>
     let message = "{{ session('success') }}";
+
     Swal.mixin({
         toast: true,
         position: "top-end",
@@ -33,62 +34,56 @@
 @endif
 
 <div class="container-fluid px-4">
-    <h1 class="mt-4 text-center">Compras</h1>
+    <h1 class="mt-4 text-center">Usuarios</h1>
+
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="{{ route('panel') }}">Inicio</a></li>
-        <li class="breadcrumb-item active">Compras</li>
+        <li class="breadcrumb-item active">Usuarios</li>
     </ol>
 
     <div class="mb-4">
-        <a href="{{ route('compras.create') }}">
-            <button type="button" class="btn btn-primary">Añadir nuevo registro</button>
+        <a href="{{ route('users.create') }}">
+            <button type="button" class="btn btn-primary">
+                Añadir nuevo registro
+            </button>
         </a>
     </div>
 
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-header">
             <i class="fas fa-table me-1"></i>
-            Tabla compras
+            Tabla Usuarios
         </div>
+
         <div class="card-body">
-            <table id="datatablesSimple" class="table table-striped fs-6">
+            <table id="datatablesSimple" class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Comprobante</th>
-                        <th>Proveedor</th>
-                        <th>Fecha y hora</th>
-                        <th>Total</th>
+                        <th>Nombre</th>
+                        <th>Correo Electrónico</th>
+                        <th>Rol</th>
                         <th>Acciones</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    @foreach ($compras as $item)
-                        <td>
-                            <p class="fw-semibold mb-1">{{ $item->comprobante->tipo_comprobante }}</p>
-                            <p class="text-muted mb-0">{{ $item->numero_comprobante }}</p>
-                        </td>
-                        <td>
-                            <p class="fw-semibold mb-1">{{ ucfirst($item->proveedore->persona->tipo_persona) }}</p>
-                            <p class="text-muted mb-0">{{ $item->proveedore->persona->razon_social }}</p>
-                        </td>
-                        <td>
-                            <p class="fw-semibold mb-1">{{ \Carbon\Carbon::parse($item->fecha_hora)->format('d-m-Y') }}</p>
-                            <p class="text-muted mb-0">{{ \Carbon\Carbon::parse($item->fecha_hora)->format('H:i') }}</p>
-                        </td>
-                        <td>{{ $item->total }}</td>
-                        <td>
-                            <div class="btn-group" role="group" aria-label="Basic mixed styles example">
-                                <form action="{{ route('compras.show', ['compra' => $item]) }}" method="get">
-                                    <button type="submit" class="btn btn-success">Ver</button>
-                                </form>
-                                @if($item->estado == 1)
+                    @foreach($users as $item)
+                        <tr>
+                            <td>{{ $item->name }}</td>
+                            <td>{{ $item->email }}</td>
+                            <td>{{ $item->getRoleNames()->first() }}</td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <form action="{{ route('users.edit', ['user' => $item]) }}">
+                                        <button type="submit" class="btn btn-warning">
+                                            Editar
+                                        </button>
+                                    </form>
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
-                                @else
-                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Restaurar</button>
-                                @endif
-                            </div>
-                        </td>
-                        <!-- Modal Confirm -->
+                                </div>
+                            </td>
+                        </tr>
+                        <!-- Modal -->
                         <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -97,11 +92,11 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                        {{ $item->estado == 1 ? '¿Seguro que quieres eliminar la compra?' : '¿Seguro que quieres restaurar la compra?' }}
+                                        ¿Seguro que quieres eliminar al usuario?
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                        <form action="{{ route('compras.destroy',['compra'=>$item->id]) }}" method="post">
+                                        <form action="{{ route('users.destroy', ['user' => $item->id]) }}" method="post">
                                             @method('DELETE')
                                             @csrf
                                             <button type="submit" class="btn btn-danger">Confirmar</button>
@@ -112,10 +107,12 @@
                         </div>
                     @endforeach
                 </tbody>
+
             </table>
         </div>
     </div>
 </div>
+
 @endsection
 
 @push('js')
