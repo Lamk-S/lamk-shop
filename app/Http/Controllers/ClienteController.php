@@ -9,10 +9,20 @@ use App\Models\Documento;
 use App\Models\Persona;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class ClienteController extends Controller
+class ClienteController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-cliente|crear-cliente|editar-cliente|eliminar-cliente', only: ['index']),
+            new Middleware('permission:crear-cliente', only: ['create', 'store']),
+            new Middleware('permission:editar-cliente', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-cliente', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

@@ -9,10 +9,20 @@ use App\Models\Producto;
 use App\Models\Ventas;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class VentaController extends Controller
+class VentaController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-venta|crear-venta|mostrar-venta|eliminar-venta', only: ['index']),
+            new Middleware('permission:crear-venta', only: ['create', 'store']),
+            new Middleware('permission:mostrar-venta', only: ['show']),
+            new Middleware('permission:eliminar-venta', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

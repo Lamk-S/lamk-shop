@@ -12,7 +12,7 @@
 
 @section('content')
 
-@if(@session('success'))
+@if(session('success'))
 <script>
     let message = "{{ session('success') }}";
     Swal.mixin({
@@ -39,11 +39,13 @@
         <li class="breadcrumb-item active">Compras</li>
     </ol>
 
+    @can('crear-compra')
     <div class="mb-4">
         <a href="{{ route('compras.create') }}">
             <button type="button" class="btn btn-primary">Añadir nuevo registro</button>
         </a>
     </div>
+    @endcan
 
     <div class="card">
         <div class="card-header">
@@ -58,7 +60,9 @@
                         <th>Proveedor</th>
                         <th>Fecha y hora</th>
                         <th>Total</th>
+                        @canany(['editar-compra', 'eliminar-compra'])
                         <th>Acciones</th>
+                        @endcanany
                     </tr>
                 </thead>
                 <tbody>
@@ -76,16 +80,21 @@
                             <p class="text-muted mb-0">{{ \Carbon\Carbon::parse($item->fecha_hora)->format('H:i') }}</p>
                         </td>
                         <td>{{ $item->total }}</td>
+                        @canany(['mostrar-compra', 'eliminar-compra'])
                         <td>
                             <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                                @can('mostrar-compra')
                                 <form action="{{ route('compras.show', ['compra' => $item]) }}" method="get">
                                     <button type="submit" class="btn btn-success">Ver</button>
                                 </form>
+                                @endcan
+                                @canany(['editar-compra', 'eliminar-compra'])
                                 @if($item->estado == 1)
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
                                 @else
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Restaurar</button>
                                 @endif
+                                @endcanany
                             </div>
                         </td>
                         <!-- Modal Confirm -->

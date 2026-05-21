@@ -12,7 +12,7 @@
 
 @section('content')
 
-@if(@session('success'))
+@if(session('success'))
 <script>
     let message = "{{ session('success') }}";
 
@@ -41,6 +41,7 @@
         <li class="breadcrumb-item active">Roles</li>
     </ol>
 
+    @can('crear-role')
     <div class="mb-4">
         <a href="{{ route('roles.create') }}">
             <button type="button" class="btn btn-primary">
@@ -48,6 +49,7 @@
             </button>
         </a>
     </div>
+    @endcan
 
     <div class="card mb-4">
         <div class="card-header">
@@ -60,24 +62,31 @@
                 <thead>
                     <tr>
                         <th>Roles</th>
+                        @canany(['editar-role', 'eliminar-role'])
                         <th>Acciones</th>
+                        @endcanany
                     </tr>
                 </thead>
-
                 <tbody>
                     @foreach($roles as $item)
                         <tr>
                             <td>{{ $item->name }}</td>
+                            @canany(['editar-role', 'eliminar-role'])
                             <td>
                                 <div class="btn-group" role="group">
+                                    @can('editar-role')
                                     <form action="{{ route('roles.edit', ['role' => $item]) }}">
                                         <button type="submit" class="btn btn-warning">
                                             Editar
                                         </button>
                                     </form>
+                                    @endcan
+                                    @can('eliminar-role')
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
+                                    @endcan
                                 </div>
                             </td>
+                            @endcanany
                         </tr>
                         <!-- Modal -->
                         <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">

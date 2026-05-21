@@ -10,11 +10,21 @@ use App\Models\Presentacione;
 use App\Models\Producto;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
-class ProductoController extends Controller
+class ProductoController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-producto|crear-producto|editar-producto|eliminar-producto', only: ['index']),
+            new Middleware('permission:crear-producto', only: ['create', 'store']),
+            new Middleware('permission:editar-producto', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-producto', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

@@ -8,10 +8,20 @@ use App\Models\Caracteristica;
 use App\Models\Categoria;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class CategoriaController extends Controller
+class CategoriaController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-categoria|crear-categoria|editar-categoria|eliminar-categoria', only: ['index']),
+            new Middleware('permission:crear-categoria', only: ['create', 'store']),
+            new Middleware('permission:editar-categoria', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-categoria', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

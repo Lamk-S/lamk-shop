@@ -8,10 +8,20 @@ use App\Models\Caracteristica;
 use App\Models\Presentacione;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
-class PresentacioneController extends Controller
+class PresentacioneController extends Controller implements HasMiddleware
 {
+    public static function middleware(): array {
+        return [
+            new Middleware('permission:ver-presentacione|crear-presentacione|editar-presentacione|eliminar-presentacione', only: ['index']),
+            new Middleware('permission:crear-presentacione', only: ['create', 'store']),
+            new Middleware('permission:editar-presentacione', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-presentacione', only: ['destroy']),
+        ];
+    }
     /**
      * Display a listing of the resource.
      */

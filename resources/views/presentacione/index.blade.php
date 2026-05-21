@@ -12,7 +12,7 @@
 
 @section('content')
 
-@if(@session('success'))
+@if(session('success'))
 <script>
     let message = "{{ session('success') }}";
     Swal.mixin({
@@ -39,11 +39,13 @@
         <li class="breadcrumb-item active">Presentaciones</li>
     </ol>
 
+    @can('crear-presentacione')
     <div class="mb-4">
         <a href="{{ route('presentaciones.create') }}">
             <button type="button" class="btn btn-primary">Añadir nuevo registro</button>
         </a>
     </div>
+    @endcan
 
     <div class="card">
         <div class="card-header">
@@ -58,7 +60,9 @@
                         <th>Sigla</th>
                         <th>Descripción</th>
                         <th>Estado</th>
+                        @canany(['editar-presentacione', 'eliminar-presentacione'])
                         <th>Acciones</th>
+                        @endcanany
                     </tr>
                 </thead>
                 <tbody>
@@ -74,18 +78,24 @@
                                 <span class="fw-bolder p-1 rounded bg-danger text-white">Eliminado</span>
                             @endif
                         </td>
+                        @canany(['editar-presentacione', 'eliminar-presentacione'])
                         <td>
                             <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                                @can('editar-presentacione')
                                 <form action="{{ route('presentaciones.edit',['presentacione'=>$item]) }}">
                                     <button type="submit" class="btn btn-warning">Editar</button>
                                 </form>
+                                @endcan
+                                @can('eliminar-presentacione')
                                 @if($item->caracteristica->estado == 1)
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
                                 @else
                                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Restaurar</button>
                                 @endif
+                                @endcan
                             </div>
                         </td>
+                        @endcanany
                     </tr>
 
                     <!-- Modal -->
