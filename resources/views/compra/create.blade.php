@@ -1,6 +1,6 @@
 @extends('template')
 
-@section('title', 'Crear compra')
+@section('title', 'Realizar compra')
 
 @push('css')
 <style>
@@ -15,7 +15,7 @@
 
 @section('content')
 <div class="container-fluid px-4">
-    <h1 class="mt-4 text-center">Crear Compra</h1>
+    <h1 class="mt-4 text-center">Realizar Compra</h1>
     <ol class="breadcrumb mb-4">
         <li class="breadcrumb-item"><a href="{{ route('panel') }}">Inicio</a></li>
         <li class="breadcrumb-item"><a href="{{ route('compras.index') }}">Compras</a></li>
@@ -44,19 +44,19 @@
 
                         <!-- Cantidad -->
                         <div class="col-md-4 mb-2">
-                            <label for="cantidad" form="form-label">Cantidad:</label>
+                            <label for="cantidad" class="form-label">Cantidad:</label>
                             <input type="number" name="cantidad" id="cantidad" class="form-control">
                         </div>
 
                         <!-- Precio de compra -->
                         <div class="col-md-4 mb-2">
-                            <label for="precio_compra" form="form-label">Precio de compra:</label>
+                            <label for="precio_compra" class="form-label">Precio de compra:</label>
                             <input type="number" name="precio_compra" id="precio_compra" class="form-control" step="0.1">
                         </div>
 
                         <!-- Precio de venta -->
                         <div class="col-md-4 mb-2">
-                            <label for="precio_venta" form="form-label">Precio de venta:</label>
+                            <label for="precio_venta" class="form-label">Precio de venta:</label>
                             <input type="number" name="precio_venta" id="precio_venta" class="form-control" step="0.1">
                         </div>
 
@@ -80,17 +80,7 @@
                                             <th></th>
                                         </tr>
                                     </thead>
-                                    <tbody>
-                                        <tr>
-                                            <th></th>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                            <td></td>
-                                        </tr>
-                                    </tbody>
+                                    <tbody></tbody>
                                     <tfoot>
                                         <tr>
                                             <th></th>
@@ -215,12 +205,12 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 <script>
-    $(document).ready(function() {
-        $('#btn_agregar').click(function() {
+    $(document).ready(function () {
+        $('#btn_agregar').click(function () {
             agregarProducto();
         });
 
-        $('#btnCancelarCompra').click(function() {
+        $('#btnCancelarCompra').click(function () {
             cancelarCompra();
         });
 
@@ -237,144 +227,166 @@
     // Constantes
     const impuesto = 18;
 
+    function agregarProducto() {
+        let idProducto = $('#producto_id').val();
+        let nameProducto = $('#producto_id option:selected').text();
+        let cantidad = parseInt($('#cantidad').val());
+        let precioCompra = parseFloat($('#precio_compra').val());
+        let precioVenta = parseFloat($('#precio_venta').val());
+
+        // Validar producto
+        if (!idProducto) {
+            showModal('Seleccione un producto');
+            return;
+        }
+
+        // Validaciones
+        if (!cantidad || cantidad <= 0) {
+            showModal('Ingrese una cantidad válida');
+            return;
+        }
+
+        if (!Number.isInteger(cantidad)) {
+            showModal('La cantidad debe ser entera');
+            return;
+        }
+
+        if (!precioCompra || precioCompra <= 0) {
+            showModal('Precio de compra inválido');
+            return;
+        }
+
+        if (!precioVenta || precioVenta <= 0) {
+            showModal('Precio de venta inválido');
+            return;
+        }
+
+        // Validar lógica de precios
+        if (precioVenta <= precioCompra) {
+            showModal('El precio de venta debe ser mayor al de compra');
+            return;
+        }
+
+        // Calcular subtotal
+        subTotal[cont] = round(cantidad * precioCompra);
+
+        sumas = round(sumas + subTotal[cont]);
+        igv = round((sumas * impuesto) / 100);
+        total = round(sumas + igv);
+
+        // Crear fila
+        let fila = `
+            <tr id="fila${cont}">
+                <th class="fila-numero"></th>
+                <td>
+                    <input type="hidden" name="arrayidproducto[]" value="${idProducto}">
+                    ${nameProducto}
+                </td>
+                <td>
+                    <input type="hidden" name="arraycantidad[]" value="${cantidad}">
+                    ${cantidad}
+                </td>
+                <td>
+                    <input type="hidden" name="arraypreciocompra[]" value="${precioCompra}">
+                    ${precioCompra}
+                </td>
+                <td>
+                    <input type="hidden" name="arrayprecioventa[]" value="${precioVenta}">
+                    ${precioVenta}
+                </td>
+                <td>
+                    ${subTotal[cont]}
+                </td>
+                <td>
+                    <button
+                        class="btn btn-danger"
+                        type="button"
+                        onclick="eliminarProducto(${cont})">
+
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+
+            </tr>
+        `;
+
+        // Insertar fila en tbody
+        $('#tabla_detalle tbody').append(fila);
+        reordenarFilas();
+
+        actualizarTotales();
+        limpiarCampos();
+        cont++;
+        disableButtons();
+    }
+
+    function eliminarProducto(indice) {
+        // Restar subtotal
+        sumas = round(sumas - subTotal[indice]);
+
+        igv = round((sumas * impuesto) / 100);
+        total = round(sumas + igv);
+
+        // Eliminar fila
+        $('#fila' + indice).remove();
+
+        actualizarTotales();
+        disableButtons();
+        limpiarCampos();
+        reordenarFilas();
+    }
+
     function cancelarCompra() {
-        //Elimar el tbody de la tabla
+        // Limpiar tbody
         $('#tabla_detalle tbody').empty();
 
-        //Añadir una nueva fila a la tabla
-        let fila = '<tr>' +
-            '<th></th>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '<td></td>' +
-            '</tr>';
-        $('#tabla_detalle').append(fila);
-
-        //Reiniciar valores de las variables
+        // Reiniciar variables
         cont = 0;
-        subtotal = [];
+        subTotal = [];
         sumas = 0;
         igv = 0;
         total = 0;
 
-        // Mostrar los campos calculados
+        actualizarTotales();
+        limpiarCampos();
+        disableButtons();
+        showModal('Compra cancelada', 'success');
+    }
+
+    function actualizarTotales() {
         $('#sumas').html(sumas);
         $('#igv').html(igv);
         $('#total').html(total);
         $('#impuesto').val(igv);
         $('#inputTotal').val(total);
-
-        limpiarCampos();
-        disableButtons();
     }
 
     function disableButtons() {
-        if (total == 0) {
+        if (!total || total <= 0) {
             $('#guardar').hide();
             $('#cancelar').hide();
         } else {
+
             $('#guardar').show();
             $('#cancelar').show();
         }
     }
 
-    function agregarProducto() {
-        // Obtener valores de las compras
-        let idProducto = $('#producto_id').val();
-        let nameProducto = ($('#producto_id option:selected').text()).split(' ')[1];
-        let cantidad = $('#cantidad').val();
-        let precioCompra = $('#precio_compra').val();
-        let precioVenta = $('#precio_venta').val();
-
-        // Validaciones
-        // 1. para que los campos no esten vacíos
-        if (nameProducto != '' && cantidad != '' && precioCompra != '' && precioVenta != '') {
-            // 2. Para que los valores ingresados sean los correctos
-            if (parseInt(cantidad) > 0 && (cantidad % 1 == 0 ) && parseFloat(precioCompra) > 0 && parseFloat(precioVenta) > 0) {
-
-                // 3. Para que el precio de compra sea menor que el precio de venta
-                if (parseFloat(precioVenta) > parseFloat(precioCompra)) {
-                    // Calcular valores
-                    subTotal[cont] = round(cantidad * precioCompra);
-                    sumas += round(subTotal[cont]);
-                    igv = round(sumas/100 * impuesto);
-                    total = round(sumas + igv);
-            
-                    let fila = '<tr id="fila'+ cont +'">'+
-                        '<th>'+ (cont + 1) +'</th>' +
-                        '<td><input type="hidden" name="arrayidproducto[]" value="'+ idProducto +'">' + nameProducto  + '</td>' +
-                        '<td><input type="hidden" name="arraycantidad[]" value="'+ cantidad +'">' + cantidad  + '</td>' +
-                        '<td><input type="hidden" name="arraypreciocompra[]" value="'+ precioCompra +'">' + precioCompra  + '</td>' +
-                        '<td><input type="hidden" name="arrayprecioventa[]" value="'+ precioVenta +'">' + precioVenta  + '</td>' +
-                        '<td>' + subTotal[cont] + '</td>' +
-                        '<td><button class="btn btn-danger" type="button" onclick="eliminarProducto('+ cont +')"><i class="fa-solid fa-trash"></i></button></td>' +
-                        '</tr>';
-                    
-                    // Acciones después de añadir la fila
-                    $('#tabla_detalle').append(fila);
-                    limpiarCampos();
-                    cont++;
-                    disableButtons();
-            
-                    // Mostrar los campos guardados
-                    $('#sumas').html(sumas);
-                    $('#igv').html(igv);
-                    $('#total').html(total);
-                    $('#impuesto').val(igv);
-                    $('#inputTotal').val(total);
-                } else {
-                    showModal('Precio de compra incorrecto');
-                }
-            } else {
-                showModal('Valores incorrectos');
-            }
-        } else {
-            showModal('Le faltan campos por llenar');
-        }
-    }
-
-    function eliminarProducto(indice) {
-        // Calcular valores
-        sumas -= round(subTotal[indice]);
-        igv = round(sumas/100 * impuesto);
-        total = round(sumas + igv);
-
-        // Mostrar los campos calculados
-        $('#sumas').html(sumas);
-        $('#igv').html(igv);
-        $('#total').html(total);
-        $('#impuesto').val(igv);
-        $('#inputTotal').val(total);
-
-        // Eliminar la fila de la tabla
-        $('#fila'+indice).remove();
-
-        disableButtons();
-    }
-
     function limpiarCampos() {
-        let select = $('#producto_id');
-        select.selectpicker();
-        select.selectpicker('val', '');
+        $('#producto_id').selectpicker('val', '');
         $('#cantidad').val('');
         $('#precio_compra').val('');
         $('#precio_venta').val('');
     }
 
+    function reordenarFilas() {
+        $('#tabla_detalle tbody tr').each(function(index) {
+            $(this).children('th').text(index + 1);
+        });
+    }
+
     function round(num, decimales = 2) {
-        var signo = (num >= 0 ? 1 : -1);
-        num = num * signo;
-        if (decimales === 0) //con 0 decimales
-            return signo * Math.round(num);
-        // round(x * 10 ^ decimales)
-        num = num.toString().split('e');
-        num = Math.round(+(num[0] + 'e' + (num[1] ? (+num[1] + decimales) : decimales)));
-        // x * 10 ^ (-decimales)
-        num = num.toString().split('e');
-        return signo * (num[0] + 'e' + (num[1] ? (+num[1] - decimales) : -decimales));
+        return Number(parseFloat(num).toFixed(decimales));
     }
 
     function showModal(message, icon = 'error') {
@@ -394,4 +406,3 @@
         });
     }
 </script>
-@endpush

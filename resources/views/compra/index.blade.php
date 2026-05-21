@@ -71,7 +71,10 @@
                             <p class="fw-semibold mb-1">{{ ucfirst($item->proveedore->persona->tipo_persona) }}</p>
                             <p class="text-muted mb-0">{{ $item->proveedore->persona->razon_social }}</p>
                         </td>
-                        <td>{{ \Carbon\Carbon::parse($item->fecha_hora)->format('d-m-Y | H:i') }}</td>
+                        <td>
+                            <p class="fw-semibold mb-1">{{ \Carbon\Carbon::parse($item->fecha_hora)->format('d-m-Y') }}</p>
+                            <p class="text-muted mb-0">{{ \Carbon\Carbon::parse($item->fecha_hora)->format('H:i') }}</p>
+                        </td>
                         <td>{{ $item->total }}</td>
                         <td>
                             <div class="btn-group" role="group" aria-label="Basic mixed styles example">
