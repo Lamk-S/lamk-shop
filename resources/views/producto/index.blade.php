@@ -12,7 +12,7 @@
 
 @section('content')
 
-@if(@session('success'))
+@if(session('success'))
 <script>
     let message = "{{ session('success') }}";
     Swal.mixin({
@@ -39,11 +39,13 @@
         <li class="breadcrumb-item active">Productos</li>
     </ol>
 
+    @can('crear-producto')
     <div class="mb-4">
         <a href="{{ route('productos.create') }}">
             <button type="button" class="btn btn-primary">Añadir nuevo registro</button>
         </a>
     </div>
+    @endcan
 
     <div class="card">
         <div class="card-header">
@@ -61,7 +63,9 @@
                         <th>Presentación</th>
                         <th>Categorías</th>
                         <th>Estado</th>
+                        @canany(['editar-producto', 'eliminar-producto'])
                         <th>Acciones</th>
+                        @endcanany
                     </tr>
                 </thead>
                 <tbody>
@@ -89,19 +93,25 @@
                                 </div>
                             </div>
                         </td>
+                        @canany(['editar-producto', 'eliminar-producto'])
                         <td>
                             <div class="btn-group" role="group" aria-label="Basic mixed styles example">
+                                @can('editar-producto')
                                 <form action="{{ route('productos.edit', ['producto' => $item]) }}" method="get">
                                     <button type="submit" class="btn btn-warning">Editar</button>
                                 </form>
+                                @endcan
+                                @can('eliminar-producto')
                                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#verModal-{{ $item->id }}">Ver</button>
                                 @if($item->estado == 1)
                                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
                                 @else
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Restaurar</button>
                                 @endif
+                                @endcan
                             </div>
                         </td>
+                        @endcanany
                     </tr>
                     <!-- Modal Ver-->
                     <div class="modal fade" id="verModal-{{ $item->id }}" tabindex="-1" aria-labelledby="verModalLabel" aria-hidden="true">

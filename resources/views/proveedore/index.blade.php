@@ -12,7 +12,7 @@
 
 @section('content')
 
-@if(@session('success'))
+@if(session('success'))
 <script>
     let message = "{{ session('success') }}";
 
@@ -41,6 +41,7 @@
         <li class="breadcrumb-item active">Proveedores</li>
     </ol>
 
+    @can('crear-proveedore')
     <div class="mb-4">
         <a href="{{ route('proveedores.create') }}">
             <button type="button" class="btn btn-primary">
@@ -48,6 +49,7 @@
             </button>
         </a>
     </div>
+    @endcan
 
     <div class="card mb-4">
         <div class="card-header">
@@ -64,53 +66,46 @@
                         <th>Documento</th>
                         <th>Tipo de persona</th>
                         <th>Estado</th>
+                        @canany(['editar-proveedore', 'eliminar-proveedore'])
                         <th>Acciones</th>
+                        @endcanany
                     </tr>
                 </thead>
-
                 <tbody>
                     @foreach($proveedores as $item)
                         <tr>
                             <td>{{ $item->persona->razon_social }}</td>
-
                             <td>{{ $item->persona->direccion }}</td>
-
                             <td>
-                                <p class="fw-normal mb-1">
-                                    {{ $item->persona->documento->tipo_documento }}
-                                </p>
-                                <p class="text-muted mb-0">
-                                    {{ $item->persona->numero_documento }}
-                                </p>
+                                <p class="fw-normal mb-1">{{ $item->persona->documento->tipo_documento }}</p>
+                                <p class="text-muted mb-0">{{ $item->persona->numero_documento }}</p>
                             </td>
-
-                            <td>
-                                {{ ucfirst($item->persona->tipo_persona) }}
-                            </td>
-
+                            <td>{{ ucfirst($item->persona->tipo_persona) }}</td>
                             <td>
                                 <span class="badge rounded-pill text-bg-{{ $item->persona->estado ? 'success' : 'danger' }}">
                                     {{ $item->persona->estado ? 'Activo' : 'Inactivo' }}
                                 </span>
                             </td>
-
+                            @canany(['editar-proveedore', 'eliminar-proveedore'])
                             <td>
                                 <div class="btn-group" role="group">
-
+                                    @can('editar-proveedore')
                                     <form action="{{ route('proveedores.edit', ['proveedore' => $item]) }}">
                                         <button type="submit" class="btn btn-warning">
                                             Editar
                                         </button>
                                     </form>
-
+                                    @endcan
+                                    @can('eliminar-proveedore')
                                     @if($item->persona->estado == 1)
                                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Eliminar</button>
                                     @else
                                         <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">Restaurar</button>
                                     @endif
-
+                                    @endcan
                                 </div>
                             </td>
+                            @endcanany
                         </tr>
                         <!-- Modal -->
                         <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">
@@ -136,7 +131,6 @@
                         </div>
                     @endforeach
                 </tbody>
-
             </table>
         </div>
     </div>
