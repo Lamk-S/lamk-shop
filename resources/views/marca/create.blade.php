@@ -1,57 +1,64 @@
-@extends('template')
+@extends('layouts.app')
 
-@section('title','Crear marca')
+@section('title','Crear Marca')
 
 @push('css')
 <style>
-    #descripcion {
-        resize: none;
-    }
+    #descripcion { resize: none; }
 </style>
 @endpush
 
 @section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4 text-center">Crear Marca</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ route('panel') }}">Inicio</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('marcas.index')}}">Marcas</a></li>
-        <li class="breadcrumb-item active">Crear Marca</li>
-    </ol>
+<div class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark mb-0">Nueva Marca</h2>
+        <ol class="breadcrumb mb-0 mt-1 fs-7">
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('marcas.index') }}" class="text-decoration-none">Marcas</a></li>
+            <li class="breadcrumb-item active">Crear registro</li>
+        </ol>
+    </div>
 
-    <div class="card">
-        <form action="{{ route('marcas.store') }}" method="post">
-            @csrf
-            <div class="card-body text-bg-light">
-
+    <!-- Tarjeta del Formulario Centrada -->
+    <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 700px;">
+        <div class="card-header bg-white border-bottom border-light p-4">
+            <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-copyright text-primary me-2"></i>Detalles de la Marca</h5>
+        </div>
+        
+        <div class="card-body p-4 p-md-5">
+            <form action="{{ route('marcas.store') }}" method="post">
+                @csrf
                 <div class="row g-4">
 
-                    <div class="col-md-6">
-                        <label for="nombre" class="form-label">Nombre:</label>
-                        <input type="text" name="nombre" id="nombre" class="form-control" value="{{old('nombre')}}">
+                    <!-- Nombre -->
+                    <div class="col-md-12">
+                        <label for="nombre" class="form-label fw-medium text-secondary">Nombre de la Marca <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-tag"></i></span>
+                            <input type="text" name="nombre" id="nombre" class="form-control border-start-0 @error('nombre') is-invalid @enderror" value="{{ old('nombre') }}" placeholder="Ej. Samsung, Nike, Coca Cola...">
+                        </div>
                         @error('nombre')
-                        <small class="text-danger">{{'*'.$message}}</small>
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <div class="col-12">
-                        <label for="descripcion" class="form-label">Descripción:</label>
-                        <textarea name="descripcion" id="descripcion" rows="3" class="form-control">{{old('descripcion')}}</textarea>
+                    <!-- Descripción -->
+                    <div class="col-md-12">
+                        <label for="descripcion" class="form-label fw-medium text-secondary">Descripción <span class="text-muted fw-normal">(Opcional)</span></label>
+                        <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror" placeholder="Añada una breve descripción de la marca...">{{ old('descripcion') }}</textarea>
                         @error('descripcion')
-                        <small class="text-danger">{{'*'.$message}}</small>
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="col-12 mt-5 d-flex justify-content-end gap-2 border-top pt-4">
+                        <a href="{{ route('marcas.index') }}" class="btn btn-light px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-save me-2"></i>Guardar Marca</button>
                     </div>
                 </div>
-
-            </div>
-            <div class="card-footer text-center">
-                <button type="submit" class="btn btn-primary">Guardar</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
-
-@push('js')
-
-@endpush

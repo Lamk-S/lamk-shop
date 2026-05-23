@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateCategoriaRequest;
 use App\Models\Caracteristica;
 use App\Models\Categoria;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;

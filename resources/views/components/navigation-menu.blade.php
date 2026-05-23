@@ -1,119 +1,107 @@
 <div id="layoutSidenav_nav">
-    <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
+    <nav class="sb-sidenav accordion sb-sidenav-dark bg-dark" id="sidenavAccordion">
         <div class="sb-sidenav-menu">
             <div class="nav">
                 <div class="sb-sidenav-menu-heading">Inicio</div>
                 <a class="nav-link" href="{{ route('panel') }}">
                     <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
-                    Panel
+                    Panel de Control
                 </a>
-                <div class="sb-sidenav-menu-heading">Módulos</div>
-                <!-- Compras -->
+                
+                <div class="sb-sidenav-menu-heading">Módulos Operativos</div>
+                
                 @can('ver-compra')
-                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="false" aria-controls="collapseCompras">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="false">
                     <div class="sb-nav-link-icon"><i class="fa-solid fa-store"></i></div>
                     Compras
                     <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
-                <div class="collapse" id="collapseCompras" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
+                <div class="collapse" id="collapseCompras" data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav">
-                        <a class="nav-link" href="{{ route('compras.index') }}">Ver</a>
+                        <a class="nav-link" href="{{ route('compras.index') }}">Gestión de Compras</a>
                         @can('crear-compra')
-                        <a class="nav-link" href="{{ route('compras.create') }}">Crear</a>
+                        <a class="nav-link" href="{{ route('compras.create') }}">Nueva Compra</a>
                         @endcan
                     </nav>
                 </div>
                 @endcan
 
-                <!-- Ventas -->
                 @can('ver-venta')
-                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseVentas" aria-expanded="false" aria-controls="collapseVentas">
+                <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseVentas" aria-expanded="false">
                     <div class="sb-nav-link-icon"><i class="fa-solid fa-cart-shopping"></i></div>
                     Ventas
                     <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                 </a>
-                <div class="collapse" id="collapseVentas" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
+                <div class="collapse" id="collapseVentas" data-bs-parent="#sidenavAccordion">
                     <nav class="sb-sidenav-menu-nested nav">
-                        <a class="nav-link" href="{{ route('ventas.index') }}">Ver</a>
+                        <a class="nav-link" href="{{ route('ventas.index') }}">Historial de Ventas</a>
                         @can('crear-venta')
-                        <a class="nav-link" href="{{ route('ventas.create') }}">Crear</a>
+                        <a class="nav-link" href="{{ route('ventas.create') }}">Nueva Venta</a>
                         @endcan
                     </nav>
                 </div>
                 @endcan
 
-                <!-- Categorías -->
+                <div class="sb-sidenav-menu-heading">Catálogos</div>
+
                 @can('ver-categoria')
                 <a class="nav-link" href="{{ route('categorias.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-tag"></i></div>
-                    Categorias
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-tags"></i></div> Categorías
                 </a>
                 @endcan
 
-                <!-- Presentaciones -->
                 @can('ver-presentacione')
                 <a class="nav-link" href="{{ route('presentaciones.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-box-archive"></i></div>
-                    Presentaciones
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-box-open"></i></div> Presentaciones
                 </a>
                 @endcan
 
-                <!-- Marcas -->
                 @can('ver-marca')
                 <a class="nav-link" href="{{ route('marcas.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-bullhorn"></i></div>
-                    Marcas
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-award"></i></div> Marcas
                 </a>
                 @endcan
 
-                <!-- Productos -->
                 @can('ver-producto')
                 <a class="nav-link" href="{{ route('productos.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-brands fa-shopify"></i></div>
-                    Productos
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-boxes-stacked"></i></div> Productos
                 </a>
                 @endcan
 
-                <!-- Clientes -->
+                <div class="sb-sidenav-menu-heading">Directorio</div>
+
                 @can('ver-cliente')
                 <a class="nav-link" href="{{ route('clientes.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-users"></i></div>
-                    Clientes
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-users"></i></div> Clientes
                 </a>
                 @endcan
 
-                <!-- Proveedores -->
                 @can('ver-proveedore')
                 <a class="nav-link" href="{{ route('proveedores.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-user-group"></i></div>
-                    Proveedores
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-truck-field"></i></div> Proveedores
                 </a>
                 @endcan
                 
-                <!-- Otros -->
                 @canany(['ver-user', 'ver-role'])
-                <div class="sb-sidenav-menu-heading">Otros</div>
+                <div class="sb-sidenav-menu-heading">Administración</div>
                 @endcanany
-                <!-- Usuarios -->
+                
                 @can('ver-user')
                 <a class="nav-link" href="{{ route('users.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-user"></i></div>
-                    Usuarios
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-user-shield"></i></div> Usuarios
                 </a>
                 @endcan
 
-                <!-- Roles -->
                 @can('ver-role')
                 <a class="nav-link" href="{{ route('roles.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-person-circle-plus"></i></div>
-                    Roles
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-key"></i></div> Roles y Permisos
                 </a>
                 @endcan
             </div>
         </div>
         <div class="sb-sidenav-footer">
-            <div class="small">Bienvenido:</div>
-            {{ auth()->user()->name }}
+            <div class="small text-muted mb-1">Sesión iniciada como:</div>
+            <div class="fw-semibold text-white">{{ auth()->user()->name }}</div>
         </div>
     </nav>
 </div>

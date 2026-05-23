@@ -1,360 +1,321 @@
-@extends('template')
+@extends('layouts.app')
 
-@section('title', 'Realizar venta')
+@section('title', 'Realizar Venta')
 
 @push('css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+    .pos-totals th { font-size: 1.1rem; color: #495057; }
+    .pos-totals .total-row th { font-size: 1.3rem; color: #0d6efd; }
+</style>
 @endpush
 
 @section('content')
-<div class="container-fluid px-4">
-    <h1 class="mt-4 text-center">Realizar Venta</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="{{ route('panel') }}">Inicio</a></li>
-        <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}">Ventas</a></li>
-        <li class="breadcrumb-item active">Crear venta</li>
-    </ol>
-</div>
+<div class="container-fluid px-4 py-4">
+    <div class="mb-4">
+        <h2 class="fw-bold text-dark mb-0">Realizar Venta</h2>
+        <ol class="breadcrumb mb-0 mt-1 fs-7">
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}" class="text-decoration-none">Ventas</a></li>
+            <li class="breadcrumb-item active">Nueva venta</li>
+        </ol>
+    </div>
 
-<form action="{{ route('ventas.store') }}" method="post">
-    @csrf
-    <div class="container-fluid mt-4">
-        <div class="row gy-4">
-            <!-- Venta producto -->
-            <div class="col-md-8">
-                <div class="text-white bg-primary p-1 text-center">
-                    Detalles de la venta
-                </div>
-                <div class="p-3 border border-3 border-primary">
-                    <div class="row">
-                        <!-- Producto -->
-                        <div class="col-md-12 mb-2">
-                            <select name="producto_id" id="producto_id" class="form-control selectpicker" data-live-search="true" data-size="4" title="Busque un producto aquí">
-                                @foreach ($productos as $item)
-                                    <option value="{{ $item->id }}-{{ $item->stock }}-{{ $item->precio_venta }}">{{ $item->codigo.' '.$item->nombre }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+    <form action="{{ route('ventas.store') }}" method="post">
+        @csrf
+        <div class="row g-4">
+            <!-- Panel Izquierdo: Detalle de Venta -->
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom border-light p-4">
+                        <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Detalle de Productos</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
+                            <!-- Buscador de Producto -->
+                            <div class="col-md-12">
+                                <label for="producto_id" class="form-label fw-medium text-secondary small">Buscar Producto</label>
+                                <select name="producto_id" id="producto_id" class="form-control selectpicker shadow-sm border-0" data-live-search="true" data-size="5" title="Escriba o seleccione un producto...">
+                                    @foreach ($productos as $item)
+                                        <option value="{{ $item->id }}-{{ $item->stock }}-{{ $item->precio_venta }}">{{ $item->codigo }} - {{ $item->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
 
-                        <!-- Stock -->
-                        <div class="d-flex justify-content-end mb-4">
-                            <div class="col-md-6 mb-2">
-                                <div class="row">
-                                    <label for="stock" class="form-label col-sm-4">En stock:</label>
-                                    <div class="col-sm-8">
-                                        <input disabled type="text" name="stock" id="stock" class="form-control">
-                                    </div>
+                            <!-- Stock (Solo lectura) -->
+                            <div class="col-md-3">
+                                <label for="stock" class="form-label fw-medium text-secondary small">Stock Disp.</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-muted"><i class="fas fa-box"></i></span>
+                                    <input disabled type="text" name="stock" id="stock" class="form-control bg-white text-center fw-bold text-success">
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Cantidad -->
-                        <div class="col-md-4 mb-2">
-                            <label for="cantidad" class="form-label">Cantidad:</label>
-                            <input type="number" name="cantidad" id="cantidad" class="form-control">
-                        </div>
+                            <!-- Precio -->
+                            <div class="col-md-3">
+                                <label for="precio_venta" class="form-label fw-medium text-secondary small">Precio Venta</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-muted">$</span>
+                                    <input disabled type="number" name="precio_venta" id="precio_venta" class="form-control bg-white text-end fw-bold" step="0.1">
+                                </div>
+                            </div>
 
-                        <!-- Precio de venta -->
-                        <div class="col-md-4 mb-2">
-                            <label for="precio_venta" class="form-label">Precio de venta:</label>
-                            <input disabled type="number" name="precio_venta" id="precio_venta" class="form-control" step="0.1">
-                        </div>
+                            <!-- Cantidad -->
+                            <div class="col-md-3">
+                                <label for="cantidad" class="form-label fw-medium text-secondary small">Cantidad</label>
+                                <input type="number" name="cantidad" id="cantidad" class="form-control text-center">
+                            </div>
 
-                        <!-- Descuento -->
-                        <div class="col-md-4 mb-2">
-                            <label for="descuento" class="form-label">Descuento:</label>
-                            <input type="number" name="descuento" id="descuento" class="form-control">
-                        </div>
+                            <!-- Descuento -->
+                            <div class="col-md-3">
+                                <label for="descuento" class="form-label fw-medium text-secondary small">Descuento</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white text-muted">$</span>
+                                    <input type="number" name="descuento" id="descuento" class="form-control text-end" value="0">
+                                </div>
+                            </div>
 
-                        <!-- Botón para agregar -->
-                        <div class="col-md-12 mb-2 text-end">
-                            <button id="btn_agregar" class="btn btn-primary" type="button">Agregar</button>
-                        </div>
-
-                        <!-- Tabla para el detalle de la venta -->
-                        <div class="col-md-12">
-                            <div class="table-responsive">
-                                <table id="tabla_detalle" class="table table-hover">
-                                    <thead class="bg-primary">
-                                        <tr>
-                                            <th class="text-white">#</th>
-                                            <th class="text-white">Producto</th>
-                                            <th class="text-white">Cantidad</th>
-                                            <th class="text-white">Precio venta</th>
-                                            <th class="text-white">Descuento</th>
-                                            <th class="text-white">Subtotal</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                    <tfoot>
-                                        <tr>
-                                            <th></th>
-                                            <th colspan="4">Suma</th>
-                                            <th colspan="2"><span id="sumas">0</span></th>
-                                        </tr>
-                                        <tr>
-                                            <th></th>
-                                            <th colspan="4">IGV %</th>
-                                            <th colspan="2"><span id="igv">0</span></th>
-                                        </tr>
-                                        <tr>
-                                            <th></th>
-                                            <th colspan="4">Total</th>
-                                            <th colspan="2"><input type="hidden" name="total" value="0" id="inputTotal"><span id="total">0</span></th>
-                                        </tr>
-                                    </tfoot>
-                                </table>
+                            <!-- Botón Agregar -->
+                            <div class="col-12 mt-3 text-end">
+                                <button id="btn_agregar" class="btn btn-primary px-4 shadow-sm" type="button">
+                                    <i class="fas fa-plus me-2"></i>Agregar al carrito
+                                </button>
                             </div>
                         </div>
 
-                        <div class="col-md-12 mb-2">
-                            <button id="cancelar" type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">Cancelar venta</button>
+                        <!-- Tabla de Venta -->
+                        <div class="table-responsive border rounded-3">
+                            <table id="tabla_detalle" class="table table-hover mb-0">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th class="text-secondary fw-semibold text-center" style="width: 50px;">#</th>
+                                        <th class="text-secondary fw-semibold">Producto</th>
+                                        <th class="text-secondary fw-semibold text-center">Cant.</th>
+                                        <th class="text-secondary fw-semibold text-end">Precio</th>
+                                        <th class="text-secondary fw-semibold text-end">Desc.</th>
+                                        <th class="text-secondary fw-semibold text-end">Subtotal</th>
+                                        <th class="text-center" style="width: 60px;"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Las filas se inyectan por JS -->
+                                </tbody>
+                                <tfoot class="bg-light pos-totals border-top">
+                                    <tr>
+                                        <th colspan="5" class="text-end py-3">Subtotal sin IGV:</th>
+                                        <th class="text-end py-3"><span id="sumas">0.00</span></th>
+                                        <th></th>
+                                    </tr>
+                                    <tr>
+                                        <th colspan="5" class="text-end py-3">IGV (18%):</th>
+                                        <th class="text-end py-3"><span id="igv">0.00</span></th>
+                                        <th></th>
+                                    </tr>
+                                    <tr class="total-row">
+                                        <th colspan="5" class="text-end py-3">Total a Pagar:</th>
+                                        <th class="text-end py-3">
+                                            <input type="hidden" name="total" value="0" id="inputTotal">
+                                            <span id="total" class="fw-bold">0.00</span>
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
+
                     </div>
                 </div>
             </div>
 
-            <!-- Venta -->
-            <div class="col-md-4">
-                <div class="text-white bg-success p-1 text-center">
-                    Datos generales
-                </div>
-                <div class="p-3 border border-3 border-success">
-                    <div class="row">
-                        <!-- Cliente -->
-                        <div class="col-md-12 mb-2">
-                            <label for="cliente_id" class="form-label">Cliente:</label>
-                            <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick" data-live-search="true" title="Selecciona" data-size="4">
-                                @foreach ( $clientes as $item )
-                                    <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
-                                @endforeach
-                            </select>
-                            @error('cliente_id')
-                                <small class="text-danger">{{ '*'.$messsage }}</small>
-                            @enderror
-                        </div>
+            <!-- Panel Derecho: Datos Generales -->
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom border-light p-4">
+                        <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-file-invoice text-info me-2"></i>Datos Generales</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            
+                            <!-- Cliente -->
+                            <div class="col-md-12">
+                                <label for="cliente_id" class="form-label fw-medium text-secondary small">Cliente <span class="text-danger">*</span></label>
+                                <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione un cliente..." data-size="4">
+                                    @foreach ( $clientes as $item )
+                                        <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
+                                    @endforeach
+                                </select>
+                                @error('cliente_id') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
 
-                        <!-- Comprobante -->
-                        <div class="col-md-12 mb-2">
-                            <label for="comprobante_id" class="form-label">Comprobante:</label>
-                            <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick" data-live-search="true" title="Selecciona">
-                                @foreach ( $comprobantes as $item )
-                                    <option value="{{ $item->id }}">{{ $item->tipo_comprobante }}</option>
-                                @endforeach
-                            </select>
-                            @error('comprobante_id')
-                                <small class="text-danger">{{ '*'.$messsage }}</small>
-                            @enderror
-                        </div>
+                            <!-- Comprobante -->
+                            <div class="col-md-12">
+                                <label for="comprobante_id" class="form-label fw-medium text-secondary small">Tipo de Comprobante <span class="text-danger">*</span></label>
+                                <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione...">
+                                    @foreach ( $comprobantes as $item )
+                                        <option value="{{ $item->id }}">{{ $item->tipo_comprobante }}</option>
+                                    @endforeach
+                                </select>
+                                @error('comprobante_id') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
 
-                        <!-- Número de comprobante -->
-                        <div class="col-md-12 mb-2">
-                            <label for="numero_comprobante" class="form-label">Número de comprobante:</label>
-                            <input required type="text" name="numero_comprobante" id="numero_comprobante" class="form-control">
-                            @error('numero_comprobante')
-                                <small class="text-danger">{{ '*'.$messsage }}</small>
-                            @enderror
-                        </div>
+                            <!-- Número de comprobante -->
+                            <div class="col-md-12">
+                                <label for="numero_comprobante" class="form-label fw-medium text-secondary small">N° Comprobante <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-hashtag"></i></span>
+                                    <input required type="text" name="numero_comprobante" id="numero_comprobante" class="form-control border-start-0" placeholder="Ej. F001-000456">
+                                </div>
+                                @error('numero_comprobante') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
 
-                        <!-- Impuesto -->
-                        <div class="col-md-6 mb-2">
-                            <label for="impuesto" class="form-label">Impuesto(IGV):</label>
-                            <input readonly type="text" name="impuesto" id="impuesto" class="form-control border-success">
-                            @error('impuesto')
-                                <small class="text-danger">{{ '*'.$messsage }}</small>
-                            @enderror
-                        </div>
+                            <!-- Fecha y Hora (Automáticos, solo lectura) -->
+                            <div class="col-md-6">
+                                <label for="fecha" class="form-label fw-medium text-secondary small">Fecha Emisión</label>
+                                <input readonly type="text" name="fecha" id="fecha" class="form-control bg-light text-muted" value="{{ date('d-m-Y') }}">
+                                <input type="hidden" name="fecha_hora" value="{{ \Carbon\Carbon::now()->toDateTimeString() }}">
+                            </div>
 
-                        <!-- Fecha Hora-->
-                        <div class="col-md-6 mb-2">
-                            <label for="fecha" class="form-label">Fecha:</label>
-                            <input readonly type="text" name="fecha" id="fecha" class="form-control border-success" value="<?php echo date("Y-m-d") ?>">
-                            <?php 
-                            use Carbon\Carbon;
-                            $fecha_hora = Carbon::now()->toDateTimeString();
-                            ?>
-                            <input type="hidden" name="fecha_hora" value="{{ $fecha_hora }}">
-                        </div>
+                            <!-- Impuesto -->
+                            <div class="col-md-6">
+                                <label for="impuesto" class="form-label fw-medium text-secondary small">Impuesto Generado</label>
+                                <input readonly type="text" name="impuesto" id="impuesto" class="form-control bg-light text-muted text-end">
+                                @error('impuesto') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
 
-                        <!-- User -->
-                        <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                            <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
 
-                        <!-- Botones -->
-                        <div class="col-md-12 mb-2 text-center">
-                            <button type="submit" class="btn btn-success" id="guardar">Guardar</button>
                         </div>
+                    </div>
+                    
+                    <!-- Botones de Acción Globales -->
+                    <div class="card-footer bg-white border-top border-light p-4 text-center">
+                        <button id="cancelar" type="button" class="btn btn-light w-100 mb-2 py-2" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="fas fa-times me-2"></i>Cancelar Venta
+                        </button>
+                        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold fs-6 shadow-sm" id="guardar">
+                            <i class="fas fa-check-circle me-2"></i>Procesar Venta
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </form>
 
-    <!-- Modal para cancelar la venta -->
-    <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="cancelModalLabel">Mensaje de confirmación</h1>
+    <!-- Modal Cancelar Venta -->
+    <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-0">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    ¿Seguro que quieres cancelar la venta?
+                <div class="modal-body text-center pb-4">
+                    <div class="text-danger mb-3"><i class="fas fa-exclamation-triangle fa-4x opacity-75"></i></div>
+                    <h4 class="fw-bold text-dark">¿Cancelar venta?</h4>
+                    <p class="text-muted">Se eliminarán todos los productos agregados al detalle.</p>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button id="btnCancelarVenta" type="button" class="btn btn-danger" data-bs-dismiss="modal">Confirmar</button>
+                <div class="modal-footer border-0 pt-0 justify-content-center">
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Mantener Venta</button>
+                    <button id="btnCancelarVenta" type="button" class="btn btn-danger px-4" data-bs-dismiss="modal">Sí, Cancelar</button>
                 </div>
             </div>
         </div>
     </div>
-</form>
+</div>
 @endsection
 
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('#producto_id').change(function () {
-            mostrarValores();
-        });
-
-        $('#btn_agregar').click(function () {
-            agregarProducto();
-        });
-
-        $('#btnCancelarVenta').click(function () {
-            cancelarVenta();
-        });
-
+        $('#producto_id').change(function () { mostrarValores(); });
+        $('#btn_agregar').click(function () { agregarProducto(); });
+        $('#btnCancelarVenta').click(function () { cancelarVenta(); });
         disableButtons();
     });
 
-    // Variables
     let cont = 0;
     let subTotal = [];
     let sumas = 0;
     let igv = 0;
     let total = 0;
-
-    // Constantes
     const impuesto = 18;
 
     function mostrarValores() {
         let value = $('#producto_id').val();
-
         if (!value) {
             $('#stock').val('');
             $('#precio_venta').val('');
             return;
         }
-
         let dataProducto = value.split('-');
-
         $('#stock').val(dataProducto[1]);
         $('#precio_venta').val(dataProducto[2]);
     }
 
     function agregarProducto() {
         let value = $('#producto_id').val();
-
-        if (!value) {
-            showModal('Seleccione un producto');
-            return;
-        }
+        if (!value) { showModal('Seleccione un producto'); return; }
 
         let dataProducto = value.split('-');
-
-        // Obtener valores
         let idProducto = dataProducto[0];
         let stock = parseFloat(dataProducto[1]);
         let precioVenta = parseFloat(dataProducto[2]);
-
-        let nameProducto = $('#producto_id option:selected').text();
+        let nameProducto = $('#producto_id option:selected').text().split(' - ')[1]; // Solo el nombre
 
         let cantidad = parseInt($('#cantidad').val());
         let descuento = parseFloat($('#descuento').val()) || 0;
 
-        // Validaciones
-        if (!cantidad || cantidad <= 0) {
-            showModal('Ingrese una cantidad válida');
-            return;
-        }
+        if (!cantidad || cantidad <= 0) { showModal('Ingrese una cantidad válida'); return; }
+        if (!Number.isInteger(cantidad)) { showModal('La cantidad debe ser entera'); return; }
+        if (descuento < 0) { showModal('Descuento inválido'); return; }
 
-        if (!Number.isInteger(cantidad)) {
-            showModal('La cantidad debe ser entera');
-            return;
-        }
-
-        if (descuento < 0) {
-            showModal('Descuento inválido');
-            return;
-        }
-
-        // Validar cantidad acumulada del mismo producto
         let cantidadAgregada = 0;
-
         $('input[name="arrayidproducto[]"]').each(function(index) {
             if ($(this).val() == idProducto) {
-                cantidadAgregada += parseInt(
-                    $('input[name="arraycantidad[]"]').eq(index).val()
-                );
+                cantidadAgregada += parseInt($('input[name="arraycantidad[]"]').eq(index).val());
             }
         });
 
         let stockDisponible = stock - cantidadAgregada;
+        if (cantidad > stockDisponible) { showModal('Stock insuficiente'); return; }
 
-        if (cantidad > stockDisponible) {
-            showModal('Stock insuficiente');
-            return;
-        }
-
-        // Calcular subtotal
         subTotal[cont] = round((cantidad * precioVenta) - descuento);
-
         sumas = round(sumas + subTotal[cont]);
         igv = round((sumas * impuesto) / 100);
         total = round(sumas + igv);
 
         let fila = `
             <tr id="fila${cont}">
-                <th class="fila-numero"></th>
-                <td>
+                <th class="align-middle text-center text-muted fw-normal">${cont + 1}</th>
+                <td class="align-middle fw-medium">
                     <input type="hidden" name="arrayidproducto[]" value="${idProducto}">
                     ${nameProducto}
                 </td>
-                <td>
+                <td class="align-middle text-center">
                     <input type="hidden" name="arraycantidad[]" value="${cantidad}">
                     ${cantidad}
                 </td>
-                <td>
+                <td class="align-middle text-end">
                     <input type="hidden" name="arrayprecioventa[]" value="${precioVenta}">
-                    ${precioVenta}
+                    ${precioVenta.toFixed(2)}
                 </td>
-                <td>
+                <td class="align-middle text-end text-danger">
                     <input type="hidden" name="arraydescuento[]" value="${descuento}">
-                    ${descuento}
+                    ${descuento > 0 ? '-' + descuento.toFixed(2) : '0.00'}
                 </td>
-                <td>${subTotal[cont]}</td>
-                <td>
-                    <button 
-                        class="btn btn-danger"
-                        type="button"
-                        onclick="eliminarProducto(${cont})">
-
-                        <i class="fa-solid fa-trash"></i>
+                <td class="align-middle text-end fw-bold text-dark">${subTotal[cont].toFixed(2)}</td>
+                <td class="align-middle text-center">
+                    <button class="btn btn-sm btn-outline-danger border-0" type="button" onclick="eliminarProducto(${cont})" title="Quitar">
+                        <i class="fa-solid fa-times"></i>
                     </button>
                 </td>
             </tr>
         `;
 
-        // Agregar al tbody
         $('#tabla_detalle tbody').append(fila);
         reordenarFilas();
-
-        // Actualizar totales
         actualizarTotales();
         limpiarCampos();
         cont++;
@@ -362,16 +323,8 @@
     }
 
     function cancelarVenta() {
-        // Limpiar tbody
         $('#tabla_detalle tbody').empty();
-
-        // Reiniciar variables
-        cont = 0;
-        subTotal = [];
-        sumas = 0;
-        igv = 0;
-        total = 0;
-
+        cont = 0; subTotal = []; sumas = 0; igv = 0; total = 0;
         actualizarTotales();
         limpiarCampos();
         disableButtons();
@@ -382,21 +335,18 @@
         sumas = round(sumas - subTotal[indice]);
         igv = round((sumas * impuesto) / 100);
         total = round(sumas + igv);
-        // Eliminar fila
         $('#fila' + indice).remove();
-
         actualizarTotales();
         disableButtons();
         limpiarCampos();
-        // Reordenar numeración visual
         reordenarFilas();
     }
 
     function actualizarTotales() {
-        $('#sumas').html(sumas);
-        $('#igv').html(igv);
-        $('#total').html(total);
-        $('#impuesto').val(igv);
+        $('#sumas').html(sumas.toFixed(2));
+        $('#igv').html(igv.toFixed(2));
+        $('#total').html(total.toFixed(2));
+        $('#impuesto').val(igv.toFixed(2));
         $('#inputTotal').val(total);
     }
 
@@ -412,9 +362,10 @@
 
     function limpiarCampos() {
         $('#producto_id').selectpicker('val', '');
+        
         $('#cantidad').val('');
         $('#precio_venta').val('');
-        $('#descuento').val('');
+        $('#descuento').val('0');
         $('#stock').val('');
     }
 
@@ -424,25 +375,17 @@
         });
     }
 
-    function round(num, decimales = 2) {
-        return Number(parseFloat(num).toFixed(decimales));
-    }
+    function round(num, decimales = 2) { return Number(parseFloat(num).toFixed(decimales)); }
 
     function showModal(message, icon = 'error') {
         Swal.mixin({
-            toast: true,
-            position: "top-end",
-            showConfirmButton: false,
-            timer: 1500,
+            toast: true, position: "top-end", showConfirmButton: false, timer: 2000,
             timerProgressBar: true,
             didOpen: (toast) => {
                 toast.onmouseenter = Swal.stopTimer;
                 toast.onmouseleave = Swal.resumeTimer;
             }
-        }).fire({
-            icon: icon,
-            title: message
-        });
+        }).fire({ icon: icon, title: message });
     }
 </script>
 @endpush
