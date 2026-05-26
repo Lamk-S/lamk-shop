@@ -7,26 +7,19 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateCategoriaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $categoria = $this->route('categoria');
-        $caracteristicaId = $categoria->caracteristica->id;
+
         return [
-            'nombre' => 'required|max:60|unique:caracteristicas,nombre,'.$caracteristicaId,
-            'descripcion' => 'nullable|max:255'
+            'nombre' => 'required|string|max:60|unique:categorias,nombre,' . $categoria->id,
+            'descripcion' => 'nullable|string|max:255',
+            'estado' => 'nullable|boolean',
         ];
     }
 }

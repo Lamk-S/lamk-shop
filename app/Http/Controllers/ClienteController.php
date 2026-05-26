@@ -8,14 +8,14 @@ use App\Models\Cliente;
 use App\Models\Documento;
 use App\Models\Persona;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
 class ClienteController extends Controller implements HasMiddleware
 {
-    public static function middleware(): array {
+    public static function middleware(): array
+    {
         return [
             new Middleware('permission:ver-cliente|crear-cliente|editar-cliente|eliminar-cliente', only: ['index']),
             new Middleware('permission:crear-cliente', only: ['create', 'store']),
@@ -23,102 +23,77 @@ class ClienteController extends Controller implements HasMiddleware
             new Middleware('permission:eliminar-cliente', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $clientes = Cliente::with('persona.documento')->get();
+        $clientes = Cliente::with('persona.documento')->latest()->get();
         return view('cliente.index', compact('clientes'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $documentos = Documento::all();
+        $documentos = Documento::where('estado', 1)->get();
         $optionsTipoPersona = [
-            'Natural' => 'Natural',
-            'Jurídica' => 'Jurídica',
+            'natural' => 'Natural',
+            'juridica' => 'Jurídica',
         ];
+
         return view('cliente.create', compact('documentos', 'optionsTipoPersona'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StorePersonaRequest $request)
     {
-        try{
-            DB::beginTransaction();
-            $persona = Persona::create($request->validated());
-            $persona->cliente()->create([
-                'persona_id' => $persona->id
-            ]);
-            DB::commit();
-        }catch (Exception $e){
-            DB::rollBack();
+        try {
+            DB::transaction(function () use ($request) {
+                $persona = Persona::create($request->validated());
+                $persona->cliente()->create();
+            });
+
+            return redirect()->route('clientes.index')->with('success', 'Cliente registrado');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al registrar el cliente: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('clientes.index')->with('success', 'Cliente registrado');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Cliente $cliente)
     {
         $cliente->load('persona.documento');
-        $documentos = Documento::all();
+        $documentos = Documento::where('estado', 1)->get();
+
         return view('cliente.edit', compact('cliente', 'documentos'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateClienteRequest $request, Cliente $cliente)
     {
         try {
-            DB::beginTransaction();
-            Persona::where('id', $cliente->persona->id)->update($request->validated());
-            DB::commit();
-        } catch (Exception $e) {
-            DB::rollBack();
-        }
+            DB::transaction(function () use ($request, $cliente) {
+                $cliente->persona->update($request->validated());
+            });
 
-        return redirect()->route('clientes.index')->with('success', 'Cliente editado');
+            return redirect()->route('clientes.index')->with('success', 'Cliente editado');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al editar el cliente: ' . $e->getMessage()]);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $message = '';
-        $persona = Persona::find($id);
-        if ($persona->estado == 1) {
-            Persona::where('id', $persona->id)
-            ->update([
-                'estado' => 0
-            ]);
-            $message = 'Cliente eliminado';
-        } else {
-            Persona::where('id', $persona->id)
-            ->update([
-                'estado' => 1
-            ]);
-            $message = 'Cliente restaurado';
-        }
+        try {
+            $cliente = Cliente::with('persona')->findOrFail($id);
 
-        return redirect()->route('clientes.index')->with('success', $message);
+            if ($cliente->persona->deleted_at) {
+                $cliente->persona->restore();
+                $cliente->restore();
+                $message = 'Cliente restaurado';
+            } else {
+                $cliente->delete();
+                $cliente->persona->delete();
+                $message = 'Cliente eliminado';
+            }
+
+            return redirect()->route('clientes.index')->with('success', $message);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar el cliente: ' . $e->getMessage()]);
+        }
     }
 }

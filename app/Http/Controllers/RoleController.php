@@ -7,13 +7,12 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
-use Override;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller implements HasMiddleware
 {
-    public static function middleware() : array
+    public static function middleware(): array
     {
         return [
             new Middleware('permission:ver-role|crear-role|editar-role|eliminar-role', only: ['index']),
@@ -22,112 +21,81 @@ class RoleController extends Controller implements HasMiddleware
             new Middleware('permission:eliminar-role', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $roles = Role::all();
+        $roles = Role::with('permissions')->get();
         return view('role.index', compact('roles'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $permisos = Permission::all();
         return view('role.create', compact('permisos'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|unique:roles,name',
             'permission' => 'required|array',
-            'permission.*' => 'exists:permissions,id'
+            'permission.*' => 'exists:permissions,id',
         ]);
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($request) {
+                $rol = Role::create([
+                    'name' => $request->name,
+                    'guard_name' => 'web',
+                ]);
 
-            // Crear rol
-            $rol = Role::create([
-                'name' => $request->name,
-                'guard_name' => 'web'
-            ]);
-            
-            // Asignar permisos
-            $permisos = Permission::whereIn('id', $request->permission)->get();
-            $rol->syncPermissions($permisos);
+                $rol->syncPermissions($request->permission);
+            });
 
-            DB::commit();
+            return redirect()->route('roles.index')->with('success', 'Rol registrado');
         } catch (Exception $e) {
-            DB::rollBack();
-            dd($e->getMessage());
+            return back()->withErrors(['error' => 'Error al registrar el rol: ' . $e->getMessage()]);
         }
-        
-        return redirect()->route('roles.index')->with('success', 'Rol registrado');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Role $role)
     {
         $permisos = Permission::all();
+        $role->load('permissions');
+
         return view('role.edit', compact('role', 'permisos'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, Role $role)
     {
         $request->validate([
-            'name' => 'required|unique:roles,name,'.$role->id,
-            'permission' => 'required'
+            'name' => 'required|unique:roles,name,' . $role->id,
+            'permission' => 'required|array',
+            'permission.*' => 'exists:permissions,id',
         ]);
 
         try {
-            DB::beginTransaction();
+            DB::transaction(function () use ($request, $role) {
+                $role->update([
+                    'name' => $request->name,
+                ]);
 
-            // Actualizar rol
-            Role::where('id', $role->id)
-            ->update([
-                'name' => $request->name
-            ]);
+                $role->syncPermissions($request->permission);
+            });
 
-            // Actualizar permisos
-            $permisos = Permission::whereIn('id', $request->permission)->get();
-            $role->syncPermissions($permisos);
-            
-            DB::commit();
+            return redirect()->route('roles.index')->with('success', 'Rol editado');
         } catch (Exception $e) {
-            DB::rollBack();
-            dd($e->getMessage());
+            return back()->withErrors(['error' => 'Error al editar el rol: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('roles.index')->with('success', 'Rol editado');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        Role::where('id', $id)->delete();
-        return redirect()->route('roles.index')->with('success', 'Rol eliminado');
+        try {
+            Role::findOrFail($id)->delete();
+            return redirect()->route('roles.index')->with('success', 'Rol eliminado');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al eliminar el rol: ' . $e->getMessage()]);
+        }
     }
 }

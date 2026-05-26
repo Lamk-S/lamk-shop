@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCategoriaRequest;
 use App\Http\Requests\UpdateCategoriaRequest;
-use App\Models\Caracteristica;
 use App\Models\Categoria;
 use Exception;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -13,7 +12,8 @@ use Illuminate\Support\Facades\DB;
 
 class CategoriaController extends Controller implements HasMiddleware
 {
-    public static function middleware(): array {
+    public static function middleware(): array
+    {
         return [
             new Middleware('permission:ver-categoria|crear-categoria|editar-categoria|eliminar-categoria', only: ['index']),
             new Middleware('permission:crear-categoria', only: ['create', 'store']),
@@ -21,90 +21,63 @@ class CategoriaController extends Controller implements HasMiddleware
             new Middleware('permission:eliminar-categoria', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $categorias = Categoria::with('caracteristica')->latest()->get();
-        return view('categoria.index', ['categorias' => $categorias]);
+        $categorias = Categoria::withTrashed()->latest()->get();
+        return view('categoria.index', compact('categorias'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('categoria.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCategoriaRequest $request)
     {
-        try{
-            DB::beginTransaction();
-            $caracteristica = Caracteristica::create($request->validated());
-            $caracteristica->categoria()->create([
-                'caracteristica_id' => $caracteristica->id
-            ]);
-            DB::commit();
-        }catch (Exception $e){
-            DB::rollBack();
+        try {
+            DB::transaction(function () use ($request) {
+                Categoria::create($request->validated());
+            });
+
+            return redirect()->route('categorias.index')->with('success', 'Categoría registrada');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al registrar la categoría: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('categorias.index')->with('success', 'Categoria registrada');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Categoria $categoria)
     {
-        return view('categoria.edit', ['categoria' => $categoria]);
+        return view('categoria.edit', compact('categoria'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateCategoriaRequest $request, Categoria $categoria)
     {
-        Caracteristica::where('id', $categoria->caracteristica->id)
-        ->update($request->validated());
+        try {
+            $categoria->update($request->validated());
 
-        return redirect()->route('categorias.index')->with('success', 'Categoría editada');
+            return redirect()->route('categorias.index')->with('success', 'Categoría editada');
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al editar la categoría: ' . $e->getMessage()]);
+        }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $message = '';
-        $categoria = Categoria::find($id);
-        if ($categoria->caracteristica->estado == 1) {
-            Caracteristica::where('id', $categoria->caracteristica->id)
-            ->update([
-                'estado' => 0
-            ]);
-            $message = 'Categoría eliminada';
-        } else {
-            Caracteristica::where('id', $categoria->caracteristica->id)
-            ->update([
-                'estado' => 1
-            ]);
-            $message = 'Categoría restaurada';
-        }
+        $categoria = Categoria::withTrashed()->findOrFail($id);
 
-        return redirect()->route('categorias.index')->with('success', $message);
+        try {
+            if ($categoria->trashed()) {
+                $categoria->restore();
+                $message = 'Categoría restaurada';
+            } else {
+                $categoria->delete();
+                $message = 'Categoría eliminada';
+            }
+
+            return redirect()->route('categorias.index')->with('success', $message);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar la categoría: ' . $e->getMessage()]);
+        }
     }
 }

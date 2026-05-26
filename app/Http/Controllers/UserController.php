@@ -6,16 +6,15 @@ use App\Http\Requests\StoreUserRequest;
 use App\Http\Requests\UpdateUserRequest;
 use App\Models\User;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller implements HasMiddleware
 {
-    public static function middleware(): array {
+    public static function middleware(): array
+    {
         return [
             new Middleware('permission:ver-user|crear-user|editar-user|eliminar-user', only: ['index']),
             new Middleware('permission:crear-user', only: ['create', 'store']),
@@ -23,102 +22,87 @@ class UserController extends Controller implements HasMiddleware
             new Middleware('permission:eliminar-user', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $users = User::all();
+        $users = User::with('roles')->withTrashed()->get();
         return view('user.index', compact('users'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         $roles = Role::all();
         return view('user.create', compact('roles'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreUserRequest $request)
     {
         try {
-            DB::beginTransaction();
-            // Encriptar la contraseña
-            $fieldHash = Hash::make($request->password);
-            // Modificar el valor de password en el request
-            $request->merge(['password' => $fieldHash]);
-            // Crear el usuario
-            $user = User::create($request->only('name', 'email', 'password'));
-            // Asignar el rol al usuario
-            $user->assignRole($request->role);
-            DB::commit();
+            DB::transaction(function () use ($request) {
+                $user = User::create([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => $request->password,
+                    'estado' => 1,
+                ]);
+
+                $user->assignRole($request->role);
+            });
+
+            return redirect()->route('users.index')->with('success', 'Usuario registrado');
         } catch (Exception $e) {
-            DB::rollBack();
             return back()->withErrors(['error' => 'Error al crear el usuario: ' . $e->getMessage()]);
         }
-        return redirect()->route('users.index')->with('success', 'Usuario registrado');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(User $user)
     {
         $roles = Role::all();
+        $user->load('roles');
+
         return view('user.edit', compact('user', 'roles'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(UpdateUserRequest $request, User $user)
     {
         try {
-            DB::beginTransaction();
-            // Encriptar la contraseña si se ha proporcionado una nueva
-            if ($request->filled('password')) {
-                $fieldHash = Hash::make($request->password);
-                $request->merge(['password' => $fieldHash]);
-            } else {
-                // Si no se ha proporcionado una nueva contraseña, eliminar el campo para evitar que se actualice a null
-                $request->request->remove('password');
-            }
-            // Actualizar el usuario
-            $user->update($request->only('name', 'email', 'password'));
-            // Sincronizar el rol del usuario
-            $user->syncRoles($request->role);
-            DB::commit();
+            DB::transaction(function () use ($request, $user) {
+                $data = [
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'estado' => $request->estado ?? $user->estado,
+                ];
+
+                if ($request->filled('password')) {
+                    $data['password'] = $request->password;
+                }
+
+                $user->update($data);
+                $user->syncRoles($request->role);
+            });
+
+            return redirect()->route('users.index')->with('success', 'Usuario actualizado');
         } catch (Exception $e) {
-            DB::rollBack();
             return back()->withErrors(['error' => 'Error al actualizar el usuario: ' . $e->getMessage()]);
         }
-        return redirect()->route('users.index')->with('success', 'Usuario actualizado');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $user = User::find($id);
-        // Eliminar roles asociados al usuario
-        $rolUser = $user->getRoleNames()->first();
-        $user->removeRole($rolUser);
-        // Eliminar el usuario
-        $user->delete();
-        return redirect()->route('users.index')->with('success', 'Usuario eliminado');
+        try {
+            $user = User::withTrashed()->findOrFail($id);
+
+            if ($user->trashed()) {
+                $user->restore();
+                $message = 'Usuario restaurado';
+            } else {
+                $user->delete();
+                $message = 'Usuario eliminado';
+            }
+
+            return redirect()->route('users.index')->with('success', $message);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar el usuario: ' . $e->getMessage()]);
+        }
     }
 }

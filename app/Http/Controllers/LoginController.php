@@ -3,29 +3,29 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\LoginRequest;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
-    public function index() {
+    public function index()
+    {
         if (Auth::check()) {
             return redirect()->route('panel');
         }
+
         return view('auth.login');
     }
 
-    public function login(LoginRequest $request) {
-        // Validar credenciales
-        if (!Auth::validate($request->only('email', 'password'))) {
-            return redirect()->to('login')->withErrors('Credenciales incorrectas');
+    public function login(LoginRequest $request)
+    {
+        $credentials = $request->only('email', 'password');
+
+        if (!Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password'], 'estado' => 1], $request->boolean('remember'))) {
+            return back()->withErrors(['email' => 'Credenciales incorrectas o usuario inactivo.']);
         }
 
-        // Crear sesión
-        $user = Auth::getProvider()->retrieveByCredentials($request->only('email', 'password'));
+        $request->session()->regenerate();
 
-        Auth::login($user);
-        
-        return redirect()->route('panel')->with('success', 'Bienvenido '.$user->name);
+        return redirect()->route('panel')->with('success', 'Bienvenido ' . Auth::user()->name);
     }
 }

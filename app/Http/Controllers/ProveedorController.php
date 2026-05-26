@@ -6,129 +6,94 @@ use App\Http\Requests\StorePersonaRequest;
 use App\Http\Requests\UpdateProveedorRequest;
 use App\Models\Documento;
 use App\Models\Persona;
-use App\Models\Proveedore;
+use App\Models\Proveedor;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
 
 class ProveedorController extends Controller implements HasMiddleware
 {
-    public static function middleware(): array {
+    public static function middleware(): array
+    {
         return [
-            new Middleware('permission:ver-proveedore|crear-proveedore|editar-proveedore|eliminar-proveedore', only: ['index']),
-            new Middleware('permission:crear-proveedore', only: ['create', 'store']),
-            new Middleware('permission:editar-proveedore', only: ['edit', 'update']),
-            new Middleware('permission:eliminar-proveedore', only: ['destroy']),
+            new Middleware('permission:ver-proveedor|crear-proveedor|editar-proveedor|eliminar-proveedor', only: ['index']),
+            new Middleware('permission:crear-proveedor', only: ['create', 'store']),
+            new Middleware('permission:editar-proveedor', only: ['edit', 'update']),
+            new Middleware('permission:eliminar-proveedor', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $proveedores = Proveedore::with('persona.documento')->latest()->get();
-        return view('proveedore.index', compact('proveedores'));
+        $proveedores = Proveedor::with('persona.documento')->latest()->get();
+        return view('proveedor.index', compact('proveedores'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $documentos = Documento::all();
-
+        $documentos = Documento::where('estado', 1)->get();
         $optionsTipoPersona = [
-            'Natural' => 'Natural',
-            'Jurídica' => 'Jurídica',
+            'natural' => 'Natural',
+            'juridica' => 'Jurídica',
         ];
 
-        return view('proveedore.create', compact('documentos', 'optionsTipoPersona'));
+        return view('proveedor.create', compact('documentos', 'optionsTipoPersona'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StorePersonaRequest $request)
     {
         try {
+            DB::transaction(function () use ($request) {
+                $persona = Persona::create($request->validated());
+                $persona->proveedor()->create();
+            });
 
-            DB::beginTransaction();
-            $persona = Persona::create($request->validated());
-            $persona->proveedore()->create();
-            DB::commit();
-
-            return redirect()
-                ->route('proveedores.index')
-                ->with('success', 'Proveedor registrado');
-
+            return redirect()->route('proveedores.index')->with('success', 'Proveedor registrado');
         } catch (Exception $e) {
-            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al registrar el proveedor: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('proveedores.index')->with('success', 'Proveedor registrado');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function edit(Proveedor $proveedor)
     {
-        //
+        $proveedor->load('persona.documento');
+        $documentos = Documento::where('estado', 1)->get();
+
+        return view('proveedor.edit', compact('proveedor', 'documentos'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Proveedore $proveedore)
-    {
-        $proveedore->load('persona.documento');
-        $documentos = Documento::all();
-        return view('proveedore.edit', compact('proveedore', 'documentos'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(UpdateProveedorRequest $request,
-        Proveedore $proveedore)
+    public function update(UpdateProveedorRequest $request, Proveedor $proveedor)
     {
         try {
+            DB::transaction(function () use ($request, $proveedor) {
+                $proveedor->persona->update($request->validated());
+            });
 
-            DB::beginTransaction();
-            $proveedore->persona->update(
-                $request->validated()
-            );
-            DB::commit();
+            return redirect()->route('proveedores.index')->with('success', 'Proveedor editado');
         } catch (Exception $e) {
-            DB::rollBack();
+            return back()->withErrors(['error' => 'Error al editar el proveedor: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('proveedores.index')->with('success', 'Proveedor actualizado');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $message = '';
-        $persona = Persona::find($id);
-        if ($persona->estado == 1) {
-            Persona::where('id', $persona->id)
-            ->update([
-                'estado' => 0
-            ]);
-            $message = 'Proveedor eliminado';
-        } else {
-            Persona::where('id', $persona->id)
-            ->update([
-                'estado' => 1
-            ]);
-            $message = 'Proveedor restaurado';
-        }
+        try {
+            $proveedor = Proveedor::with('persona')->findOrFail($id);
 
-        return redirect()->route('proveedores.index')->with('success', $message);
+            if ($proveedor->persona->deleted_at) {
+                $proveedor->persona->restore();
+                $proveedor->restore();
+                $message = 'Proveedor restaurado';
+            } else {
+                $proveedor->delete();
+                $proveedor->persona->delete();
+                $message = 'Proveedor eliminado';
+            }
+
+            return redirect()->route('proveedores.index')->with('success', $message);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar el proveedor: ' . $e->getMessage()]);
+        }
     }
 }

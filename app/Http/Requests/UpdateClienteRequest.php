@@ -7,27 +7,33 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateClienteRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         $cliente = $this->route('cliente');
+
         return [
-            'razon_social' => 'required|max:80',
-            'direccion' => 'required|max:80',
+            'razon_social' => 'required|string|max:150',
+            'direccion' => 'nullable|string|max:255',
+            'telefono' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'tipo_persona' => 'required|in:natural,juridica',
             'documento_id' => 'required|integer|exists:documentos,id',
-            'numero_documento' => 'required|max:20|unique:personas,numero_documento,' . $cliente->persona->id
+            'numero_documento' => 'required|string|max:25|unique:personas,numero_documento,' . $cliente->persona->id,
+        ];
+    }
+
+    public function attributes(): array
+    {
+        return [
+            'razon_social' => 'razón social',
+            'tipo_persona' => 'tipo de persona',
+            'documento_id' => 'tipo de documento',
+            'numero_documento' => 'número de documento',
         ];
     }
 }
