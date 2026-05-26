@@ -6,18 +6,18 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Marca extends Model
+class Caja extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'nombre',
-        'descripcion',
+        'fondo_fijo',
         'estado',
     ];
 
-    public function productos()
+    public function sesionesCaja()
     {
-        return $this->hasMany(Producto::class);
+        return $this->hasMany(SesionCaja::class);
     }
 }

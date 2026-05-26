@@ -6,24 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('comprobantes', function (Blueprint $table) {
+        Schema::create('documentos', function (Blueprint $table) {
             $table->id();
-            $table->string('tipo_comprobante', 50);
-            $table->tinyInteger('estado')->default(1);
+            $table->string('tipo_documento', 30)->unique(); // DNI, RUC, Pasaporte, etc.
+            $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('comprobantes');
+        Schema::dropIfExists('documentos');
     }
 };

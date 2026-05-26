@@ -2,15 +2,11 @@
 
 namespace Database\Seeders;
 
-use App\Models\Caracteristica;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\Presentacion;
 use Illuminate\Database\Seeder;
 
 class PresentacionSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         $presentaciones = [
@@ -23,19 +19,18 @@ class PresentacionSeeder extends Seeder
             ['nombre' => 'Frasco', 'sigla' => 'FCO', 'descripcion' => 'Envase de vidrio o plástico rígido.'],
             ['nombre' => 'Bolsa', 'sigla' => 'BOL', 'descripcion' => 'Empaque flexible de plástico o papel.'],
             ['nombre' => 'Lata', 'sigla' => 'LAT', 'descripcion' => 'Envase metálico para conservas o bebidas.'],
-            ['nombre' => 'Botella', 'sigla' => 'BOT', 'descripcion' => 'Envase cilíndrico, generalmente para líquidos.']
+            ['nombre' => 'Botella', 'sigla' => 'BOT', 'descripcion' => 'Envase cilíndrico, generalmente para líquidos.'],
         ];
 
         foreach ($presentaciones as $item) {
-            $caracteristica = Caracteristica::create([
-                'nombre' => $item['nombre'],
-                'descripcion' => $item['descripcion'],
-                'estado' => 1
-            ]);
-            $caracteristica->presentacione()->create([
-                'caracteristica_id' => $caracteristica->id,
-                'sigla' => $item['sigla']
-            ]);
+            Presentacion::firstOrCreate(
+                ['nombre' => $item['nombre']],
+                [
+                    'sigla' => $item['sigla'],
+                    'descripcion' => $item['descripcion'],
+                    'estado' => 1,
+                ]
+            );
         }
     }
 }
