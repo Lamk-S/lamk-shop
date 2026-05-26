@@ -2,34 +2,56 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Validator;
 
 class StoreVentaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            'fecha_hora' => 'required',
-            'impuesto' => 'required',
-            'numero_comprobante' => 'required|unique:ventas,numero_comprobante|max:255',
-            'total' => 'required|numeric',
-            'cliente_id' => 'required|exists:clientes,id',
-            'user_id' => 'required|exists:users,id',
-            'comprobante_id' => 'required|exists:comprobantes,id'
+            'cliente_id' => 'nullable|integer|exists:clientes,id',
+            'comprobante_id' => 'nullable|integer|exists:comprobantes,id',
+            'numero_comprobante' => 'required|string|max:255|unique:ventas,numero_comprobante',
+            'fecha_hora' => 'required|date',
+            'subtotal' => 'required|numeric|min:0',
+            'impuesto' => 'required|numeric|min:0',
+            'total' => 'required|numeric|min:0',
+
+            'metodo_pago' => 'required|in:EFECTIVO,TARJETA,TRANSFERENCIA',
+            'monto_recibido' => 'required|numeric|min:0',
+            'vuelto_entregado' => 'nullable|numeric|min:0',
+
+            'arrayidproducto' => 'required|array|min:1',
+            'arrayidproducto.*' => 'integer|exists:productos,id',
+            'arraycantidad' => 'required|array|min:1',
+            'arraycantidad.*' => 'integer|min:1',
+            'arrayprecioventa' => 'required|array|min:1',
+            'arrayprecioventa.*' => 'numeric|min:0',
+            'arraydescuento' => 'required|array|min:1',
+            'arraydescuento.*' => 'numeric|min:0',
         ];
+    }
+
+    public function withValidator(Validator $validator): void
+    {
+        $validator->after(function (Validator $validator) {
+            $metodo = strtoupper((string) $this->input('metodo_pago'));
+            $total = (float) $this->input('total', 0);
+            $montoRecibido = (float) $this->input('monto_recibido', 0);
+
+            if ($metodo === 'EFECTIVO' && $montoRecibido < $total) {
+                $validator->errors()->add('monto_recibido', 'En efectivo, el monto recibido debe ser mayor o igual al total.');
+            }
+
+            if (in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true) && abs($montoRecibido - $total) > 0.01) {
+                $validator->errors()->add('monto_recibido', 'En tarjeta o transferencia, el monto recibido debe coincidir con el total.');
+            }
+        });
     }
 }

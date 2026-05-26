@@ -4,18 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cliente extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    public function persona() {
+    protected $fillable = [
+        'persona_id',
+    ];
+
+    public function persona()
+    {
         return $this->belongsTo(Persona::class);
     }
 
-    public function ventas() {
-        return $this->hasMany(Ventas::class);
+    public function ventas()
+    {
+        return $this->hasMany(Venta::class);
     }
-
-    protected $fillable = ['persona_id'];
 }

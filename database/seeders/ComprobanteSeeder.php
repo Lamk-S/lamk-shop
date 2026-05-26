@@ -3,23 +3,28 @@
 namespace Database\Seeders;
 
 use App\Models\Comprobante;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ComprobanteSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        Comprobante::insert([
-            [
-                'tipo_comprobante' => 'Boleta'
-            ],
-            [
-                'tipo_comprobante' => 'Factura'
-            ]
-        ]);
+        $comprobantes = [
+            ['tipo_comprobante' => 'Boleta', 'serie' => 'B001', 'correlativo_actual' => 0],
+            ['tipo_comprobante' => 'Factura', 'serie' => 'F001', 'correlativo_actual' => 0],
+        ];
+
+        foreach ($comprobantes as $item) {
+            Comprobante::firstOrCreate(
+                [
+                    'tipo_comprobante' => $item['tipo_comprobante'],
+                    'serie' => $item['serie'],
+                ],
+                [
+                    'correlativo_actual' => $item['correlativo_actual'],
+                    'estado' => 1,
+                ]
+            );
+        }
     }
 }

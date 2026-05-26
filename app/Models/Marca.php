@@ -4,18 +4,20 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Marca extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    public function productos() {
+    protected $fillable = [
+        'nombre',
+        'descripcion',
+        'estado',
+    ];
+
+    public function productos()
+    {
         return $this->hasMany(Producto::class);
     }
-
-    public function caracteristica() {
-        return $this->belongsTo(Caracteristica::class);
-    }
-
-    protected $fillable = ['caracteristica_id'];
 }

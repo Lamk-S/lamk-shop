@@ -3,19 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreCompraRequest;
-use App\Models\Compras;
+use App\Models\Compra;
 use App\Models\Comprobante;
+use App\Models\Kardex;
+use App\Models\MovimientoCaja;
+use App\Models\MovimientoTesoreria;
 use App\Models\Producto;
-use App\Models\Proveedore;
+use App\Models\SesionCaja;
+use App\Models\Tesoreria;
+use App\Models\Proveedor;
 use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class CompraController extends Controller implements HasMiddleware
 {
-    public static function middleware(): array {
+    public static function middleware(): array
+    {
         return [
             new Middleware('permission:ver-compra|crear-compra|mostrar-compra|eliminar-compra', only: ['index']),
             new Middleware('permission:crear-compra', only: ['create', 'store']),
@@ -23,128 +29,208 @@ class CompraController extends Controller implements HasMiddleware
             new Middleware('permission:eliminar-compra', only: ['destroy']),
         ];
     }
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
-        $compras = Compras::with('comprobante', 'proveedore.persona')
-        ->latest()
-        ->get();
+        $compras = Compra::with('comprobante', 'proveedor.persona', 'productos')
+            ->latest()
+            ->get();
+
         return view('compra.index', compact('compras'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
-        $proveedores = Proveedore::whereHas('persona', function($query) {
-            $query->where('estado', 1);
-        })->get();
-        $comprobantes = Comprobante::all();
+        $proveedores = Proveedor::with('persona')
+            ->whereHas('persona', fn ($q) => $q->where('estado', 1))
+            ->get();
+
+        $comprobantes = Comprobante::where('estado', 1)->get();
         $productos = Producto::where('estado', 1)->get();
+
         return view('compra.create', compact('proveedores', 'comprobantes', 'productos'));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(StoreCompraRequest $request)
     {
         try {
-            DB::beginTransaction();
-            
-            // Tabla compras
-            $compra = Compras::create($request->validated());
-
-            // Llenar tabla compra_producto
-            // 1. Recuperar los arrays
-            $arrayProducto_id = $request->get('arrayidproducto');
-            $arrayCantidad = $request->get('arraycantidad');
-            $arrayPrecioCompra = $request->get('arraypreciocompra');
-            $arrayPrecioVenta = $request->get('arrayprecioventa');
-
-            // 2. Realizar el llenado
-            $siseArray = count($arrayProducto_id);
-            $cont = 0;
-            while ($cont < $siseArray) {
-                $compra->productos()->syncWithoutDetaching([
-                    $arrayProducto_id[$cont] => [
-                        'cantidad' => $arrayCantidad[$cont],
-                        'precio_compra' => $arrayPrecioCompra[$cont],
-                        'precio_venta' => $arrayPrecioVenta[$cont]
-                    ]
+            DB::transaction(function () use ($request) {
+                $compra = Compra::create([
+                    'proveedor_id' => $request->proveedor_id,
+                    'user_id' => Auth::id(),
+                    'comprobante_id' => $request->comprobante_id,
+                    'numero_comprobante' => $request->numero_comprobante,
+                    'metodo_pago' => $request->metodo_pago,
+                    'fecha_hora' => $request->fecha_hora,
+                    'subtotal' => $request->subtotal,
+                    'impuesto' => $request->impuesto,
+                    'total' => $request->total,
+                    'estado' => 1,
                 ]);
 
-                $producto = Producto::find($arrayProducto_id[$cont]);
+                $ids = $request->get('arrayidproducto', []);
+                $cantidades = $request->get('arraycantidad', []);
+                $preciosCompra = $request->get('arraypreciocompra', []);
+                $preciosVenta = $request->get('arrayprecioventa', []);
 
-                $stockActual = $producto->stock;
-                $stockNuevo = intval($arrayCantidad[$cont]);
+                foreach ($ids as $i => $productoId) {
+                    $cantidad = (int) ($cantidades[$i] ?? 0);
+                    $precioCompra = (float) ($preciosCompra[$i] ?? 0);
+                    $precioVenta = (float) ($preciosVenta[$i] ?? 0);
 
-                DB::table('productos')
-                    ->where('id', $producto->id)
-                    ->update([
-                        'stock' => $stockActual + $stockNuevo
+                    $producto = Producto::whereKey($productoId)->lockForUpdate()->firstOrFail();
+
+                    $compra->productos()->attach($producto->id, [
+                        'cantidad' => $cantidad,
+                        'precio_compra' => $precioCompra,
+                        'precio_venta' => $precioVenta,
                     ]);
 
-                $cont++;
-            }
+                    $producto->update([
+                        'stock' => $producto->stock + $cantidad,
+                        'precio_compra' => $precioCompra,
+                        'precio_venta' => $precioVenta,
+                    ]);
 
-            DB::commit();
+                    $ultimoSaldo = Kardex::where('producto_id', $producto->id)
+                        ->lockForUpdate()
+                        ->latest('id')
+                        ->value('saldo') ?? 0;
+
+                    Kardex::create([
+                        'producto_id' => $producto->id,
+                        'tipo_transaccion' => 'COMPRA',
+                        'descripcion' => 'Compra #' . $compra->id,
+                        'entrada' => $cantidad,
+                        'salida' => 0,
+                        'saldo' => $ultimoSaldo + $cantidad,
+                        'costo_unitario' => $precioCompra,
+                        'user_id' => Auth::id(),
+                    ]);
+                }
+
+                $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
+                    ['nombre' => 'Tesorería Principal'],
+                    ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
+                );
+
+                $medio = strtoupper($request->metodo_pago);
+                $campoSaldo = $medio === 'EFECTIVO' ? 'saldo_efectivo' : 'saldo_banco';
+
+                $saldoAnterior = (float) $tesoreria->{$campoSaldo};
+                $saldoPosterior = $saldoAnterior - (float) $compra->total;
+
+                $tesoreria->update([
+                    $campoSaldo => $saldoPosterior,
+                ]);
+
+                MovimientoTesoreria::create([
+                    'tesoreria_id' => $tesoreria->id,
+                    'user_id' => Auth::id(),
+                    'tipo' => 'EGRESO',
+                    'origen' => 'COMPRA_PRODUCTO',
+                    'descripcion' => 'Pago de compra #' . $compra->id,
+                    'monto' => $compra->total,
+                    'saldo_anterior' => $saldoAnterior,
+                    'saldo_posterior' => $saldoPosterior,
+                ]);
+
+                if ($medio === 'EFECTIVO') {
+                    $sesionAbierta = SesionCaja::where('user_id', Auth::id())
+                        ->where('estado', 1)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($sesionAbierta) {
+                        MovimientoCaja::create([
+                            'sesion_caja_id' => $sesionAbierta->id,
+                            'tipo' => 'EGRESO',
+                            'descripcion' => 'Compra #' . $compra->id,
+                            'monto' => $compra->total,
+                        ]);
+                    }
+                }
+            });
+
+            return redirect()->route('compras.index')->with('success', 'Compra exitosa');
         } catch (Exception $e) {
-            DB::rollBack();
-            dd($e->getMessage());
+            return back()->withErrors(['error' => 'Error al registrar la compra: ' . $e->getMessage()]);
         }
-
-        return redirect()->route('compras.index')->with('success', 'Compra exitosa');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(Compras $compra)
+    public function show(Compra $compra)
     {
+        $compra->load('comprobante', 'proveedor.persona', 'productos');
         return view('compra.show', compact('compra'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        $message = '';
-        $compra = Compras::find($id);
-        if($compra->estado == 1) {
-            Compras::where('id', $id)
-            ->update([
-                'estado' => 0
-            ]);
-            $message = 'Compra eliminada';
-        } else {
-            Compras::where('id', $id)
-            ->update([
-                'estado' => 1
-            ]);
-            $message = 'Compra restaurada';
-        }
+        try {
+            $compra = Compra::with('productos')->findOrFail($id);
 
-        return redirect()->route('compras.index')->with('success', $message);
+            if ((int) $compra->estado === 1) {
+                DB::transaction(function () use ($compra) {
+                    foreach ($compra->productos as $producto) {
+                        $cantidad = (int) $producto->pivot->cantidad;
+
+                        $producto->update([
+                            'stock' => $producto->stock - $cantidad,
+                        ]);
+
+                        $ultimoSaldo = Kardex::where('producto_id', $producto->id)
+                            ->latest('id')
+                            ->value('saldo') ?? 0;
+
+                        Kardex::create([
+                            'producto_id' => $producto->id,
+                            'tipo_transaccion' => 'ANULACION',
+                            'descripcion' => 'Anulación de compra #' . $compra->id,
+                            'entrada' => 0,
+                            'salida' => $cantidad,
+                            'saldo' => $ultimoSaldo - $cantidad,
+                            'costo_unitario' => $producto->precio_compra,
+                            'user_id' => Auth::id(),
+                        ]);
+                    }
+
+                    $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
+                        ['nombre' => 'Tesorería Principal'],
+                        ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
+                    );
+
+                    $medio = strtoupper($compra->metodo_pago);
+                    $campoSaldo = $medio === 'EFECTIVO' ? 'saldo_efectivo' : 'saldo_banco';
+
+                    $saldoAnterior = (float) $tesoreria->{$campoSaldo};
+                    $saldoPosterior = $saldoAnterior + (float) $compra->total;
+
+                    $tesoreria->update([
+                        $campoSaldo => $saldoPosterior,
+                    ]);
+
+                    MovimientoTesoreria::create([
+                        'tesoreria_id' => $tesoreria->id,
+                        'user_id' => Auth::id(),
+                        'tipo' => 'INGRESO',
+                        'origen' => 'AJUSTE',
+                        'descripcion' => 'Anulación de compra #' . $compra->id,
+                        'monto' => $compra->total,
+                        'saldo_anterior' => $saldoAnterior,
+                        'saldo_posterior' => $saldoPosterior,
+                    ]);
+
+                    $compra->update(['estado' => 0]);
+                });
+
+                $message = 'Compra anulada';
+            } else {
+                $message = 'La compra ya estaba anulada';
+            }
+
+            return redirect()->route('compras.index')->with('success', $message);
+        } catch (Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar la compra: ' . $e->getMessage()]);
+        }
     }
 }

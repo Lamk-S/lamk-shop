@@ -18,19 +18,17 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario Centrada -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 700px;">
         <div class="card-header bg-white border-bottom border-light p-4 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-user-pen text-warning me-2"></i>Credenciales y Rol</h5>
             <span class="badge bg-light text-secondary border">ID: {{ $user->id }}</span>
         </div>
-        
+
         <div class="card-body p-4 p-md-5">
             <form action="{{ route('users.update', ['user' => $user]) }}" method="post">
                 @csrf
                 @method('PATCH')
                 <div class="row g-4">
-                    <!-- Nombre -->
                     <div class="col-md-12">
                         <label for="name" class="form-label fw-medium text-secondary">Nombre de Usuario <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -40,7 +38,6 @@
                         @error('name') <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Correo electrónico -->
                     <div class="col-md-12">
                         <label for="email" class="form-label fw-medium text-secondary">Correo Electrónico <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -50,7 +47,6 @@
                         @error('email') <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Rol -->
                     <div class="col-md-12">
                         <label for="role" class="form-label fw-medium text-secondary">Asignar Rol <span class="text-danger">*</span></label>
                         <select name="role" id="role" class="form-select @error('role') is-invalid @enderror">
@@ -65,7 +61,6 @@
                         @error('role') <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Contraseña -->
                     <div class="col-md-6">
                         <label for="password" class="form-label fw-medium text-secondary">Nueva Contraseña <span class="text-muted fw-normal">(Opcional)</span></label>
                         <div class="input-group">
@@ -75,17 +70,14 @@
                         @error('password') <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Confirmar Contraseña -->
                     <div class="col-md-6">
-                        <label for="password_confirm" class="form-label fw-medium text-secondary">Confirmar Contraseña</label>
+                        <label for="password_confirmation" class="form-label fw-medium text-secondary">Confirmar Contraseña</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-lock"></i></span>
-                            <input type="password" name="password_confirm" id="password_confirm" class="form-control border-start-0 @error('password_confirm') is-invalid @enderror" placeholder="Repita la nueva contraseña">
+                            <input type="password" name="password_confirmation" id="password_confirmation" class="form-control border-start-0 @error('password_confirmation') is-invalid @enderror" placeholder="Repita la nueva contraseña">
                         </div>
-                        @error('password_confirm') <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-between align-items-center border-top pt-4">
                         <button type="reset" class="btn btn-link text-muted text-decoration-none">Restablecer valores</button>
                         <div class="d-flex gap-2">

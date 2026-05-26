@@ -23,11 +23,10 @@
         </ol>
     </div>
 
-    <form action="{{ route('productos.update', ['producto' => $producto]) }}" method="post" enctype="multipart/form-data">
+    <form action="{{ route('productos.update', $producto) }}" method="post" enctype="multipart/form-data">
         @method('PATCH')
         @csrf
         <div class="row g-4">
-            <!-- Panel 1: Información Básica -->
             <div class="col-xl-7">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-bottom border-light p-4 d-flex justify-content-between align-items-center">
@@ -36,7 +35,6 @@
                     </div>
                     <div class="card-body p-4 p-md-5 pt-4">
                         <div class="row g-4">
-                            <!-- Código -->
                             <div class="col-md-5">
                                 <label for="codigo" class="form-label fw-medium text-secondary">Código (SKU/Barras) <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -46,28 +44,55 @@
                                 @error('codigo') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Nombre -->
                             <div class="col-md-7">
                                 <label for="nombre" class="form-label fw-medium text-secondary">Nombre del Producto <span class="text-danger">*</span></label>
                                 <input type="text" name="nombre" id="nombre" class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre', $producto->nombre) }}">
                                 @error('nombre') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Descripcion -->
                             <div class="col-md-12">
                                 <label for="descripcion" class="form-label fw-medium text-secondary">Descripción Detallada <span class="text-muted fw-normal">(Opcional)</span></label>
                                 <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror">{{ old('descripcion', $producto->descripcion) }}</textarea>
                                 @error('descripcion') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Imagen Actual y Subida -->
+                            <div class="col-md-6">
+                                <label for="precio_compra" class="form-label fw-medium text-secondary">Precio de Compra <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">S/</span>
+                                    <input type="number" step="0.01" min="0" name="precio_compra" id="precio_compra" class="form-control border-start-0 @error('precio_compra') is-invalid @enderror" value="{{ old('precio_compra', $producto->precio_compra) }}">
+                                </div>
+                                @error('precio_compra') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="precio_venta" class="form-label fw-medium text-secondary">Precio de Venta <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">S/</span>
+                                    <input type="number" step="0.01" min="0" name="precio_venta" id="precio_venta" class="form-control border-start-0 @error('precio_venta') is-invalid @enderror" value="{{ old('precio_venta', $producto->precio_venta) }}">
+                                </div>
+                                @error('precio_venta') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="stock" class="form-label fw-medium text-secondary">Stock Actual</label>
+                                <input type="number" min="0" name="stock" id="stock" class="form-control @error('stock') is-invalid @enderror" value="{{ old('stock', $producto->stock) }}">
+                                @error('stock') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="stock_minimo" class="form-label fw-medium text-secondary">Stock Mínimo</label>
+                                <input type="number" min="0" name="stock_minimo" id="stock_minimo" class="form-control @error('stock_minimo') is-invalid @enderror" value="{{ old('stock_minimo', $producto->stock_minimo) }}">
+                                @error('stock_minimo') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
                             <div class="col-md-12 mt-4 border-top pt-4">
                                 <label for="img_path" class="form-label fw-medium text-secondary">Fotografía del Producto</label>
                                 <div class="d-flex align-items-center gap-4">
                                     @if($producto->img_path)
                                         <div>
                                             <span class="d-block small text-muted mb-1 text-center">Imagen actual</span>
-                                            <img src="{{ Storage::url('public/productos/'.$producto->img_path) }}" alt="Producto" class="img-preview shadow-sm">
+                                            <img src="{{ Storage::url($producto->img_path) }}" alt="Producto" class="img-preview shadow-sm">
                                         </div>
                                     @endif
                                     <div class="flex-grow-1">
@@ -77,13 +102,11 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Panel 2: Clasificación y Detalles Extras -->
             <div class="col-xl-5">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-bottom border-light p-4">
@@ -91,35 +114,31 @@
                     </div>
                     <div class="card-body p-4 p-md-5 pt-4">
                         <div class="row g-4">
-                            
-                            <!-- Marca -->
+
                             <div class="col-md-6">
                                 <label for="marca_id" class="form-label fw-medium text-secondary">Marca <span class="text-danger">*</span></label>
                                 <select data-size="4" title="Seleccione..." data-live-search="true" name="marca_id" id="marca_id" class="form-control selectpicker show-tick">
                                     @foreach($marcas as $item)
-                                        <option value="{{ $item->id }}" {{ (old('marca_id') ?? $producto->marca_id) == $item->id ? 'selected' : '' }}>{{ $item->nombre }}</option>
+                                        <option value="{{ $item->id }}" {{ (old('marca_id', $producto->marca_id) == $item->id) ? 'selected' : '' }}>{{ $item->nombre }}</option>
                                     @endforeach
                                 </select>
                                 @error('marca_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Presentación -->
                             <div class="col-md-6">
-                                <label for="presentacione_id" class="form-label fw-medium text-secondary">Presentación <span class="text-danger">*</span></label>
-                                <select data-size="4" title="Seleccione..." data-live-search="true" name="presentacione_id" id="presentacione_id" class="form-control selectpicker show-tick">
+                                <label for="presentacion_id" class="form-label fw-medium text-secondary">Presentación <span class="text-danger">*</span></label>
+                                <select data-size="4" title="Seleccione..." data-live-search="true" name="presentacion_id" id="presentacion_id" class="form-control selectpicker show-tick">
                                     @foreach($presentaciones as $item)
-                                        <option value="{{ $item->id }}" {{ (old('presentacione_id') ?? $producto->presentacione_id) == $item->id ? 'selected' : '' }}>{{ $item->nombre }}</option>
+                                        <option value="{{ $item->id }}" {{ (old('presentacion_id', $producto->presentacion_id) == $item->id) ? 'selected' : '' }}>{{ $item->nombre }}</option>
                                     @endforeach
                                 </select>
-                                @error('presentacione_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                                @error('presentacion_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Categoría (Múltiple) -->
                             <div class="col-md-12">
                                 <label for="categoria_id" class="form-label fw-medium text-secondary">Categorías <span class="text-danger">*</span></label>
                                 <select data-size="4" title="Busque y seleccione categorías..." data-live-search="true" name="categoria_id[]" id="categoria_id" class="form-control selectpicker show-tick" multiple data-selected-text-format="count > 3">
                                     @php
-                                        // Extraemos los IDs de las categorías actuales del producto si existe old() usamos old()
                                         $selectedCategories = old('categoria_id', $producto->categorias->pluck('id')->toArray());
                                     @endphp
                                     @foreach($categorias as $item)
@@ -129,7 +148,6 @@
                                 @error('categoria_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Fecha de vencimiento -->
                             <div class="col-md-12">
                                 <label for="fecha_vencimiento" class="form-label fw-medium text-secondary">Fecha de Vencimiento <span class="text-muted fw-normal">(Si aplica)</span></label>
                                 <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control" value="{{ old('fecha_vencimiento', $producto->fecha_vencimiento) }}">
@@ -141,7 +159,6 @@
                 </div>
             </div>
 
-            <!-- Botones Generales -->
             <div class="col-12 mt-4">
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4 d-flex justify-content-between align-items-center">

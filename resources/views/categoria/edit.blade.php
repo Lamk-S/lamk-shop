@@ -13,24 +13,26 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 800px;">
         <div class="card-header bg-white border-bottom border-light p-4 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-pen-to-square text-warning me-2"></i>Datos de la categoría</h5>
+            <h5 class="mb-0 fw-semibold text-dark">
+                <i class="fa-solid fa-pen-to-square text-warning me-2"></i>Datos de la categoría
+            </h5>
             <span class="badge bg-light text-secondary border">ID: {{ $categoria->id }}</span>
         </div>
-        
+
         <div class="card-body p-4 p-md-5">
-            <form action="{{ route('categorias.update', ['categoria' => $categoria]) }}" method="post">
+            <form action="{{ route('categorias.update', $categoria) }}" method="post">
                 @method('PATCH')
                 @csrf
                 <div class="row g-4">
-                    
                     <div class="col-md-12">
                         <label for="nombre" class="form-label fw-medium text-secondary">Nombre de la Categoría <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-tag"></i></span>
-                            <input type="text" name="nombre" id="nombre" class="form-control border-start-0 @error('nombre') is-invalid @enderror" value="{{ old('nombre', $categoria->caracteristica->nombre) }}">
+                            <input type="text" name="nombre" id="nombre"
+                                class="form-control border-start-0 @error('nombre') is-invalid @enderror"
+                                value="{{ old('nombre', $categoria->nombre) }}">
                         </div>
                         @error('nombre')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
@@ -39,21 +41,23 @@
 
                     <div class="col-md-12">
                         <label for="descripcion" class="form-label fw-medium text-secondary">Descripción</label>
-                        <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror" style="resize: none;">{{ old('descripcion', $categoria->caracteristica->descripcion) }}</textarea>
+                        <textarea name="descripcion" id="descripcion" rows="4"
+                            class="form-control @error('descripcion') is-invalid @enderror"
+                            style="resize: none;">{{ old('descripcion', $categoria->descripcion) }}</textarea>
                         @error('descripcion')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-between align-items-center border-top pt-4">
                         <button type="reset" class="btn btn-link text-muted text-decoration-none">Restablecer campos</button>
                         <div class="d-flex gap-2">
                             <a href="{{ route('categorias.index') }}" class="btn btn-light px-4">Cancelar</a>
-                            <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-sync-alt me-2"></i>Actualizar Registro</button>
+                            <button type="submit" class="btn btn-primary px-4 shadow-sm">
+                                <i class="fas fa-sync-alt me-2"></i>Actualizar Registro
+                            </button>
                         </div>
                     </div>
-                    
                 </div>
             </form>
         </div>
