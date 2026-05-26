@@ -7,7 +7,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-    .pos-totals th { font-size: 1.1rem; color: #495057; }
+    .pos-totals th { font-size: 1.1rem; color: #495457; }
     .pos-totals .total-row th { font-size: 1.3rem; color: #0d6efd; }
 </style>
 @endpush
@@ -26,25 +26,25 @@
     <form action="{{ route('ventas.store') }}" method="post">
         @csrf
         <div class="row g-4">
-            <!-- Panel Izquierdo: Detalle de Venta -->
             <div class="col-lg-8">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-bottom border-light p-4">
                         <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-boxes-stacked text-primary me-2"></i>Detalle de Productos</h5>
                     </div>
+
                     <div class="card-body p-4">
                         <div class="row g-3 mb-4 bg-light p-3 rounded-3 border">
-                            <!-- Buscador de Producto -->
                             <div class="col-md-12">
                                 <label for="producto_id" class="form-label fw-medium text-secondary small">Buscar Producto</label>
                                 <select name="producto_id" id="producto_id" class="form-control selectpicker shadow-sm border-0" data-live-search="true" data-size="5" title="Escriba o seleccione un producto...">
                                     @foreach ($productos as $item)
-                                        <option value="{{ $item->id }}-{{ $item->stock }}-{{ $item->precio_venta }}">{{ $item->codigo }} - {{ $item->nombre }}</option>
+                                        <option value="{{ $item->id }}" data-stock="{{ $item->stock }}" data-precio="{{ $item->precio_venta }}">
+                                            {{ $item->codigo }} - {{ $item->nombre }}
+                                        </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <!-- Stock (Solo lectura) -->
                             <div class="col-md-3">
                                 <label for="stock" class="form-label fw-medium text-secondary small">Stock Disp.</label>
                                 <div class="input-group">
@@ -53,31 +53,27 @@
                                 </div>
                             </div>
 
-                            <!-- Precio -->
                             <div class="col-md-3">
                                 <label for="precio_venta" class="form-label fw-medium text-secondary small">Precio Venta</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-white text-muted">$</span>
+                                    <span class="input-group-text bg-white text-muted">S/</span>
                                     <input disabled type="number" name="precio_venta" id="precio_venta" class="form-control bg-white text-end fw-bold" step="0.1">
                                 </div>
                             </div>
 
-                            <!-- Cantidad -->
                             <div class="col-md-3">
                                 <label for="cantidad" class="form-label fw-medium text-secondary small">Cantidad</label>
-                                <input type="number" name="cantidad" id="cantidad" class="form-control text-center">
+                                <input type="number" name="cantidad" id="cantidad" class="form-control text-center" min="1">
                             </div>
 
-                            <!-- Descuento -->
                             <div class="col-md-3">
                                 <label for="descuento" class="form-label fw-medium text-secondary small">Descuento</label>
                                 <div class="input-group">
-                                    <span class="input-group-text bg-white text-muted">$</span>
-                                    <input type="number" name="descuento" id="descuento" class="form-control text-end" value="0">
+                                    <span class="input-group-text bg-white text-muted">S/</span>
+                                    <input type="number" name="descuento" id="descuento" class="form-control text-end" value="0" min="0" step="0.01">
                                 </div>
                             </div>
 
-                            <!-- Botón Agregar -->
                             <div class="col-12 mt-3 text-end">
                                 <button id="btn_agregar" class="btn btn-primary px-4 shadow-sm" type="button">
                                     <i class="fas fa-plus me-2"></i>Agregar al carrito
@@ -85,7 +81,6 @@
                             </div>
                         </div>
 
-                        <!-- Tabla de Venta -->
                         <div class="table-responsive border rounded-3">
                             <table id="tabla_detalle" class="table table-hover mb-0">
                                 <thead class="bg-light">
@@ -99,13 +94,14 @@
                                         <th class="text-center" style="width: 60px;"></th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <!-- Las filas se inyectan por JS -->
-                                </tbody>
+                                <tbody></tbody>
                                 <tfoot class="bg-light pos-totals border-top">
                                     <tr>
                                         <th colspan="5" class="text-end py-3">Subtotal sin IGV:</th>
-                                        <th class="text-end py-3"><span id="sumas">0.00</span></th>
+                                        <th class="text-end py-3">
+                                            <input type="hidden" name="subtotal" value="0" id="inputSubtotal">
+                                            <span id="sumas">0.00</span>
+                                        </th>
                                         <th></th>
                                     </tr>
                                     <tr>
@@ -124,72 +120,89 @@
                                 </tfoot>
                             </table>
                         </div>
-
                     </div>
                 </div>
             </div>
 
-            <!-- Panel Derecho: Datos Generales -->
             <div class="col-lg-4">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-bottom border-light p-4">
                         <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-file-invoice text-info me-2"></i>Datos Generales</h5>
                     </div>
+
                     <div class="card-body p-4">
                         <div class="row g-3">
-                            
-                            <!-- Cliente -->
                             <div class="col-md-12">
                                 <label for="cliente_id" class="form-label fw-medium text-secondary small">Cliente <span class="text-danger">*</span></label>
                                 <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione un cliente..." data-size="4">
-                                    @foreach ( $clientes as $item )
-                                        <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
+                                    @foreach ($clientes as $item)
+                                        <option value="{{ $item->id }}" @selected(old('cliente_id') == $item->id)>{{ $item->persona->razon_social }}</option>
                                     @endforeach
                                 </select>
                                 @error('cliente_id') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
-                            <!-- Comprobante -->
                             <div class="col-md-12">
                                 <label for="comprobante_id" class="form-label fw-medium text-secondary small">Tipo de Comprobante <span class="text-danger">*</span></label>
                                 <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione...">
-                                    @foreach ( $comprobantes as $item )
-                                        <option value="{{ $item->id }}">{{ $item->tipo_comprobante }}</option>
+                                    @foreach ($comprobantes as $item)
+                                        <option value="{{ $item->id }}" @selected(old('comprobante_id') == $item->id)>{{ $item->tipo_comprobante }}</option>
                                     @endforeach
                                 </select>
                                 @error('comprobante_id') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
-                            <!-- Número de comprobante -->
                             <div class="col-md-12">
                                 <label for="numero_comprobante" class="form-label fw-medium text-secondary small">N° Comprobante <span class="text-danger">*</span></label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-hashtag"></i></span>
-                                    <input required type="text" name="numero_comprobante" id="numero_comprobante" class="form-control border-start-0" placeholder="Ej. F001-000456">
+                                    <input required type="text" name="numero_comprobante" id="numero_comprobante" class="form-control border-start-0" placeholder="Ej. F001-000456" value="{{ old('numero_comprobante') }}">
                                 </div>
                                 @error('numero_comprobante') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
-                            <!-- Fecha y Hora (Automáticos, solo lectura) -->
                             <div class="col-md-6">
                                 <label for="fecha" class="form-label fw-medium text-secondary small">Fecha Emisión</label>
                                 <input readonly type="text" name="fecha" id="fecha" class="form-control bg-light text-muted" value="{{ date('d-m-Y') }}">
-                                <input type="hidden" name="fecha_hora" value="{{ \Carbon\Carbon::now()->toDateTimeString() }}">
+                                <input type="hidden" name="fecha_hora" value="{{ old('fecha_hora', \Carbon\Carbon::now()->toDateTimeString()) }}">
                             </div>
 
-                            <!-- Impuesto -->
                             <div class="col-md-6">
                                 <label for="impuesto" class="form-label fw-medium text-secondary small">Impuesto Generado</label>
                                 <input readonly type="text" name="impuesto" id="impuesto" class="form-control bg-light text-muted text-end">
                                 @error('impuesto') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
-                            <input type="hidden" name="user_id" value="{{ auth()->user()->id }}">
+                            <div class="col-md-12">
+                                <label for="metodo_pago" class="form-label fw-medium text-secondary small">Método de pago <span class="text-danger">*</span></label>
+                                <select name="metodo_pago" id="metodo_pago" class="form-select @error('metodo_pago') is-invalid @enderror">
+                                    <option value="EFECTIVO" @selected(old('metodo_pago', 'EFECTIVO') == 'EFECTIVO')>EFECTIVO</option>
+                                    <option value="TARJETA" @selected(old('metodo_pago') == 'TARJETA')>TARJETA</option>
+                                    <option value="TRANSFERENCIA" @selected(old('metodo_pago') == 'TRANSFERENCIA')>TRANSFERENCIA</option>
+                                </select>
+                                @error('metodo_pago') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
 
+                            <div class="col-md-12">
+                                <label for="monto_recibido" class="form-label fw-medium text-secondary small">Monto recibido <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">$</span>
+                                    <input type="number" name="monto_recibido" id="monto_recibido" class="form-control border-start-0 text-end" value="{{ old('monto_recibido', 0) }}" min="0" step="0.01">
+                                </div>
+                                @error('monto_recibido') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
+
+                            <div class="col-md-12">
+                                <label for="vuelto_entregado" class="form-label fw-medium text-secondary small">Vuelto entregado</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">$</span>
+                                    <input disabled type="number" name="vuelto_entregado" id="vuelto_entregado" class="form-control border-start-0 bg-light text-end fw-bold" value="{{ old('vuelto_entregado', 0) }}" step="0.01">
+                                </div>
+                                @error('vuelto_entregado') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Botones de Acción Globales -->
+
                     <div class="card-footer bg-white border-top border-light p-4 text-center">
                         <button id="cancelar" type="button" class="btn btn-light w-100 mb-2 py-2" data-bs-toggle="modal" data-bs-target="#cancelModal">
                             <i class="fas fa-times me-2"></i>Cancelar Venta
@@ -203,7 +216,6 @@
         </div>
     </form>
 
-    <!-- Modal Cancelar Venta -->
     <div class="modal fade" id="cancelModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -232,6 +244,11 @@
         $('#producto_id').change(function () { mostrarValores(); });
         $('#btn_agregar').click(function () { agregarProducto(); });
         $('#btnCancelarVenta').click(function () { cancelarVenta(); });
+        $('#monto_recibido').on('input', actualizarVuelto);
+        $('#metodo_pago').on('change', function () {
+            actualizarVuelto();
+        });
+
         disableButtons();
     });
 
@@ -243,26 +260,30 @@
     const impuesto = 18;
 
     function mostrarValores() {
-        let value = $('#producto_id').val();
-        if (!value) {
+        let $option = $('#producto_id option:selected');
+
+        if (!$option.val()) {
             $('#stock').val('');
             $('#precio_venta').val('');
             return;
         }
-        let dataProducto = value.split('-');
-        $('#stock').val(dataProducto[1]);
-        $('#precio_venta').val(dataProducto[2]);
+
+        $('#stock').val($option.data('stock') ?? '');
+        $('#precio_venta').val($option.data('precio') ?? '');
     }
 
     function agregarProducto() {
-        let value = $('#producto_id').val();
-        if (!value) { showModal('Seleccione un producto'); return; }
+        let idProducto = $('#producto_id').val();
 
-        let dataProducto = value.split('-');
-        let idProducto = dataProducto[0];
-        let stock = parseFloat(dataProducto[1]);
-        let precioVenta = parseFloat(dataProducto[2]);
-        let nameProducto = $('#producto_id option:selected').text().split(' - ')[1]; // Solo el nombre
+        if (!idProducto) {
+            showModal('Seleccione un producto');
+            return;
+        }
+
+        let $option = $('#producto_id option:selected');
+        let stock = parseFloat($option.data('stock'));
+        let precioVenta = parseFloat($option.data('precio'));
+        let nameProducto = $option.text().split(' - ').slice(1).join(' - ');
 
         let cantidad = parseInt($('#cantidad').val());
         let descuento = parseFloat($('#descuento').val()) || 0;
@@ -317,6 +338,7 @@
         $('#tabla_detalle tbody').append(fila);
         reordenarFilas();
         actualizarTotales();
+
         limpiarCampos();
         cont++;
         disableButtons();
@@ -324,9 +346,15 @@
 
     function cancelarVenta() {
         $('#tabla_detalle tbody').empty();
-        cont = 0; subTotal = []; sumas = 0; igv = 0; total = 0;
+        cont = 0;
+        subTotal = [];
+        sumas = 0;
+        igv = 0;
+        total = 0;
         actualizarTotales();
         limpiarCampos();
+        $('#monto_recibido').val('0.00');
+        $('#vuelto_entregado').val('0.00');
         disableButtons();
         showModal('Venta cancelada', 'success');
     }
@@ -347,7 +375,22 @@
         $('#igv').html(igv.toFixed(2));
         $('#total').html(total.toFixed(2));
         $('#impuesto').val(igv.toFixed(2));
-        $('#inputTotal').val(total);
+        $('#inputTotal').val(total.toFixed(2));
+        $('#inputSubtotal').val(sumas.toFixed(2));
+
+        const montoActual = parseFloat($('#monto_recibido').val()) || 0;
+
+        if (!montoActual || montoActual === 0) {
+            $('#monto_recibido').val(total.toFixed(2));
+        }
+
+        actualizarVuelto();
+    }
+
+    function actualizarVuelto() {
+        const montoRecibido = parseFloat($('#monto_recibido').val()) || 0;
+        const vuelto = round(Math.max(0, montoRecibido - total));
+        $('#vuelto_entregado').val(vuelto.toFixed(2));
     }
 
     function disableButtons() {
@@ -362,7 +405,6 @@
 
     function limpiarCampos() {
         $('#producto_id').selectpicker('val', '');
-        
         $('#cantidad').val('');
         $('#precio_venta').val('');
         $('#descuento').val('0');
@@ -375,11 +417,16 @@
         });
     }
 
-    function round(num, decimales = 2) { return Number(parseFloat(num).toFixed(decimales)); }
+    function round(num, decimales = 2) {
+        return Number(parseFloat(num).toFixed(decimales));
+    }
 
     function showModal(message, icon = 'error') {
         Swal.mixin({
-            toast: true, position: "top-end", showConfirmButton: false, timer: 2000,
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
             timerProgressBar: true,
             didOpen: (toast) => {
                 toast.onmouseenter = Swal.stopTimer;

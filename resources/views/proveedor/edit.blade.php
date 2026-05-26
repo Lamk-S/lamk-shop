@@ -18,62 +18,80 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario Centrada -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 800px;">
         <div class="card-header bg-white border-bottom border-light p-4 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-truck-moving text-warning me-2"></i>Datos del Proveedor</h5>
-            <span class="badge bg-light text-secondary border">ID: {{ $proveedore->id }}</span>
+            <span class="badge bg-light text-secondary border">ID: {{ $proveedor->id }}</span>
         </div>
         
         <div class="card-body p-4 p-md-5">
-            <form action="{{ route('proveedores.update', ['proveedore' => $proveedore]) }}" method="post">
+            <form action="{{ route('proveedores.update', $proveedor->id) }}" method="post">
                 @method('PATCH')
                 @csrf
                 <div class="row g-4">
-                    <!-- Tipo de persona (Solo lectura visual) -->
                     <div class="col-md-12">
                         <label class="form-label fw-medium text-secondary">Tipo de persona</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-info-circle"></i></span>
-                            <input type="text" class="form-control border-start-0 bg-light text-muted" value="{{ strtoupper($proveedore->persona->tipo_persona) }}" readonly>
+                            <input type="hidden" name="tipo_persona" value="{{ $proveedor->persona->tipo_persona }}">
+                            <input type="text" class="form-control border-start-0 bg-light text-muted" value="{{ ucfirst($proveedor->persona->tipo_persona) }}" readonly>
                         </div>
                         <small class="text-muted fs-8">Este campo no puede ser modificado una vez creado el registro.</small>
                     </div>
 
-                    <!-- Razón social / Nombres -->
                     <div class="col-md-12">
                         <label for="razon_social" class="form-label fw-medium text-secondary">
-                            {{ $proveedore->persona->tipo_persona == 'natural' ? 'Nombres y Apellidos' : 'Razón Social de la Empresa' }} <span class="text-danger">*</span>
+                            {{ $proveedor->persona->tipo_persona == 'natural' ? 'Nombres y Apellidos' : 'Razón Social de la Empresa' }} <span class="text-danger">*</span>
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-building"></i></span>
-                            <input type="text" name="razon_social" id="razon_social" class="form-control border-start-0 @error('razon_social') is-invalid @enderror" value="{{ old('razon_social', $proveedore->persona->razon_social) }}">
+                            <input type="text" name="razon_social" id="razon_social" class="form-control border-start-0 @error('razon_social') is-invalid @enderror" value="{{ old('razon_social', $proveedor->persona->razon_social) }}">
                         </div>
                         @error('razon_social')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Dirección -->
                     <div class="col-md-12">
-                        <label for="direccion" class="form-label fw-medium text-secondary">Dirección Física <span class="text-danger">*</span></label>
+                        <label for="direccion" class="form-label fw-medium text-secondary">Dirección Física</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-map-marker-alt"></i></span>
-                            <input type="text" name="direccion" id="direccion" class="form-control border-start-0 @error('direccion') is-invalid @enderror" value="{{ old('direccion', $proveedore->persona->direccion) }}">
+                            <input type="text" name="direccion" id="direccion" class="form-control border-start-0 @error('direccion') is-invalid @enderror" value="{{ old('direccion', $proveedor->persona->direccion) }}">
                         </div>
                         @error('direccion')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Tipo de Documento -->
+                    <div class="col-md-6">
+                        <label for="telefono" class="form-label fw-medium text-secondary">Teléfono de contacto</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-phone"></i></span>
+                            <input type="text" name="telefono" id="telefono" class="form-control border-start-0 @error('telefono') is-invalid @enderror" value="{{ old('telefono', $proveedor->persona->telefono) }}" placeholder="Ej. 987654321">
+                        </div>
+                        @error('telefono')
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="email" class="form-label fw-medium text-secondary">Correo Electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-envelope"></i></span>
+                            <input type="email" name="email" id="email" class="form-control border-start-0 @error('email') is-invalid @enderror" value="{{ old('email', $proveedor->persona->email) }}" placeholder="ejemplo@empresa.com">
+                        </div>
+                        @error('email')
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="col-md-6">
                         <label for="documento_id" class="form-label fw-medium text-secondary">Tipo de documento <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-id-card"></i></span>
                             <select class="form-select border-start-0 @error('documento_id') is-invalid @enderror" name="documento_id" id="documento_id">
                                 @foreach($documentos as $item)
-                                    <option value="{{ $item->id }}" {{ old('documento_id', $proveedore->persona->documento_id) == $item->id ? 'selected' : '' }}>
+                                    <option value="{{ $item->id }}" {{ old('documento_id', $proveedor->persona->documento_id) == $item->id ? 'selected' : '' }}>
                                         {{ $item->tipo_documento }}
                                     </option>
                                 @endforeach
@@ -84,16 +102,14 @@
                         @enderror
                     </div>
 
-                    <!-- Número documento -->
                     <div class="col-md-6">
                         <label for="numero_documento" class="form-label fw-medium text-secondary">Número de documento <span class="text-danger">*</span></label>
-                        <input type="text" name="numero_documento" id="numero_documento" class="form-control @error('numero_documento') is-invalid @enderror" value="{{ old('numero_documento', $proveedore->persona->numero_documento) }}">
+                        <input type="text" name="numero_documento" id="numero_documento" class="form-control @error('numero_documento') is-invalid @enderror" value="{{ old('numero_documento', $proveedor->persona->numero_documento) }}">
                         @error('numero_documento')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-between align-items-center border-top pt-4">
                         <button type="reset" class="btn btn-link text-muted text-decoration-none">Restablecer valores</button>
                         <div class="d-flex gap-2">

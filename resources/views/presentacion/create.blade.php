@@ -19,18 +19,16 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario Centrada -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 700px;">
         <div class="card-header bg-white border-bottom border-light p-4">
             <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-box text-primary me-2"></i>Detalles de la Presentación</h5>
         </div>
-        
+
         <div class="card-body p-4 p-md-5">
             <form action="{{ route('presentaciones.store') }}" method="post">
                 @csrf
                 <div class="row g-4">
 
-                    <!-- Nombre -->
                     <div class="col-md-8">
                         <label for="nombre" class="form-label fw-medium text-secondary">Nombre <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -42,7 +40,6 @@
                         @enderror
                     </div>
 
-                    <!-- Sigla -->
                     <div class="col-md-4">
                         <label for="sigla" class="form-label fw-medium text-secondary">Sigla <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -54,7 +51,6 @@
                         @enderror
                     </div>
 
-                    <!-- Descripción -->
                     <div class="col-md-12">
                         <label for="descripcion" class="form-label fw-medium text-secondary">Descripción <span class="text-muted fw-normal">(Opcional)</span></label>
                         <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror" placeholder="Añada una breve descripción...">{{ old('descripcion') }}</textarea>
@@ -63,7 +59,6 @@
                         @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-end gap-2 border-top pt-4">
                         <a href="{{ route('presentaciones.index') }}" class="btn btn-light px-4">Cancelar</a>
                         <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-save me-2"></i>Guardar Presentación</button>

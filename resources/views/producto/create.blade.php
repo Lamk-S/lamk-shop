@@ -25,13 +25,11 @@
     <form action="{{ route('productos.store') }}" method="post" enctype="multipart/form-data">
         @csrf
         <div class="row g-4">
-            <!-- Panel 1: Información Básica -->
             <div class="col-xl-7">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4 p-md-5">
                         <h6 class="section-title"><i class="fas fa-info-circle text-primary me-2"></i>Información General</h6>
                         <div class="row g-4">
-                            <!-- Código -->
                             <div class="col-md-5">
                                 <label for="codigo" class="form-label fw-medium text-secondary">Código (SKU/Barras) <span class="text-danger">*</span></label>
                                 <div class="input-group">
@@ -41,33 +39,58 @@
                                 @error('codigo') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Nombre -->
                             <div class="col-md-7">
                                 <label for="nombre" class="form-label fw-medium text-secondary">Nombre del Producto <span class="text-danger">*</span></label>
                                 <input type="text" name="nombre" id="nombre" class="form-control @error('nombre') is-invalid @enderror" value="{{ old('nombre') }}" placeholder="Ej. Zapatillas Running Nike...">
                                 @error('nombre') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Descripcion -->
                             <div class="col-md-12">
                                 <label for="descripcion" class="form-label fw-medium text-secondary">Descripción Detallada <span class="text-muted fw-normal">(Opcional)</span></label>
                                 <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror" placeholder="Añada características, colores, dimensiones...">{{ old('descripcion') }}</textarea>
                                 @error('descripcion') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
+                            <div class="col-md-6">
+                                <label for="precio_compra" class="form-label fw-medium text-secondary">Precio de Compra <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">S/</span>
+                                    <input type="number" step="0.01" min="0" name="precio_compra" id="precio_compra" class="form-control border-start-0 @error('precio_compra') is-invalid @enderror" value="{{ old('precio_compra', 0) }}">
+                                </div>
+                                @error('precio_compra') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="precio_venta" class="form-label fw-medium text-secondary">Precio de Venta <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0 text-muted">S/</span>
+                                    <input type="number" step="0.01" min="0" name="precio_venta" id="precio_venta" class="form-control border-start-0 @error('precio_venta') is-invalid @enderror" value="{{ old('precio_venta', 0) }}">
+                                </div>
+                                @error('precio_venta') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="stock" class="form-label fw-medium text-secondary">Stock Inicial</label>
+                                <input type="number" min="0" name="stock" id="stock" class="form-control @error('stock') is-invalid @enderror" value="{{ old('stock', 0) }}">
+                                @error('stock') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label for="stock_minimo" class="form-label fw-medium text-secondary">Stock Mínimo</label>
+                                <input type="number" min="0" name="stock_minimo" id="stock_minimo" class="form-control @error('stock_minimo') is-invalid @enderror" value="{{ old('stock_minimo', 5) }}">
+                                @error('stock_minimo') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Panel 2: Clasificación y Detalles Extras -->
             <div class="col-xl-5">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4 p-md-5">
                         <h6 class="section-title"><i class="fas fa-tags text-success me-2"></i>Clasificación y Logística</h6>
                         <div class="row g-4">
-                            
-                            <!-- Marca -->
+
                             <div class="col-md-6">
                                 <label for="marca_id" class="form-label fw-medium text-secondary">Marca <span class="text-danger">*</span></label>
                                 <select data-size="4" title="Seleccione..." data-live-search="true" name="marca_id" id="marca_id" class="form-control selectpicker show-tick">
@@ -78,18 +101,16 @@
                                 @error('marca_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Presentación -->
                             <div class="col-md-6">
-                                <label for="presentacione_id" class="form-label fw-medium text-secondary">Presentación <span class="text-danger">*</span></label>
-                                <select data-size="4" title="Seleccione..." data-live-search="true" name="presentacione_id" id="presentacione_id" class="form-control selectpicker show-tick">
+                                <label for="presentacion_id" class="form-label fw-medium text-secondary">Presentación <span class="text-danger">*</span></label>
+                                <select data-size="4" title="Seleccione..." data-live-search="true" name="presentacion_id" id="presentacion_id" class="form-control selectpicker show-tick">
                                     @foreach($presentaciones as $item)
-                                        <option value="{{ $item->id }}" {{ old('presentacione_id') == $item->id ? 'selected' : '' }}>{{ $item->nombre }}</option>
+                                        <option value="{{ $item->id }}" {{ old('presentacion_id') == $item->id ? 'selected' : '' }}>{{ $item->nombre }}</option>
                                     @endforeach
                                 </select>
-                                @error('presentacione_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                                @error('presentacion_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Categoría (Múltiple) -->
                             <div class="col-md-12">
                                 <label for="categoria_id" class="form-label fw-medium text-secondary">Categorías (Puede elegir varias) <span class="text-danger">*</span></label>
                                 <select data-size="4" title="Busque y seleccione categorías..." data-live-search="true" name="categoria_id[]" id="categoria_id" class="form-control selectpicker show-tick" multiple data-selected-text-format="count > 3">
@@ -100,14 +121,12 @@
                                 @error('categoria_id') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Fecha de vencimiento -->
                             <div class="col-md-12">
                                 <label for="fecha_vencimiento" class="form-label fw-medium text-secondary">Fecha de Vencimiento <span class="text-muted fw-normal">(Si aplica)</span></label>
                                 <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control" value="{{ old('fecha_vencimiento') }}">
                                 @error('fecha_vencimiento') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
                             </div>
 
-                            <!-- Imagen -->
                             <div class="col-md-12">
                                 <label for="img_path" class="form-label fw-medium text-secondary">Fotografía del Producto <span class="text-muted fw-normal">(JPG/PNG)</span></label>
                                 <input type="file" name="img_path" id="img_path" class="form-control" accept="image/*">
@@ -119,7 +138,6 @@
                 </div>
             </div>
 
-            <!-- Botones Generales -->
             <div class="col-12 mt-4">
                 <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4 d-flex justify-content-end gap-2">

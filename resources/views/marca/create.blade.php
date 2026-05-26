@@ -29,7 +29,6 @@
             <form action="{{ route('marcas.store') }}" method="post">
                 @csrf
                 <div class="row g-4">
-
                     <!-- Nombre -->
                     <div class="col-md-12">
                         <label for="nombre" class="form-label fw-medium text-secondary">Nombre de la Marca <span class="text-danger">*</span></label>

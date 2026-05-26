@@ -19,53 +19,48 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario Centrada -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 700px;">
         <div class="card-header bg-white border-bottom border-light p-4 d-flex justify-content-between align-items-center">
             <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-box text-warning me-2"></i>Detalles de la Presentación</h5>
-            <span class="badge bg-light text-secondary border">ID: {{ $presentacione->id }}</span>
+            <span class="badge bg-light text-secondary border">ID: {{ $presentacion->id }}</span>
         </div>
-        
+
         <div class="card-body p-4 p-md-5">
-            <form action="{{ route('presentaciones.update', ['presentacione' => $presentacione]) }}" method="post">
+            <form action="{{ route('presentaciones.update', $presentacion) }}" method="post">
                 @method('PATCH')
                 @csrf
                 <div class="row g-4">
 
-                    <!-- Nombre -->
                     <div class="col-md-8">
                         <label for="nombre" class="form-label fw-medium text-secondary">Nombre <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-tag"></i></span>
-                            <input type="text" name="nombre" id="nombre" class="form-control border-start-0 @error('nombre') is-invalid @enderror" value="{{ old('nombre', $presentacione->caracteristica->nombre) }}">
+                            <input type="text" name="nombre" id="nombre" class="form-control border-start-0 @error('nombre') is-invalid @enderror" value="{{ old('nombre', $presentacion->nombre) }}">
                         </div>
                         @error('nombre')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Sigla -->
                     <div class="col-md-4">
                         <label for="sigla" class="form-label fw-medium text-secondary">Sigla <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-text-width"></i></span>
-                            <input type="text" name="sigla" id="sigla" class="form-control border-start-0 @error('sigla') is-invalid @enderror" value="{{ old('sigla', $presentacione->sigla) }}" required>
+                            <input type="text" name="sigla" id="sigla" class="form-control border-start-0 @error('sigla') is-invalid @enderror" value="{{ old('sigla', $presentacion->sigla) }}" required>
                         </div>
                         @error('sigla')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Descripción -->
                     <div class="col-md-12">
                         <label for="descripcion" class="form-label fw-medium text-secondary">Descripción <span class="text-muted fw-normal">(Opcional)</span></label>
-                        <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror">{{ old('descripcion', $presentacione->caracteristica->descripcion) }}</textarea>
+                        <textarea name="descripcion" id="descripcion" rows="4" class="form-control @error('descripcion') is-invalid @enderror">{{ old('descripcion', $presentacion->descripcion) }}</textarea>
                         @error('descripcion')
                             <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
                         @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-between align-items-center border-top pt-4">
                         <button type="reset" class="btn btn-link text-muted text-decoration-none">Restablecer campos</button>
                         <div class="d-flex gap-2">

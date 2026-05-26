@@ -7,9 +7,9 @@
                     <div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                     Panel de Control
                 </a>
-                
-                <div class="sb-sidenav-menu-heading">Módulos Operativos</div>
-                
+
+                <div class="sb-sidenav-menu-heading">Operaciones</div>
+
                 @can('ver-compra')
                 <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="false">
                     <div class="sb-nav-link-icon"><i class="fa-solid fa-store"></i></div>
@@ -42,6 +42,44 @@
                 </div>
                 @endcan
 
+                <div class="sb-sidenav-menu-heading">Caja y Tesorería</div>
+
+                @can('ver-caja')
+                <a class="nav-link" href="{{ route('cajas.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-cash-register"></i></div> Cajas
+                </a>
+                @endcan
+
+                @can('ver-sesion-caja')
+                <a class="nav-link" href="{{ route('sesiones-caja.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-lock-open"></i></div> Sesiones de Caja
+                </a>
+                @endcan
+
+                @can('ver-movimiento-caja')
+                <a class="nav-link" href="{{ route('movimientos-caja.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-money-bill-wave"></i></div> Movimientos de Caja
+                </a>
+                @endcan
+
+                @can('ver-tesoreria')
+                <a class="nav-link" href="{{ route('tesoreria.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-vault"></i></div> Tesorería
+                </a>
+                @endcan
+
+                @can('ver-movimiento-tesoreria')
+                <a class="nav-link" href="{{ route('movimientos-tesoreria.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-right-left"></i></div> Movimientos Tesorería
+                </a>
+                @endcan
+
+                @can('ver-kardex')
+                <a class="nav-link" href="{{ route('kardex.index') }}">
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-box-open"></i></div> Kardex
+                </a>
+                @endcan
+
                 <div class="sb-sidenav-menu-heading">Catálogos</div>
 
                 @can('ver-categoria')
@@ -50,9 +88,9 @@
                 </a>
                 @endcan
 
-                @can('ver-presentacione')
+                @can('ver-presentacion')
                 <a class="nav-link" href="{{ route('presentaciones.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-box-open"></i></div> Presentaciones
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-box"></i></div> Presentaciones
                 </a>
                 @endcan
 
@@ -76,16 +114,16 @@
                 </a>
                 @endcan
 
-                @can('ver-proveedore')
+                @can('ver-proveedor')
                 <a class="nav-link" href="{{ route('proveedores.index') }}">
-                    <div class="sb-nav-link-icon"><i class="fa-solid fa-truck-field"></i></div> Proveedores
+                    <div class="sb-nav-link-icon"><i class="fa-solid fa-truck-moving"></i></div> Proveedores
                 </a>
                 @endcan
-                
+
                 @canany(['ver-user', 'ver-role'])
                 <div class="sb-sidenav-menu-heading">Administración</div>
                 @endcanany
-                
+
                 @can('ver-user')
                 <a class="nav-link" href="{{ route('users.index') }}">
                     <div class="sb-nav-link-icon"><i class="fa-solid fa-user-shield"></i></div> Usuarios
@@ -99,6 +137,7 @@
                 @endcan
             </div>
         </div>
+
         <div class="sb-sidenav-footer">
             <div class="small text-muted mb-1">Sesión iniciada como:</div>
             <div class="fw-semibold text-white">{{ auth()->user()->name }}</div>

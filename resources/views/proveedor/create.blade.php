@@ -18,7 +18,6 @@
         </ol>
     </div>
 
-    <!-- Tarjeta del Formulario Centrada -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 800px;">
         <div class="card-header bg-white border-bottom border-light p-4">
             <h5 class="mb-0 fw-semibold text-dark"><i class="fa-solid fa-truck-moving text-primary me-2"></i>Datos del Proveedor</h5>
@@ -28,7 +27,6 @@
             <form action="{{ route('proveedores.store') }}" method="post">
                 @csrf
                 <div class="row g-4">
-                    <!-- Tipo de persona -->
                     <div class="col-md-12">
                         <label for="tipo_persona" class="form-label fw-medium text-secondary">Tipo de persona <span class="text-danger">*</span></label>
                         <select class="form-select border-start-0 @error('tipo_persona') is-invalid @enderror" name="tipo_persona" id="tipo_persona">
@@ -44,7 +42,6 @@
                         @enderror
                     </div>
 
-                    <!-- Razón social / Nombres (Inicia oculto con d-none) -->
                     <div class="col-md-12 d-none" id="box-razon-social">
                         <label id="label-natural" for="razon_social" class="form-label fw-medium text-secondary">Nombres y Apellidos <span class="text-danger">*</span></label>
                         <label id="label-juridica" for="razon_social" class="form-label fw-medium text-secondary d-none">Razón Social de la Empresa <span class="text-danger">*</span></label>
@@ -57,9 +54,8 @@
                         @enderror
                     </div>
 
-                    <!-- Dirección -->
                     <div class="col-md-12">
-                        <label for="direccion" class="form-label fw-medium text-secondary">Dirección Física <span class="text-danger">*</span></label>
+                        <label for="direccion" class="form-label fw-medium text-secondary">Dirección Física</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-map-marker-alt"></i></span>
                             <input type="text" name="direccion" id="direccion" class="form-control border-start-0 @error('direccion') is-invalid @enderror" value="{{ old('direccion') }}" placeholder="Dirección completa">
@@ -69,7 +65,28 @@
                         @enderror
                     </div>
 
-                    <!-- Tipo de Documento -->
+                    <div class="col-md-6">
+                        <label for="telefono" class="form-label fw-medium text-secondary">Teléfono de contacto</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-phone"></i></span>
+                            <input type="text" name="telefono" id="telefono" class="form-control border-start-0 @error('telefono') is-invalid @enderror" value="{{ old('telefono') }}" placeholder="Ej. 987654321">
+                        </div>
+                        @error('telefono')
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="email" class="form-label fw-medium text-secondary">Correo Electrónico</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-envelope"></i></span>
+                            <input type="email" name="email" id="email" class="form-control border-start-0 @error('email') is-invalid @enderror" value="{{ old('email') }}" placeholder="ejemplo@empresa.com">
+                        </div>
+                        @error('email')
+                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
+                        @enderror
+                    </div>
+
                     <div class="col-md-6">
                         <label for="documento_id" class="form-label fw-medium text-secondary">Tipo de documento <span class="text-danger">*</span></label>
                         <div class="input-group">
@@ -88,7 +105,6 @@
                         @enderror
                     </div>
 
-                    <!-- Número documento -->
                     <div class="col-md-6">
                         <label for="numero_documento" class="form-label fw-medium text-secondary">Número de documento <span class="text-danger">*</span></label>
                         <input type="text" name="numero_documento" id="numero_documento" class="form-control @error('numero_documento') is-invalid @enderror" value="{{ old('numero_documento') }}" placeholder="Ej. 1045... o 2056...">
@@ -97,7 +113,6 @@
                         @enderror
                     </div>
 
-                    <!-- Botones de Acción -->
                     <div class="col-12 mt-5 d-flex justify-content-end gap-2 border-top pt-4">
                         <a href="{{ route('proveedores.index') }}" class="btn btn-light px-4">Cancelar</a>
                         <button type="submit" class="btn btn-primary px-4 shadow-sm"><i class="fas fa-save me-2"></i>Guardar Proveedor</button>
