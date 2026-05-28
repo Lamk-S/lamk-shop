@@ -54,6 +54,8 @@
                             <th>Nombre</th>
                             <th>Clasificación</th>
                             <th class="text-center">Stock</th>
+                            <th class="text-center">P. Compra</th>
+                            <th class="text-center">P. Venta</th>
                             <th>Vencimiento</th>
                             <th class="text-center">Estado</th>
                             @canany(['editar-producto', 'eliminar-producto'])
@@ -89,8 +91,14 @@
                                         @endforelse
                                     </div>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center align-content-center">
                                     <span class="badge bg-primary rounded-pill px-3">{{ $item->stock }} unid.</span>
+                                </td>
+                                <td class="text-center align-content-center">
+                                    <span class="badge bg-danger rounded-pill px-3">S/ {{ number_format($item->precio_compra, 2) }}</span>
+                                </td>
+                                <td class="text-center align-content-center">
+                                    <span class="badge bg-success rounded-pill px-3">S/ {{ number_format($item->precio_venta, 2) }}</span>
                                 </td>
                                 <td>
                                     @if($item->fecha_vencimiento)
@@ -181,6 +189,16 @@
                                                 <div class="col-6">
                                                     <span class="text-muted small d-block mb-1">Presentación</span>
                                                     <span class="fw-medium text-dark">{{ optional($item->presentacion)->nombre ?? 'Sin presentación' }}</span>
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <span class="text-muted small d-block mb-1">P. Compra</span>
+                                                    <span class="badge bg-danger rounded-pill px-3">S/ {{ number_format($item->precio_compra, 2) }}</span>
+                                                </div>
+
+                                                <div class="col-6">
+                                                    <span class="text-muted small d-block mb-1">P. Venta</span>
+                                                    <span class="badge bg-success rounded-pill px-3">S/ {{ number_format($item->precio_venta, 2) }}</span>
                                                 </div>
 
                                                 <div class="col-12">
