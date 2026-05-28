@@ -23,6 +23,10 @@ class RoleSeeder extends Seeder
                 'ver-producto',
                 'ver-kardex',
                 'ver-sesion-caja',
+                'abrir-sesion-caja',
+                'cerrar-sesion-caja',
+                'ver-movimiento-caja',
+                'crear-movimiento-caja',
             ],
 
             'Cajero' => [
