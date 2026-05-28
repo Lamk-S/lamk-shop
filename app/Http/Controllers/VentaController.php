@@ -46,14 +46,16 @@ class VentaController extends Controller implements HasMiddleware
             ->first();
 
         if (!$sesionAbierta) {
-            return redirect()->route('panel')->withErrors(['error' => 'Debes abrir una caja antes de registrar ventas.']);
+            return redirect()
+                ->route('sesiones-caja.index')
+                ->with('warning', 'Debes abrir una sesión de caja antes de registrar una venta.');
         }
 
         $productos = Producto::where('estado', 1)
             ->where('stock', '>', 0)
             ->get();
 
-        $clientes = Cliente::whereHas('persona', fn ($q) => $q->where('estado', 1))->get();
+        $clientes = Cliente::whereHas('persona', fn($q) => $q->where('estado', 1))->get();
         $comprobantes = Comprobante::where('estado', 1)->get();
 
         return view('venta.create', compact('productos', 'clientes', 'comprobantes', 'sesionAbierta'));
@@ -132,7 +134,7 @@ class VentaController extends Controller implements HasMiddleware
 
                 $venta->pagos()->create([
                     'metodo_pago' => $request->metodo_pago,
-                    'monto' => $request->monto_recibido,
+                    'monto' => $request->monto_recibido - $vueltoEntregado,
                     'referencia_operacion' => $request->referencia_operacion ?? null,
                 ]);
 
@@ -143,13 +145,23 @@ class VentaController extends Controller implements HasMiddleware
                         'sesion_caja_id' => $sesionAbierta->id,
                         'tipo' => 'INGRESO',
                         'descripcion' => 'Pago de venta #' . $venta->id,
-                        'monto' => $venta->total,
+                        'monto' => $venta->monto_recibido,
                     ]);
+
+                    if ($vueltoEntregado > 0) {
+                        MovimientoCaja::create([
+                            'sesion_caja_id' => $sesionAbierta->id,
+                            'tipo' => 'EGRESO',
+                            'descripcion' => 'Vuelto por venta #' . $venta->id,
+                            'monto' => $vueltoEntregado,
+                        ]);
+                    }
+
+                    $this->recalcularSaldoEsperadoSesion($sesionAbierta->id);
                 } else {
-                    $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                        ['nombre' => 'Tesorería Principal'],
-                        ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
-                    );
+                    $tesoreria = Tesoreria::withTrashed()
+                        ->lockForUpdate()
+                        ->first();
 
                     $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true) ? 'saldo_banco' : 'saldo_efectivo';
                     $saldoAnterior = (float) $tesoreria->{$campoSaldo};
@@ -195,6 +207,7 @@ class VentaController extends Controller implements HasMiddleware
             }
 
             DB::transaction(function () use ($venta) {
+
                 foreach ($venta->productos as $producto) {
                     $cantidad = (int) $producto->pivot->cantidad;
 
@@ -228,16 +241,32 @@ class VentaController extends Controller implements HasMiddleware
                             'sesion_caja_id' => $sesion->id,
                             'tipo' => 'EGRESO',
                             'descripcion' => 'Anulación de venta #' . $venta->id,
-                            'monto' => $venta->total,
+                            'monto' => $venta->monto_recibido,
                         ]);
+
+                        if ((float) $venta->vuelto_entregado > 0) {
+                            MovimientoCaja::create([
+                                'sesion_caja_id' => $sesion->id,
+                                'tipo' => 'INGRESO',
+                                'descripcion' => 'Reverso de vuelto por anulación venta #' . $venta->id,
+                                'monto' => $venta->vuelto_entregado,
+                            ]);
+                        }
+
+                        $this->recalcularSaldoEsperadoSesion($sesion->id);
                     } else {
-                        $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                            ['nombre' => 'Tesorería Principal'],
-                            ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
-                        );
+                        $tesoreria = Tesoreria::withTrashed()
+                            ->lockForUpdate()
+                            ->first();
 
                         $saldoAnterior = (float) $tesoreria->saldo_efectivo;
-                        $saldoPosterior = $saldoAnterior - (float) $venta->total;
+                        $montoAjuste = (float) $venta->total;
+
+                        if ($saldoAnterior < $montoAjuste) {
+                            throw new Exception('Saldo insuficiente en tesorería efectivo para anular la venta.');
+                        }
+
+                        $saldoPosterior = round($saldoAnterior - $montoAjuste, 2);
 
                         $tesoreria->update([
                             'saldo_efectivo' => $saldoPosterior,
@@ -250,7 +279,7 @@ class VentaController extends Controller implements HasMiddleware
                             'tipo' => 'EGRESO',
                             'origen' => 'AJUSTE',
                             'descripcion' => 'Anulación de venta #' . $venta->id,
-                            'monto' => $venta->total,
+                            'monto' => $montoAjuste,
                             'saldo_anterior' => $saldoAnterior,
                             'saldo_posterior' => $saldoPosterior,
                         ]);
@@ -258,12 +287,28 @@ class VentaController extends Controller implements HasMiddleware
                 } else {
                     $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
                         ['nombre' => 'Tesorería Principal'],
-                        ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
+                        [
+                            'saldo_efectivo' => 1000,
+                            'saldo_banco' => 1000,
+                            'estado' => 1,
+                        ]
                     );
 
-                    $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true) ? 'saldo_banco' : 'saldo_efectivo';
+                    $tesoreria = Tesoreria::whereKey($tesoreria->id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true)
+                        ? 'saldo_banco'
+                        : 'saldo_efectivo';
+
                     $saldoAnterior = (float) $tesoreria->{$campoSaldo};
-                    $saldoPosterior = $saldoAnterior - (float) $venta->total;
+
+                    if ($saldoAnterior < (float) $venta->total) {
+                        throw new Exception("Saldo insuficiente en tesorería ({$campoSaldo}) para anular la venta.");
+                    }
+
+                    $saldoPosterior = round($saldoAnterior - (float) $venta->total, 2);
 
                     $tesoreria->update([
                         $campoSaldo => $saldoPosterior,
@@ -289,5 +334,28 @@ class VentaController extends Controller implements HasMiddleware
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar la venta: ' . $e->getMessage()]);
         }
+    }
+
+    private function recalcularSaldoEsperadoSesion(int $sesionCajaId): void
+    {
+        $sesion = SesionCaja::find($sesionCajaId);
+
+        if (!$sesion) {
+            return;
+        }
+
+        $ingresos = MovimientoCaja::where('sesion_caja_id', $sesion->id)
+            ->where('tipo', 'INGRESO')
+            ->sum('monto');
+
+        $egresos = MovimientoCaja::where('sesion_caja_id', $sesion->id)
+            ->where('tipo', 'EGRESO')
+            ->sum('monto');
+
+        $saldoEsperado = (float) $sesion->saldo_inicial + (float) $ingresos - (float) $egresos;
+
+        $sesion->update([
+            'saldo_final_esperado' => $saldoEsperado,
+        ]);
     }
 }

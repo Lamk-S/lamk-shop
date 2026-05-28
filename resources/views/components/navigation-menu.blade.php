@@ -8,7 +8,9 @@
                     Panel de Control
                 </a>
 
+                @canany(['ver-venta', 'ver-compra'])
                 <div class="sb-sidenav-menu-heading">Operaciones</div>
+                @endcanany
 
                 @can('ver-compra')
                 <a class="nav-link collapsed" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="false">
@@ -42,7 +44,9 @@
                 </div>
                 @endcan
 
+                @canany(['ver-caja', 'ver-sesion-caja', 'ver-movimiento-caja', 'ver-tesoreria', 'ver-movimiento-tesoreria'])
                 <div class="sb-sidenav-menu-heading">Caja y Tesorería</div>
+                @endcanany
 
                 @can('ver-caja')
                 <a class="nav-link" href="{{ route('cajas.index') }}">
@@ -80,7 +84,9 @@
                 </a>
                 @endcan
 
+                @canany(['ver-categoria', 'ver-presentacion', 'ver-marca', 'ver-producto'])
                 <div class="sb-sidenav-menu-heading">Catálogos</div>
+                @endcanany
 
                 @can('ver-categoria')
                 <a class="nav-link" href="{{ route('categorias.index') }}">
@@ -106,7 +112,9 @@
                 </a>
                 @endcan
 
+                @canany(['ver-cliente', 'ver-proveedor'])
                 <div class="sb-sidenav-menu-heading">Directorio</div>
+                @endcanany
 
                 @can('ver-cliente')
                 <a class="nav-link" href="{{ route('clientes.index') }}">

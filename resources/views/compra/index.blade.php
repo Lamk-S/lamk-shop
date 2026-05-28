@@ -8,17 +8,8 @@
 
 @push('css')
 <style>
-    .table-custom th {
-        background-color: #f8f9fa;
-        color: #495057;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-    }
-    .table-custom td {
-        vertical-align: middle;
-        color: #495057;
-    }
+    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+    .table-custom td { vertical-align: middle; color: #495057; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
@@ -69,7 +60,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($compras as $item)
+                        @forelse ($compras as $item)
                             <tr>
                                 <td>
                                     <div class="fw-medium text-dark">
@@ -107,61 +98,78 @@
                                 </td>
 
                                 @canany(['mostrar-compra', 'eliminar-compra'])
-                                <td class="text-center align-content-center">
-                                    <div class="btn-group shadow-sm" role="group">
-                                        @can('mostrar-compra')
-                                        <a href="{{ route('compras.show', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Ver detalles">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        @endcan
+                                    <td class="text-center align-content-center">
+                                        <div class="btn-group shadow-sm" role="group">
+                                            @can('mostrar-compra')
+                                            <a href="{{ route('compras.show', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Ver detalles">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            @endcan
 
-                                        @can('eliminar-compra')
-                                            @if((int) $item->estado === 1)
-                                                <button type="button" class="btn btn-sm btn-outline-secondary text-danger border-light" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}" title="Anular compra">
-                                                    <i class="fas fa-ban"></i>
-                                                </button>
-                                            @else
-                                                <button type="button" class="btn btn-sm btn-outline-secondary text-success border-light" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}" title="Restaurar compra">
-                                                    <i class="fas fa-trash-restore-alt"></i>
-                                                </button>
-                                            @endif
-                                        @endcan
-                                    </div>
-                                </td>
+                                            @can('eliminar-compra')
+                                                @if((int) $item->estado === 1)
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-secondary text-danger border-light"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmModal-{{ $item->id }}"
+                                                            title="Anular compra">
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                @else
+                                                    <span class="btn btn-sm btn-outline-secondary text-secondary border-light disabled" title="compra anulada">
+                                                        <i class="fas fa-ban"></i>
+                                                    </span>
+                                                @endif
+                                            @endcan
+                                        </div>
+                                    </td>
                                 @endcanany
                             </tr>
 
-                            <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content border-0 shadow">
-                                        <div class="modal-header border-0 pb-0">
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body text-center pb-4">
-                                            @if((int) $item->estado === 1)
-                                                <div class="text-danger mb-3"><i class="fas fa-times-circle fa-4x"></i></div>
+                            @if((int) $item->estado === 1)
+                                <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-content border-0 shadow">
+                                            <div class="modal-header border-0 pb-0">
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body text-center pb-4">
+                                                <div class="text-danger mb-3"><i class="fas fa-ban fa-4x opacity-75"></i></div>
                                                 <h4 class="fw-bold text-dark">¿Anular esta compra?</h4>
-                                                <p class="text-muted">Se anulará la transacción con comprobante <strong>{{ $item->numero_comprobante }}</strong>.</p>
-                                            @else
-                                                <div class="text-success mb-3"><i class="fas fa-check-circle fa-4x"></i></div>
-                                                <h4 class="fw-bold text-dark">¿Restaurar esta compra?</h4>
-                                                <p class="text-muted">La transacción <strong>{{ $item->numero_comprobante }}</strong> volverá a figurar como completada.</p>
-                                            @endif
-                                        </div>
-                                        <div class="modal-footer border-0 pt-0 justify-content-center">
-                                            <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
-                                            <form action="{{ route('compras.destroy', $item) }}" method="post">
-                                                @method('DELETE')
-                                                @csrf
-                                                <button type="submit" class="btn {{ (int) $item->estado === 1 ? 'btn-danger' : 'btn-success' }} px-4">
-                                                    Confirmar
-                                                </button>
-                                            </form>
+                                                <p class="text-muted">La compra {{ $item->numero_comprobante }} pasará a estado anulado.</p>
+                                            </div>
+                                            <div class="modal-footer border-0 pt-0 justify-content-center">
+                                                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                                                <form action="{{ route('compras.destroy', $item->id) }}" method="post">
+                                                    @method('DELETE')
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-danger px-4">
+                                                        Confirmar
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
+                            @endif
+                        @empty
+                            <tr>
+                                <td colspan="{{ auth()->user()->canAny(['mostrar-venta', 'eliminar-venta']) ? 7 : 6 }}" class="py-5">
+                                    <div class="d-flex flex-column align-items-center justify-content-center text-center">
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3"
+                                            style="width: 90px; height: 90px;">
+                                            <i class="fas fa-store text-success fs-1"></i>
+                                        </div>
+                                        <h5 class="fw-semibold text-dark mb-1">
+                                            No hay compras registradas
+                                        </h5>
+                                        <p class="text-muted mb-0">
+                                            Aún no se han realizado compras en el sistema.
+                                        </p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
