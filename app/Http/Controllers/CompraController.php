@@ -42,7 +42,7 @@ class CompraController extends Controller implements HasMiddleware
     public function create()
     {
         $proveedores = Proveedor::with('persona')
-            ->whereHas('persona', fn ($q) => $q->where('estado', 1))
+            ->whereHas('persona', fn($q) => $q->where('estado', 1))
             ->get();
 
         $comprobantes = Comprobante::where('estado', 1)->get();
@@ -55,6 +55,34 @@ class CompraController extends Controller implements HasMiddleware
     {
         try {
             DB::transaction(function () use ($request) {
+
+                $tesoreria = Tesoreria::withTrashed()
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$tesoreria) {
+                    return redirect()
+                        ->route('compras.index')
+                        ->with('error', 'No existe la tesorería principal.');
+                }
+
+                $medio = strtoupper($request->metodo_pago);
+                $campoSaldo = $medio === 'EFECTIVO' ? 'saldo_efectivo' : 'saldo_banco';
+
+                $saldoDisponible = (float) $tesoreria->{$campoSaldo};
+
+                if ($saldoDisponible < (float) $request->total) {
+                    return redirect()
+                        ->route('compras.index')
+                        ->with(
+                            'error',
+                            "Saldo insuficiente en tesorería ({$campoSaldo}). Disponible: S/ "
+                                . number_format($saldoDisponible, 2)
+                                . " / Requerido: S/ "
+                                . number_format($request->total, 2)
+                        );
+                }
+
                 $compra = Compra::create([
                     'proveedor_id' => $request->proveedor_id,
                     'user_id' => Auth::id(),
@@ -78,7 +106,9 @@ class CompraController extends Controller implements HasMiddleware
                     $precioCompra = (float) ($preciosCompra[$i] ?? 0);
                     $precioVenta = (float) ($preciosVenta[$i] ?? 0);
 
-                    $producto = Producto::whereKey($productoId)->lockForUpdate()->firstOrFail();
+                    $producto = Producto::whereKey($productoId)
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
                     $compra->productos()->attach($producto->id, [
                         'cantidad' => $cantidad,
@@ -109,16 +139,8 @@ class CompraController extends Controller implements HasMiddleware
                     ]);
                 }
 
-                $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                    ['nombre' => 'Tesorería Principal'],
-                    ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
-                );
-
-                $medio = strtoupper($request->metodo_pago);
-                $campoSaldo = $medio === 'EFECTIVO' ? 'saldo_efectivo' : 'saldo_banco';
-
                 $saldoAnterior = (float) $tesoreria->{$campoSaldo};
-                $saldoPosterior = $saldoAnterior - (float) $compra->total;
+                $saldoPosterior = round($saldoAnterior - (float) $compra->total, 2);
 
                 $tesoreria->update([
                     $campoSaldo => $saldoPosterior,
@@ -127,6 +149,7 @@ class CompraController extends Controller implements HasMiddleware
                 MovimientoTesoreria::create([
                     'tesoreria_id' => $tesoreria->id,
                     'user_id' => Auth::id(),
+                    'compra_id' => $compra->id,
                     'tipo' => 'EGRESO',
                     'origen' => 'COMPRA_PRODUCTO',
                     'descripcion' => 'Pago de compra #' . $compra->id,
@@ -134,22 +157,6 @@ class CompraController extends Controller implements HasMiddleware
                     'saldo_anterior' => $saldoAnterior,
                     'saldo_posterior' => $saldoPosterior,
                 ]);
-
-                if ($medio === 'EFECTIVO') {
-                    $sesionAbierta = SesionCaja::where('user_id', Auth::id())
-                        ->where('estado', 1)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if ($sesionAbierta) {
-                        MovimientoCaja::create([
-                            'sesion_caja_id' => $sesionAbierta->id,
-                            'tipo' => 'EGRESO',
-                            'descripcion' => 'Compra #' . $compra->id,
-                            'monto' => $compra->total,
-                        ]);
-                    }
-                }
             });
 
             return redirect()->route('compras.index')->with('success', 'Compra exitosa');

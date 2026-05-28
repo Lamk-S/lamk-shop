@@ -18,14 +18,13 @@ class TesoreriaController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $tesoreria = Tesoreria::firstOrCreate(
-            ['nombre' => 'Tesorería Principal'],
-            [
-                'saldo_efectivo' => 0,
-                'saldo_banco' => 0,
-                'estado' => 1,
-            ]
-        );
+        $tesoreria = Tesoreria::first();
+
+        if (!$tesoreria) {
+            return redirect()
+                ->route('panel')
+                ->with('warning', 'No existe la tesorería principal.');
+        }
 
         $movimientos = MovimientoTesoreria::with(['user', 'venta', 'compra', 'sesionCaja.caja'])
             ->latest()
