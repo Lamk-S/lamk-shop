@@ -90,7 +90,7 @@
                                     </div>
                                 </td>
 
-                                <td>
+                                <td class="text-center align-content-center">
                                     <div class="d-flex align-items-center">
                                         <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-secondary me-2" style="width: 25px; height: 25px; font-size: 0.7rem;">
                                             <i class="fas fa-user"></i>
