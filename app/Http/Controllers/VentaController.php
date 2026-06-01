@@ -56,7 +56,9 @@ class VentaController extends Controller implements HasMiddleware
             ->get();
 
         $clientes = Cliente::whereHas('persona', fn($q) => $q->where('estado', 1))->get();
-        $comprobantes = Comprobante::where('estado', 1)->get();
+        $comprobantes = Comprobante::where('estado', 1)
+            ->where('uso_comprobante', 'VENTA')
+            ->get();
 
         return view('venta.create', compact('productos', 'clientes', 'comprobantes', 'sesionAbierta'));
     }
@@ -70,6 +72,13 @@ class VentaController extends Controller implements HasMiddleware
                     ->lockForUpdate()
                     ->firstOrFail();
 
+                $comprobante = Comprobante::whereKey($request->comprobante_id)
+                    ->where('uso_comprobante', 'VENTA')
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $numeroComprobante = $this->generarNumeroComprobante($comprobante);
+
                 $vueltoEntregado = max(0, (float) $request->monto_recibido - (float) $request->total);
 
                 $venta = Venta::create([
@@ -77,7 +86,7 @@ class VentaController extends Controller implements HasMiddleware
                     'user_id' => Auth::id(),
                     'sesion_caja_id' => $sesionAbierta->id,
                     'comprobante_id' => $request->comprobante_id,
-                    'numero_comprobante' => $request->numero_comprobante,
+                    'numero_comprobante' => $numeroComprobante,
                     'fecha_hora' => $request->fecha_hora,
                     'subtotal' => $request->subtotal,
                     'impuesto' => $request->impuesto,
@@ -263,7 +272,7 @@ class VentaController extends Controller implements HasMiddleware
                         $montoAjuste = (float) $venta->total;
 
                         if ($saldoAnterior < $montoAjuste) {
-                            throw new Exception('Saldo insuficiente en tesorería efectivo para anular la venta.');
+                            return redirect()->route('ventas.index')->with('success', 'Saldo insuficiente en tesorería efectivo para anular la venta.');
                         }
 
                         $saldoPosterior = round($saldoAnterior - $montoAjuste, 2);
@@ -285,18 +294,9 @@ class VentaController extends Controller implements HasMiddleware
                         ]);
                     }
                 } else {
-                    $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                        ['nombre' => 'Tesorería Principal'],
-                        [
-                            'saldo_efectivo' => 1000,
-                            'saldo_banco' => 1000,
-                            'estado' => 1,
-                        ]
-                    );
-
-                    $tesoreria = Tesoreria::whereKey($tesoreria->id)
+                    $tesoreria = Tesoreria::withTrashed()
                         ->lockForUpdate()
-                        ->firstOrFail();
+                        ->first();
 
                     $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true)
                         ? 'saldo_banco'
@@ -305,7 +305,7 @@ class VentaController extends Controller implements HasMiddleware
                     $saldoAnterior = (float) $tesoreria->{$campoSaldo};
 
                     if ($saldoAnterior < (float) $venta->total) {
-                        throw new Exception("Saldo insuficiente en tesorería ({$campoSaldo}) para anular la venta.");
+                        return redirect()->route('ventas.index')->with('success', 'Saldo insuficiente en tesorería para anular la venta.');
                     }
 
                     $saldoPosterior = round($saldoAnterior - (float) $venta->total, 2);
@@ -357,5 +357,13 @@ class VentaController extends Controller implements HasMiddleware
         $sesion->update([
             'saldo_final_esperado' => $saldoEsperado,
         ]);
+    }
+
+    private function generarNumeroComprobante(Comprobante $comprobante): string
+    {
+        $nuevoCorrelativo = (int) $comprobante->correlativo_actual + 1;
+        $comprobante->update(['correlativo_actual' => $nuevoCorrelativo]);
+
+        return $comprobante->serie . '-' . str_pad((string) $nuevoCorrelativo, 8, '0', STR_PAD_LEFT);
     }
 }

@@ -32,7 +32,7 @@ class HomeController extends Controller
             'ventas_mes' => Venta::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('estado', 1)->sum('total'),
             'compras_mes' => Compra::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('estado', 1)->sum('total'),
             'sesiones_activas' => SesionCaja::where('estado', 1)->count(),
-            'productos_stock_bajo' => Producto::where('estado', 1)->where('stock', '<=', 30)->count(),
+            'productos_stock_bajo' => Producto::where('estado', 1)->where('stock', '<=', 10)->count(),
         ];
 
         $ventasCompras = [];
@@ -77,7 +77,7 @@ class HomeController extends Controller
 
         $stockBajo = Producto::select('id', 'nombre', 'stock')
             ->where('estado', 1)
-            ->where('stock', '<=', 30)
+            ->where('stock', '<=', 10)
             ->orderBy('stock')
             ->limit(10)
             ->get();
