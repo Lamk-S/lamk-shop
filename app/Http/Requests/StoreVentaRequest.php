@@ -17,7 +17,6 @@ class StoreVentaRequest extends FormRequest
         return [
             'cliente_id' => 'nullable|integer|exists:clientes,id',
             'comprobante_id' => 'nullable|integer|exists:comprobantes,id',
-            'numero_comprobante' => 'required|string|max:255|unique:ventas,numero_comprobante',
             'fecha_hora' => 'required|date',
             'subtotal' => 'required|numeric|min:0',
             'impuesto' => 'required|numeric|min:0',

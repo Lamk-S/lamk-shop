@@ -8,8 +8,18 @@
 
 @push('css')
 <style>
-    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
-    .table-custom td { vertical-align: middle; color: #495057; }
+    .table-custom th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+    }
+
+    .table-custom td {
+        vertical-align: middle;
+        color: #495057;
+    }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
@@ -52,8 +62,9 @@
                             <th>Comprobante</th>
                             <th>Proveedor</th>
                             <th>Fecha y Hora</th>
-                            <th class="text-end">Total</th>
+                            <th>Comprador</th>
                             <th class="text-center">Estado</th>
+                            <th class="text-end">Total</th>
                             @canany(['mostrar-compra', 'eliminar-compra'])
                             <th class="text-center">Acciones</th>
                             @endcanany
@@ -61,114 +72,123 @@
                     </thead>
                     <tbody>
                         @forelse ($compras as $item)
-                            <tr>
-                                <td>
-                                    <div class="fw-medium text-dark">
-                                        {{ optional($item->comprobante)->tipo_comprobante ?? 'Sin comprobante' }}
+                        <tr>
+                            <td>
+                                <div class="fw-bold text-dark fs-7 mb-1">
+                                    {{ $item->comprobante?->tipo_comprobante ?? 'Sin comprobante' }}
+                                </div>
+                                <div class="text-muted fs-8">
+                                    <i class="fas fa-hashtag me-1"></i>{{ $item->numero_comprobante }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark fs-7 mb-1">
+                                    {{ $item->proveedor?->persona?->razon_social ?? 'Consumidor final' }}
+                                </div>
+                                <div class="text-muted fs-8 text-uppercase">
+                                    <i class="fas {{ ($item->proveedor?->persona?->tipo_persona ?? null) === 'NATURAL' ? 'fa-user-tie' : 'fa-building' }} me-1"></i>
+                                    {{ $item->proveedor?->persona?->tipo_persona ?? 'N/A' }}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-medium text-dark fs-7 mb-1">
+                                    <i class="fas fa-calendar-alt text-secondary me-2"></i>{{ \Carbon\Carbon::parse($item->fecha_hora)->format('d-m-Y') }}
+                                </div>
+                                <div class="text-muted fs-8">
+                                    <i class="fas fa-clock text-secondary me-2"></i>{{ \Carbon\Carbon::parse($item->fecha_hora)->format('H:i') }}
+                                </div>
+                            </td>
+                            <td class="text-center align-content-center">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-secondary me-2" style="width: 25px; height: 25px; font-size: 0.7rem;">
+                                        <i class="fas fa-user"></i>
                                     </div>
-                                    <div class="text-muted small">N° {{ $item->numero_comprobante ?? '—' }}</div>
-                                </td>
-                                <td>
-                                    <div class="fw-medium text-dark">
-                                        {{ optional(optional($item->proveedor)->persona)->razon_social ?? 'Sin proveedor' }}
-                                    </div>
-                                    <div class="text-muted small">
-                                        {{ optional(optional($item->proveedor)->persona)->tipo_persona ? ucfirst(optional($item->proveedor)->persona->tipo_persona) : '' }}
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="text-dark">
-                                        <i class="far fa-calendar-alt me-1 text-muted"></i>
-                                        {{ \Carbon\Carbon::parse($item->fecha_hora)->format('d/m/Y') }}
-                                    </div>
-                                    <div class="text-muted small">
-                                        <i class="far fa-clock me-1"></i>
-                                        {{ \Carbon\Carbon::parse($item->fecha_hora)->format('H:i') }} hrs
-                                    </div>
-                                </td>
-                                <td class="text-end fw-bold text-dark">
-                                    S/ {{ number_format($item->total, 2) }}
-                                </td>
-                                <td class="text-center align-content-center">
+                                    <span class="fs-7">{{ $item->user?->name ?? 'N/A' }}</span>
+                                </div>
+                            </td>
+                            <td class="text-center align-content-center">
+                                @if((int) $item->estado === 1)
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">Activa</span>
+                                @else
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill">Anulada</span>
+                                @endif
+                            </td>
+                            <td class="text-end align-content-center fw-bold text-danger">
+                                {{ number_format($item->total, 2) }}
+                            </td>
+
+                            @canany(['mostrar-compra', 'eliminar-compra'])
+                            <td class="text-center align-content-center">
+                                <div class="btn-group shadow-sm" role="group">
+                                    @can('mostrar-compra')
+                                    <a href="{{ route('compras.show', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    @endcan
+
+                                    @can('eliminar-compra')
                                     @if((int) $item->estado === 1)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Completada</span>
+                                    <button type="button"
+                                        class="btn btn-sm btn-outline-secondary text-danger border-light"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#confirmModal-{{ $item->id }}"
+                                        title="Anular compra">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
                                     @else
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Anulada</span>
+                                    <span class="btn btn-sm btn-outline-secondary text-secondary border-light disabled" title="compra anulada">
+                                        <i class="fas fa-ban"></i>
+                                    </span>
                                     @endif
-                                </td>
+                                    @endcan
+                                </div>
+                            </td>
+                            @endcanany
+                        </tr>
 
-                                @canany(['mostrar-compra', 'eliminar-compra'])
-                                    <td class="text-center align-content-center">
-                                        <div class="btn-group shadow-sm" role="group">
-                                            @can('mostrar-compra')
-                                            <a href="{{ route('compras.show', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Ver detalles">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            @endcan
-
-                                            @can('eliminar-compra')
-                                                @if((int) $item->estado === 1)
-                                                    <button type="button"
-                                                            class="btn btn-sm btn-outline-secondary text-danger border-light"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmModal-{{ $item->id }}"
-                                                            title="Anular compra">
-                                                        <i class="fas fa-ban"></i>
-                                                    </button>
-                                                @else
-                                                    <span class="btn btn-sm btn-outline-secondary text-secondary border-light disabled" title="compra anulada">
-                                                        <i class="fas fa-ban"></i>
-                                                    </span>
-                                                @endif
-                                            @endcan
-                                        </div>
-                                    </td>
-                                @endcanany
-                            </tr>
-
-                            @if((int) $item->estado === 1)
-                                <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content border-0 shadow">
-                                            <div class="modal-header border-0 pb-0">
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body text-center pb-4">
-                                                <div class="text-danger mb-3"><i class="fas fa-ban fa-4x opacity-75"></i></div>
-                                                <h4 class="fw-bold text-dark">¿Anular esta compra?</h4>
-                                                <p class="text-muted">La compra {{ $item->numero_comprobante }} pasará a estado anulado.</p>
-                                            </div>
-                                            <div class="modal-footer border-0 pt-0 justify-content-center">
-                                                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
-                                                <form action="{{ route('compras.destroy', $item->id) }}" method="post">
-                                                    @method('DELETE')
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-danger px-4">
-                                                        Confirmar
-                                                    </button>
-                                                </form>
-                                            </div>
-                                        </div>
+                        @if((int) $item->estado === 1)
+                        <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                    <div class="modal-header border-0 pb-0">
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body text-center pb-4">
+                                        <div class="text-danger mb-3"><i class="fas fa-ban fa-4x opacity-75"></i></div>
+                                        <h4 class="fw-bold text-dark">¿Anular esta compra?</h4>
+                                        <p class="text-muted">La compra {{ $item->numero_comprobante }} pasará a estado anulado.</p>
+                                    </div>
+                                    <div class="modal-footer border-0 pt-0 justify-content-center">
+                                        <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                                        <form action="{{ route('compras.destroy', $item->id) }}" method="post">
+                                            @method('DELETE')
+                                            @csrf
+                                            <button type="submit" class="btn btn-danger px-4">
+                                                Confirmar
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
-                            @endif
+                            </div>
+                        </div>
+                        @endif
                         @empty
-                            <tr>
-                                <td colspan="{{ auth()->user()->canAny(['mostrar-venta', 'eliminar-venta']) ? 7 : 6 }}" class="py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center text-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3"
-                                            style="width: 90px; height: 90px;">
-                                            <i class="fas fa-store text-success fs-1"></i>
-                                        </div>
-                                        <h5 class="fw-semibold text-dark mb-1">
-                                            No hay compras registradas
-                                        </h5>
-                                        <p class="text-muted mb-0">
-                                            Aún no se han realizado compras en el sistema.
-                                        </p>
+                        <tr>
+                            <td colspan="{{ auth()->user()->canAny(['mostrar-venta', 'eliminar-venta']) ? 7 : 6 }}" class="py-5">
+                                <div class="d-flex flex-column align-items-center justify-content-center text-center">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3"
+                                        style="width: 90px; height: 90px;">
+                                        <i class="fas fa-store text-success fs-1"></i>
                                     </div>
-                                </td>
-                            </tr>
+                                    <h5 class="fw-semibold text-dark mb-1">
+                                        No hay compras registradas
+                                    </h5>
+                                    <p class="text-muted mb-0">
+                                        Aún no se han realizado compras en el sistema.
+                                    </p>
+                                </div>
+                            </td>
+                        </tr>
                         @endforelse
                     </tbody>
                 </table>

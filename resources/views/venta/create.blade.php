@@ -7,8 +7,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-    .pos-totals th { font-size: 1.1rem; color: #495457; }
-    .pos-totals .total-row th { font-size: 1.3rem; color: #0d6efd; }
+    .pos-totals th {
+        font-size: 1.1rem;
+        color: #495457;
+    }
+
+    .pos-totals .total-row th {
+        font-size: 1.3rem;
+        color: #0d6efd;
+    }
 </style>
 @endpush
 
@@ -38,9 +45,9 @@
                                 <label for="producto_id" class="form-label fw-medium text-secondary small">Buscar Producto</label>
                                 <select name="producto_id" id="producto_id" class="form-control selectpicker shadow-sm border-0" data-live-search="true" data-size="5" title="Escriba o seleccione un producto...">
                                     @foreach ($productos as $item)
-                                        <option value="{{ $item->id }}" data-stock="{{ $item->stock }}" data-precio="{{ $item->precio_venta }}">
-                                            {{ $item->codigo }} - {{ $item->nombre }}
-                                        </option>
+                                    <option value="{{ $item->id }}" data-stock="{{ $item->stock }}" data-precio="{{ $item->precio_venta }}">
+                                        {{ $item->codigo }} - {{ $item->nombre }}
+                                    </option>
                                     @endforeach
                                 </select>
                             </div>
@@ -136,7 +143,7 @@
                                 <label for="cliente_id" class="form-label fw-medium text-secondary small">Cliente <span class="text-danger">*</span></label>
                                 <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione un cliente..." data-size="4">
                                     @foreach ($clientes as $item)
-                                        <option value="{{ $item->id }}" @selected(old('cliente_id') == $item->id)>{{ $item->persona->razon_social }}</option>
+                                    <option value="{{ $item->id }}" @selected(old('cliente_id')==$item->id)>{{ $item->persona->razon_social }}</option>
                                     @endforeach
                                 </select>
                                 @error('cliente_id') <small class="text-danger">{{ $message }}</small> @enderror
@@ -146,19 +153,17 @@
                                 <label for="comprobante_id" class="form-label fw-medium text-secondary small">Tipo de Comprobante <span class="text-danger">*</span></label>
                                 <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" title="Seleccione...">
                                     @foreach ($comprobantes as $item)
-                                        <option value="{{ $item->id }}" @selected(old('comprobante_id') == $item->id)>{{ $item->tipo_comprobante }}</option>
+                                    <option value="{{ $item->id }}" @selected(old('comprobante_id')==$item->id)>{{ $item->tipo_comprobante }}</option>
                                     @endforeach
                                 </select>
                                 @error('comprobante_id') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
                             <div class="col-md-12">
-                                <label for="numero_comprobante" class="form-label fw-medium text-secondary small">N° Comprobante <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-hashtag"></i></span>
-                                    <input required type="text" name="numero_comprobante" id="numero_comprobante" class="form-control border-start-0" placeholder="Ej. F001-000456" value="{{ old('numero_comprobante') }}">
-                                </div>
-                                @error('numero_comprobante') <small class="text-danger">{{ $message }}</small> @enderror
+                                <label class="form-label fw-medium text-secondary small">N° Comprobante</label>
+                                <input type="text" id="numero_comprobante_preview" class="form-control bg-light text-muted"
+                                    value="Se generará automáticamente al guardar" readonly>
+                                <small class="text-muted">El número final se asignará según la serie y el correlativo automático.</small>
                             </div>
 
                             <div class="col-md-6">
@@ -176,9 +181,9 @@
                             <div class="col-md-12">
                                 <label for="metodo_pago" class="form-label fw-medium text-secondary small">Método de pago <span class="text-danger">*</span></label>
                                 <select name="metodo_pago" id="metodo_pago" class="form-select @error('metodo_pago') is-invalid @enderror">
-                                    <option value="EFECTIVO" @selected(old('metodo_pago', 'EFECTIVO') == 'EFECTIVO')>EFECTIVO</option>
-                                    <option value="TARJETA" @selected(old('metodo_pago') == 'TARJETA')>TARJETA</option>
-                                    <option value="TRANSFERENCIA" @selected(old('metodo_pago') == 'TRANSFERENCIA')>TRANSFERENCIA</option>
+                                    <option value="EFECTIVO" @selected(old('metodo_pago', 'EFECTIVO' )=='EFECTIVO' )>EFECTIVO</option>
+                                    <option value="TARJETA" @selected(old('metodo_pago')=='TARJETA' )>TARJETA</option>
+                                    <option value="TRANSFERENCIA" @selected(old('metodo_pago')=='TRANSFERENCIA' )>TRANSFERENCIA</option>
                                 </select>
                                 @error('metodo_pago') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
@@ -241,11 +246,17 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 <script>
     $(document).ready(function() {
-        $('#producto_id').change(function () { mostrarValores(); });
-        $('#btn_agregar').click(function () { agregarProducto(); });
-        $('#btnCancelarVenta').click(function () { cancelarVenta(); });
+        $('#producto_id').change(function() {
+            mostrarValores();
+        });
+        $('#btn_agregar').click(function() {
+            agregarProducto();
+        });
+        $('#btnCancelarVenta').click(function() {
+            cancelarVenta();
+        });
         $('#monto_recibido').on('input', actualizarVuelto);
-        $('#metodo_pago').on('change', function () {
+        $('#metodo_pago').on('change', function() {
             actualizarVuelto();
         });
 
@@ -288,9 +299,18 @@
         let cantidad = parseInt($('#cantidad').val());
         let descuento = parseFloat($('#descuento').val()) || 0;
 
-        if (!cantidad || cantidad <= 0) { showModal('Ingrese una cantidad válida'); return; }
-        if (!Number.isInteger(cantidad)) { showModal('La cantidad debe ser entera'); return; }
-        if (descuento < 0) { showModal('Descuento inválido'); return; }
+        if (!cantidad || cantidad <= 0) {
+            showModal('Ingrese una cantidad válida');
+            return;
+        }
+        if (!Number.isInteger(cantidad)) {
+            showModal('La cantidad debe ser entera');
+            return;
+        }
+        if (descuento < 0) {
+            showModal('Descuento inválido');
+            return;
+        }
 
         let cantidadAgregada = 0;
         $('input[name="arrayidproducto[]"]').each(function(index) {
@@ -300,7 +320,10 @@
         });
 
         let stockDisponible = stock - cantidadAgregada;
-        if (cantidad > stockDisponible) { showModal('Stock insuficiente'); return; }
+        if (cantidad > stockDisponible) {
+            showModal('Stock insuficiente');
+            return;
+        }
 
         subTotal[cont] = round((cantidad * precioVenta) - descuento);
         sumas = round(sumas + subTotal[cont]);
@@ -432,7 +455,10 @@
                 toast.onmouseenter = Swal.stopTimer;
                 toast.onmouseleave = Swal.resumeTimer;
             }
-        }).fire({ icon: icon, title: message });
+        }).fire({
+            icon: icon,
+            title: message
+        });
     }
 </script>
 @endpush

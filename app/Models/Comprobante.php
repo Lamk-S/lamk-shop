@@ -12,6 +12,7 @@ class Comprobante extends Model
 
     protected $fillable = [
         'tipo_comprobante',
+        'uso_comprobante',
         'serie',
         'correlativo_actual',
         'estado',

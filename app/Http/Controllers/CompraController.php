@@ -45,7 +45,9 @@ class CompraController extends Controller implements HasMiddleware
             ->whereHas('persona', fn($q) => $q->where('estado', 1))
             ->get();
 
-        $comprobantes = Comprobante::where('estado', 1)->get();
+        $comprobantes = Comprobante::where('estado', 1)
+            ->where('uso_comprobante', 'COMPRA')
+            ->get();
         $productos = Producto::where('estado', 1)->get();
 
         return view('compra.create', compact('proveedores', 'comprobantes', 'productos'));
@@ -55,6 +57,12 @@ class CompraController extends Controller implements HasMiddleware
     {
         try {
             DB::transaction(function () use ($request) {
+                $comprobante = Comprobante::whereKey($request->comprobante_id)
+                    ->where('uso_comprobante', 'COMPRA')
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
+                $numeroComprobante = $this->generarNumeroComprobante($comprobante);
 
                 $tesoreria = Tesoreria::withTrashed()
                     ->lockForUpdate()
@@ -87,7 +95,7 @@ class CompraController extends Controller implements HasMiddleware
                     'proveedor_id' => $request->proveedor_id,
                     'user_id' => Auth::id(),
                     'comprobante_id' => $request->comprobante_id,
-                    'numero_comprobante' => $request->numero_comprobante,
+                    'numero_comprobante' => $numeroComprobante,
                     'metodo_pago' => $request->metodo_pago,
                     'fecha_hora' => $request->fecha_hora,
                     'subtotal' => $request->subtotal,
@@ -201,10 +209,9 @@ class CompraController extends Controller implements HasMiddleware
                         ]);
                     }
 
-                    $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                        ['nombre' => 'Tesorería Principal'],
-                        ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
-                    );
+                    $tesoreria = Tesoreria::withTrashed()
+                        ->lockForUpdate()
+                        ->first();
 
                     $medio = strtoupper($compra->metodo_pago);
                     $campoSaldo = $medio === 'EFECTIVO' ? 'saldo_efectivo' : 'saldo_banco';
@@ -239,5 +246,13 @@ class CompraController extends Controller implements HasMiddleware
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar la compra: ' . $e->getMessage()]);
         }
+    }
+
+    private function generarNumeroComprobante(Comprobante $comprobante): string
+    {
+        $nuevoCorrelativo = (int) $comprobante->correlativo_actual + 1;
+        $comprobante->update(['correlativo_actual' => $nuevoCorrelativo]);
+
+        return $comprobante->serie . '-' . str_pad((string) $nuevoCorrelativo, 8, '0', STR_PAD_LEFT);
     }
 }

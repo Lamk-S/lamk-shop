@@ -16,7 +16,6 @@ class StoreCompraRequest extends FormRequest
         return [
             'proveedor_id' => 'nullable|integer|exists:proveedores,id',
             'comprobante_id' => 'nullable|integer|exists:comprobantes,id',
-            'numero_comprobante' => 'nullable|string|max:255|unique:compras,numero_comprobante',
             'metodo_pago' => 'required|in:EFECTIVO,TARJETA,TRANSFERENCIA',
             'fecha_hora' => 'required|date',
             'subtotal' => 'required|numeric|min:0',

@@ -45,7 +45,7 @@
                                 <label for="producto_id" class="form-label fw-medium text-secondary small">Buscar Producto</label>
                                 <select name="producto_id" id="producto_id" class="form-control selectpicker show-tick" data-live-search="true" data-size="5" title="Seleccione o busque un producto...">
                                     @foreach ($productos as $item)
-                                        <option value="{{ $item->id }}" data-subtext="Cod: {{ $item->codigo }}">{{ $item->nombre }}</option>
+                                    <option value="{{ $item->id }}" data-subtext="Cod: {{ $item->codigo }}" data-precio-compra="{{ $item->precio_compra }}" data-precio-venta="{{ $item->precio_venta }}">{{ $item->nombre }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -130,26 +130,33 @@
                                 <label for="proveedor_id" class="form-label fw-medium text-secondary small">Proveedor <span class="text-danger">*</span></label>
                                 <select name="proveedor_id" id="proveedor_id" class="form-control selectpicker show-tick" data-live-search="true" title="Seleccione proveedor" data-size="5">
                                     @foreach ($proveedores as $item)
-                                        <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
+                                    <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
                                     @endforeach
                                 </select>
                                 @error('proveedor_id') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
                             <div class="col-12">
-                                <label for="comprobante_id" class="form-label fw-medium text-secondary small">Tipo de Comprobante <span class="text-danger">*</span></label>
-                                <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick" title="Seleccione tipo">
+                                <label for="comprobante_id" class="form-label fw-medium text-secondary small">
+                                    Tipo de Comprobante <span class="text-danger">*</span>
+                                </label>
+                                <select name="comprobante_id" id="comprobante_id"
+                                    class="form-control selectpicker show-tick"
+                                    title="Seleccione tipo" data-size="4">
                                     @foreach ($comprobantes as $item)
-                                        <option value="{{ $item->id }}">{{ $item->tipo_comprobante }}</option>
+                                    <option value="{{ $item->id }}" @selected(old('comprobante_id')==$item->id)>
+                                        {{ $item->tipo_comprobante }} - {{ $item->serie }}
+                                    </option>
                                     @endforeach
                                 </select>
                                 @error('comprobante_id') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
                             <div class="col-12">
-                                <label for="numero_comprobante" class="form-label fw-medium text-secondary small">Número de comprobante</label>
-                                <input type="text" name="numero_comprobante" id="numero_comprobante" class="form-control" placeholder="Ej: F001-000456">
-                                @error('numero_comprobante') <small class="text-danger">{{ $message }}</small> @enderror
+                                <label class="form-label fw-medium text-secondary small">Número de comprobante</label>
+                                <input type="text" id="numero_comprobante_preview" class="form-control bg-light text-muted"
+                                    value="Se generará automáticamente al guardar" readonly>
+                                <small class="text-muted">El número final se generará según la serie y el correlativo automático.</small>
                             </div>
 
                             <div class="col-12">
@@ -219,9 +226,16 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
 <script>
-    $(document).ready(function () {
-        $('#btn_agregar').click(function () { agregarProducto(); });
-        $('#btnCancelarCompra').click(function () { cancelarCompra(); });
+    $(document).ready(function() {
+        $('#producto_id').change(function() {
+            mostrarPrecios();
+        });
+        $('#btn_agregar').click(function() {
+            agregarProducto();
+        });
+        $('#btnCancelarCompra').click(function() {
+            cancelarCompra();
+        });
         disableButtons();
     });
 
@@ -232,6 +246,19 @@
     let total = 0;
     const impuesto = 18;
 
+    function mostrarPrecios() {
+        let $option = $('#producto_id option:selected');
+
+        if (!$option.val()) {
+            $('#precio_compra').val('');
+            $('#precio_venta').val('');
+            return;
+        }
+
+        $('#precio_compra').val($option.data('precio-compra'));
+        $('#precio_venta').val($option.data('precio-venta'));
+    }
+
     function agregarProducto() {
         let idProducto = $('#producto_id').val();
         let nameProducto = $('#producto_id option:selected').text();
@@ -239,11 +266,26 @@
         let precioCompra = parseFloat($('#precio_compra').val());
         let precioVenta = parseFloat($('#precio_venta').val());
 
-        if (!idProducto) { showModal('Seleccione un producto'); return; }
-        if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) { showModal('Ingrese una cantidad entera válida'); return; }
-        if (!precioCompra || precioCompra <= 0) { showModal('Precio de compra inválido'); return; }
-        if (!precioVenta || precioVenta <= 0) { showModal('Precio de venta inválido'); return; }
-        if (precioVenta <= precioCompra) { showModal('El precio de venta debe ser mayor al de compra'); return; }
+        if (!idProducto) {
+            showModal('Seleccione un producto');
+            return;
+        }
+        if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) {
+            showModal('Ingrese una cantidad entera válida');
+            return;
+        }
+        if (!precioCompra || precioCompra <= 0) {
+            showModal('Precio de compra inválido');
+            return;
+        }
+        if (!precioVenta || precioVenta <= 0) {
+            showModal('Precio de venta inválido');
+            return;
+        }
+        if (precioVenta <= precioCompra) {
+            showModal('El precio de venta debe ser mayor al de compra');
+            return;
+        }
 
         subTotal[cont] = round(cantidad * precioCompra);
         sumas = round(sumas + subTotal[cont]);
@@ -301,7 +343,11 @@
 
     function cancelarCompra() {
         $('#tabla_detalle tbody').empty();
-        cont = 0; subTotal = []; sumas = 0; igv = 0; total = 0;
+        cont = 0;
+        subTotal = [];
+        sumas = 0;
+        igv = 0;
+        total = 0;
         actualizarTotales();
         limpiarCampos();
         disableButtons();
@@ -348,9 +394,18 @@
 
     function showModal(message, icon = 'error') {
         Swal.mixin({
-            toast: true, position: "top-end", showConfirmButton: false, timer: 2000,
-            timerProgressBar: true, customClass: { popup: 'shadow-sm border-0 rounded-3' }
-        }).fire({ icon: icon, title: message });
+            toast: true,
+            position: "top-end",
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+            customClass: {
+                popup: 'shadow-sm border-0 rounded-3'
+            }
+        }).fire({
+            icon: icon,
+            title: message
+        });
     }
 </script>
 @endpush
