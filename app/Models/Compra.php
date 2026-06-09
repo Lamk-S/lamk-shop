@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Compra extends Model
@@ -16,42 +16,57 @@ class Compra extends Model
         'proveedor_id',
         'user_id',
         'comprobante_id',
-        'numero_comprobante',
+        'tipo_comprobante',
+        'serie',
+        'correlativo',
+        'proveedor_tipo_documento',
+        'proveedor_numero_documento',
+        'proveedor_nombre',
+        'proveedor_direccion',
         'metodo_pago',
-        'fecha_hora',
+        'moneda',
+        'fecha_emision',
         'subtotal',
-        'impuesto',
+        'descuento_total',
+        'impuesto_total',
         'total',
-        'estado',
+        'estado_documento',
+        'observacion',
+        'motivo_anulacion',
+        'anulado_at',
+    ];
+
+    protected $casts = [
+        'fecha_emision' => 'datetime',
+        'subtotal' => 'decimal:2',
+        'descuento_total' => 'decimal:2',
+        'impuesto_total' => 'decimal:2',
+        'total' => 'decimal:2',
+        'anulado_at' => 'datetime',
     ];
 
     public function proveedor()
     {
-        return $this->belongsTo(Proveedor::class);
+        return $this->belongsTo(Proveedor::class, 'proveedor_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function comprobante()
     {
-        return $this->belongsTo(Comprobante::class);
+        return $this->belongsTo(Comprobante::class, 'comprobante_id');
     }
 
-    public function productos()
+    public function detalles()
     {
-        return $this->belongsToMany(
-            Producto::class,
-            'compra_producto',
-            'compra_id',
-            'producto_id'
-        )->withTimestamps()->withPivot('cantidad', 'precio_compra', 'precio_venta');
+        return $this->hasMany(CompraProducto::class, 'compra_id');
     }
 
-    public function movimientos()
+    public function movimientosTesoreria()
     {
-        return $this->hasMany(MovimientoTesoreria::class);
+        return $this->hasMany(MovimientoTesoreria::class, 'compra_id');
     }
 }

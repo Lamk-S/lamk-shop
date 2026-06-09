@@ -14,16 +14,14 @@ class MarcaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-marca|crear-marca|editar-marca|eliminar-marca', only: ['index']),
-            new Middleware('permission:crear-marca', only: ['create', 'store']),
-            new Middleware('permission:editar-marca', only: ['edit', 'update']),
-            new Middleware('permission:eliminar-marca', only: ['destroy']),
+            new Middleware('permission:gestionar_marcas', only: ['index', 'create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
     public function index()
     {
-        $marcas = Marca::withTrashed()->latest()->get();
+        $marcas = Marca::withTrashed()->latest('id')->get();
+
         return view('marca.index', compact('marcas'));
     }
 
@@ -36,7 +34,8 @@ class MarcaController extends Controller implements HasMiddleware
     {
         try {
             Marca::create($request->validated());
-            return redirect()->route('marcas.index')->with('success', 'Marca registrada');
+
+            return redirect()->route('marcas.index')->with('success', 'Marca registrada correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar la marca: ' . $e->getMessage()]);
         }
@@ -51,7 +50,8 @@ class MarcaController extends Controller implements HasMiddleware
     {
         try {
             $marca->update($request->validated());
-            return redirect()->route('marcas.index')->with('success', 'Marca editada');
+
+            return redirect()->route('marcas.index')->with('success', 'Marca editada correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al editar la marca: ' . $e->getMessage()]);
         }
@@ -59,15 +59,15 @@ class MarcaController extends Controller implements HasMiddleware
 
     public function destroy(string $id)
     {
-        $marca = Marca::withTrashed()->findOrFail($id);
-
         try {
+            $marca = Marca::withTrashed()->findOrFail($id);
+
             if ($marca->trashed()) {
                 $marca->restore();
-                $message = 'Marca restaurada';
+                $message = 'Marca restaurada correctamente';
             } else {
                 $marca->delete();
-                $message = 'Marca eliminada';
+                $message = 'Marca eliminada correctamente';
             }
 
             return redirect()->route('marcas.index')->with('success', $message);

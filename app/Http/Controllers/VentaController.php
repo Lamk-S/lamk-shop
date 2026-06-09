@@ -5,35 +5,48 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreVentaRequest;
 use App\Models\Cliente;
 use App\Models\Comprobante;
+use App\Models\EmpresaConfiguracion;
 use App\Models\Kardex;
 use App\Models\MovimientoCaja;
 use App\Models\MovimientoTesoreria;
 use App\Models\Producto;
+use App\Models\ProductoVenta;
+use App\Models\ProductoVariante;
 use App\Models\SesionCaja;
 use App\Models\Tesoreria;
 use App\Models\Venta;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class VentaController extends Controller implements HasMiddleware
 {
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-venta|crear-venta|mostrar-venta|eliminar-venta', only: ['index']),
-            new Middleware('permission:crear-venta', only: ['create', 'store']),
-            new Middleware('permission:mostrar-venta', only: ['show']),
-            new Middleware('permission:eliminar-venta', only: ['destroy']),
+            new Middleware('permission:registrar_ventas|anular_ventas', only: ['index', 'show']),
+            new Middleware('permission:registrar_ventas', only: ['create', 'store']),
+            new Middleware('permission:anular_ventas', only: ['destroy']),
         ];
     }
 
     public function index()
     {
-        $ventas = Venta::with('comprobante', 'cliente.persona', 'user', 'sesionCaja.caja')
-            ->latest()
+        $ventas = Venta::with([
+                'comprobante',
+                'cliente.persona.documento',
+                'user',
+                'sesionCaja.caja',
+                'detalles.productoVariante.producto.marca',
+                'detalles.productoVariante.talla',
+                'pagos',
+            ])
+            ->latest('id')
             ->get();
 
         return view('venta.index', compact('ventas'));
@@ -42,7 +55,8 @@ class VentaController extends Controller implements HasMiddleware
     public function create()
     {
         $sesionAbierta = SesionCaja::where('user_id', Auth::id())
-            ->where('estado', 1)
+            ->where('estado_sesion', 'ABIERTA')
+            ->with('caja', 'user')
             ->first();
 
         if (!$sesionAbierta) {
@@ -51,289 +65,383 @@ class VentaController extends Controller implements HasMiddleware
                 ->with('warning', 'Debes abrir una sesión de caja antes de registrar una venta.');
         }
 
-        $productos = Producto::where('estado', 1)
-            ->where('stock', '>', 0)
+        $variantes = ProductoVariante::with(['producto.marca', 'talla'])
+            ->where('estado', 1)
+            ->whereNull('deleted_at')
+            ->where('stock_actual', '>', 0)
+            ->orderBy('id')
             ->get();
 
-        $clientes = Cliente::whereHas('persona', fn($q) => $q->where('estado', 1))->get();
+        $clientes = Cliente::with('persona.documento')
+            ->whereHas('persona', fn ($q) => $q->where('estado', 1))
+            ->orderBy('id')
+            ->get();
+
         $comprobantes = Comprobante::where('estado', 1)
             ->where('uso_comprobante', 'VENTA')
+            ->orderBy('serie')
             ->get();
 
-        return view('venta.create', compact('productos', 'clientes', 'comprobantes', 'sesionAbierta'));
+        $optionsMetodosPago = [
+            'EFECTIVO' => 'Efectivo',
+            'TARJETA' => 'Tarjeta',
+            'TRANSFERENCIA' => 'Transferencia',
+            'YAPE' => 'Yape',
+            'PLIN' => 'Plin',
+            'OTRO' => 'Otro',
+        ];
+
+        return view('venta.create', compact('variantes', 'clientes', 'comprobantes', 'sesionAbierta', 'optionsMetodosPago'));
     }
 
     public function store(StoreVentaRequest $request)
     {
+        $data = $request->validated();
+
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($data, $request) {
                 $sesionAbierta = SesionCaja::where('user_id', Auth::id())
-                    ->where('estado', 1)
+                    ->where('estado_sesion', 'ABIERTA')
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                $comprobante = Comprobante::whereKey($request->comprobante_id)
-                    ->where('uso_comprobante', 'VENTA')
-                    ->lockForUpdate()
-                    ->firstOrFail();
+                $empresa = EmpresaConfiguracion::first();
+                $igv = (float) ($empresa?->igv_porcentaje ?? 18);
 
-                $numeroComprobante = $this->generarNumeroComprobante($comprobante);
+                $cliente = null;
+                if (!empty($data['cliente_id'])) {
+                    $cliente = Cliente::with(['persona.documento'])
+                        ->whereKey($data['cliente_id'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
+                }
 
-                $vueltoEntregado = max(0, (float) $request->monto_recibido - (float) $request->total);
+                $comprobante = null;
+                $tipoComprobante = null;
+                $serie = null;
+                $correlativo = null;
 
-                $venta = Venta::create([
-                    'cliente_id' => $request->cliente_id,
-                    'user_id' => Auth::id(),
-                    'sesion_caja_id' => $sesionAbierta->id,
-                    'comprobante_id' => $request->comprobante_id,
-                    'numero_comprobante' => $numeroComprobante,
-                    'fecha_hora' => $request->fecha_hora,
-                    'subtotal' => $request->subtotal,
-                    'impuesto' => $request->impuesto,
-                    'total' => $request->total,
-                    'monto_recibido' => $request->monto_recibido,
-                    'vuelto_entregado' => $vueltoEntregado,
-                    'estado' => 1,
-                ]);
-
-                $ids = $request->get('arrayidproducto', []);
-                $cantidades = $request->get('arraycantidad', []);
-                $preciosVenta = $request->get('arrayprecioventa', []);
-                $descuentos = $request->get('arraydescuento', []);
-
-                foreach ($ids as $i => $productoId) {
-                    $cantidad = (int) ($cantidades[$i] ?? 0);
-                    $precioVenta = (float) ($preciosVenta[$i] ?? 0);
-                    $descuento = (float) ($descuentos[$i] ?? 0);
-
-                    $producto = Producto::whereKey($productoId)
+                if (!empty($data['comprobante_id'])) {
+                    $comprobante = Comprobante::whereKey($data['comprobante_id'])
+                        ->where('uso_comprobante', 'VENTA')
+                        ->where('estado', 1)
                         ->lockForUpdate()
                         ->firstOrFail();
 
-                    if ($producto->stock < $cantidad) {
-                        throw new Exception("Stock insuficiente para el producto {$producto->nombre}");
-                    }
-
-                    $venta->productos()->attach($producto->id, [
-                        'cantidad' => $cantidad,
-                        'precio_venta' => $precioVenta,
-                        'descuento' => $descuento,
-                    ]);
-
-                    $producto->update([
-                        'stock' => $producto->stock - $cantidad,
-                    ]);
-
-                    $ultimoSaldo = Kardex::where('producto_id', $producto->id)
-                        ->lockForUpdate()
-                        ->latest('id')
-                        ->value('saldo') ?? 0;
-
-                    Kardex::create([
-                        'producto_id' => $producto->id,
-                        'tipo_transaccion' => 'VENTA',
-                        'descripcion' => 'Venta #' . $venta->id,
-                        'entrada' => 0,
-                        'salida' => $cantidad,
-                        'saldo' => $ultimoSaldo - $cantidad,
-                        'costo_unitario' => $producto->precio_compra,
-                        'user_id' => Auth::id(),
-                    ]);
-                }
-
-                $venta->pagos()->create([
-                    'metodo_pago' => $request->metodo_pago,
-                    'monto' => $request->monto_recibido - $vueltoEntregado,
-                    'referencia_operacion' => $request->referencia_operacion ?? null,
-                ]);
-
-                $metodo = strtoupper($request->metodo_pago);
-
-                if ($metodo === 'EFECTIVO') {
-                    MovimientoCaja::create([
-                        'sesion_caja_id' => $sesionAbierta->id,
-                        'tipo' => 'INGRESO',
-                        'descripcion' => 'Pago de venta #' . $venta->id,
-                        'monto' => $venta->monto_recibido,
-                    ]);
-
-                    if ($vueltoEntregado > 0) {
-                        MovimientoCaja::create([
-                            'sesion_caja_id' => $sesionAbierta->id,
-                            'tipo' => 'EGRESO',
-                            'descripcion' => 'Vuelto por venta #' . $venta->id,
-                            'monto' => $vueltoEntregado,
-                        ]);
-                    }
-
-                    $this->recalcularSaldoEsperadoSesion($sesionAbierta->id);
+                    [$tipoComprobante, $serie, $correlativo] = $this->generarDatosComprobante($comprobante);
                 } else {
-                    $tesoreria = Tesoreria::withTrashed()
+                    $ticket = Comprobante::where('uso_comprobante', 'VENTA')
+                        ->where('tipo_comprobante', 'TICKET')
+                        ->where('estado', 1)
                         ->lockForUpdate()
                         ->first();
 
-                    $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true) ? 'saldo_banco' : 'saldo_efectivo';
-                    $saldoAnterior = (float) $tesoreria->{$campoSaldo};
-                    $saldoPosterior = $saldoAnterior + (float) $venta->total;
+                    if ($ticket) {
+                        $comprobante = $ticket;
+                        [$tipoComprobante, $serie, $correlativo] = $this->generarDatosComprobante($ticket);
+                    }
+                }
 
-                    $tesoreria->update([
-                        $campoSaldo => $saldoPosterior,
-                    ]);
-
-                    MovimientoTesoreria::create([
-                        'tesoreria_id' => $tesoreria->id,
-                        'user_id' => Auth::id(),
-                        'venta_id' => $venta->id,
-                        'tipo' => 'INGRESO',
-                        'origen' => $metodo === 'TARJETA' ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
-                        'descripcion' => 'Cobro de venta #' . $venta->id,
-                        'monto' => $venta->total,
-                        'saldo_anterior' => $saldoAnterior,
-                        'saldo_posterior' => $saldoPosterior,
+                if ($tipoComprobante === 'FACTURA' && !$cliente) {
+                    throw ValidationException::withMessages([
+                        'cliente_id' => 'La factura requiere un cliente registrado.',
                     ]);
                 }
-            });
 
-            return redirect()->route('ventas.index')->with('success', 'Venta exitosa');
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar la venta: ' . $e->getMessage()]);
-        }
-    }
+                if ($tipoComprobante === 'FACTURA' && $cliente && $cliente->persona?->documento?->codigo !== 'RUC') {
+                    throw ValidationException::withMessages([
+                        'cliente_id' => 'La factura solo puede emitirse a un cliente con RUC.',
+                    ]);
+                }
 
-    public function show(Venta $venta)
-    {
-        $venta->load('comprobante', 'cliente.persona', 'user', 'sesionCaja.caja', 'productos', 'pagos');
-        return view('venta.show', compact('venta'));
-    }
+                $lineas = [];
+                $subtotal = 0.0;
+                $descuentoTotal = 0.0;
+                $impuestoTotal = 0.0;
+                $total = 0.0;
 
-    public function destroy(string $id)
-    {
-        try {
-            $venta = Venta::with(['productos', 'pagos', 'sesionCaja'])->findOrFail($id);
+                foreach ($data['detalles'] as $row) {
+                    $variante = ProductoVariante::with(['producto', 'talla'])
+                        ->whereKey($row['producto_variante_id'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
-            if ((int) $venta->estado !== 1) {
-                return redirect()->route('ventas.index')->with('success', 'La venta ya estaba anulada');
-            }
+                    $producto = Producto::whereKey($variante->producto_id)
+                        ->lockForUpdate()
+                        ->firstOrFail();
 
-            DB::transaction(function () use ($venta) {
+                    $cantidad = (int) $row['cantidad'];
+                    $precioUnitario = (float) $row['precio_unitario'];
+                    $descuento = (float) ($row['descuento'] ?? 0);
 
-                foreach ($venta->productos as $producto) {
-                    $cantidad = (int) $producto->pivot->cantidad;
+                    if ((int) $variante->stock_actual < $cantidad) {
+                        throw new Exception("Stock insuficiente para el producto {$producto->nombre} - {$variante->talla->nombre}");
+                    }
+
+                    $base = round(($cantidad * $precioUnitario) - $descuento, 2);
+                    $impuesto = $producto->afecto_igv ? round($base * $igv / 100, 2) : 0.00;
+                    $lineaTotal = round($base + $impuesto, 2);
+
+                    $lineas[] = [
+                        'variante_id' => $variante->id,
+                        'producto_id' => $producto->id,
+                        'cantidad' => $cantidad,
+                        'precio_unitario' => $precioUnitario,
+                        'descuento' => $descuento,
+                        'subtotal' => round($cantidad * $precioUnitario, 2),
+                        'impuesto' => $impuesto,
+                        'total' => $lineaTotal,
+                        'producto_codigo' => $producto->codigo,
+                        'producto_nombre' => $producto->nombre,
+                        'talla_codigo' => $variante->talla->codigo,
+                        'talla_nombre' => $variante->talla->nombre,
+                    ];
+
+                    $subtotal += round($cantidad * $precioUnitario, 2);
+                    $descuentoTotal += $descuento;
+                    $impuestoTotal += $impuesto;
+                    $total += $lineaTotal;
+                }
+
+                $paymentRows = collect($data['pagos'] ?? []);
+
+                if ($paymentRows->isEmpty()) {
+                    if (empty($data['metodo_pago'])) {
+                        throw ValidationException::withMessages([
+                            'metodo_pago' => 'Debes registrar al menos un método de pago.',
+                        ]);
+                    }
+
+                    $paymentRows = collect([
+                        [
+                            'metodo_pago' => $data['metodo_pago'],
+                            'monto' => (float) ($data['monto_recibido'] ?? $total),
+                            'referencia_operacion' => $data['referencia_operacion'] ?? null,
+                        ],
+                    ]);
+                }
+
+                $pagosTotal = round($paymentRows->sum('monto'), 2);
+
+                if ($pagosTotal < $total) {
+                    throw ValidationException::withMessages([
+                        'pagos' => 'El total de pagos no cubre el total de la venta.',
+                    ]);
+                }
+
+                $soloUnPagoEfectivo = $paymentRows->count() === 1 && strtoupper($paymentRows->first()['metodo_pago']) === 'EFECTIVO';
+                $vueltoEntregado = $soloUnPagoEfectivo
+                    ? round(max(0, (float) $paymentRows->first()['monto'] - $total), 2)
+                    : 0.00;
+
+                $venta = Venta::create([
+                    'cliente_id' => $cliente?->id,
+                    'user_id' => Auth::id(),
+                    'sesion_caja_id' => $sesionAbierta->id,
+                    'comprobante_id' => $comprobante?->id,
+                    'tipo_comprobante' => $tipoComprobante,
+                    'serie' => $serie,
+                    'correlativo' => $correlativo,
+                    'cliente_tipo_documento' => $cliente?->persona?->documento?->codigo,
+                    'cliente_numero_documento' => $cliente?->persona?->numero_documento,
+                    'cliente_nombre' => $cliente
+                        ? (
+                            $cliente->persona?->razon_social
+                            ?? trim(($cliente->persona?->nombres ?? '') . ' ' . ($cliente->persona?->apellidos ?? ''))
+                        )
+                        : 'CONSUMIDOR FINAL',
+                    'cliente_direccion' => $cliente?->persona?->direccion,
+                    'cliente_email' => $cliente?->persona?->email,
+                    'moneda' => $data['moneda'] ?? 'PEN',
+                    'fecha_emision' => $data['fecha_emision'] ?? now(),
+                    'subtotal' => round($subtotal, 2),
+                    'descuento_total' => round($descuentoTotal, 2),
+                    'impuesto_total' => round($impuestoTotal, 2),
+                    'total' => round($total, 2),
+                    'monto_recibido' => $pagosTotal,
+                    'vuelto_entregado' => $vueltoEntregado,
+                    'estado_documento' => 'EMITIDA',
+                    'observacion' => $data['observacion'] ?? null,
+                    'motivo_anulacion' => null,
+                    'anulado_at' => null,
+                    'sunat_estado' => 'SIMULADO',
+                    'sunat_mensaje' => 'Documento generado internamente',
+                    'xml_path' => null,
+                    'pdf_path' => null,
+                    'qr_payload' => null,
+                    'hash_resumen' => null,
+                ]);
+
+                foreach ($lineas as $linea) {
+                    $variante = ProductoVariante::whereKey($linea['variante_id'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    $producto = Producto::whereKey($linea['producto_id'])
+                        ->lockForUpdate()
+                        ->firstOrFail();
+
+                    if ($variante->stock_actual < $linea['cantidad']) {
+                        throw new Exception("Stock insuficiente para el producto {$producto->nombre} - {$linea['talla_nombre']}");
+                    }
+
+                    $saldoAnterior = (int) $variante->stock_actual;
+                    $saldoPosterior = $saldoAnterior - $linea['cantidad'];
+
+                    $variante->update([
+                        'stock_actual' => $saldoPosterior,
+                    ]);
+
+                    ProductoVenta::create([
+                        'venta_id' => $venta->id,
+                        'producto_variante_id' => $variante->id,
+                        'cantidad' => $linea['cantidad'],
+                        'precio_unitario' => $linea['precio_unitario'],
+                        'descuento' => $linea['descuento'],
+                        'subtotal' => $linea['subtotal'],
+                        'impuesto' => $linea['impuesto'],
+                        'total' => $linea['total'],
+                        'costo_unitario' => $producto->precio_compra,
+                        'producto_codigo' => $linea['producto_codigo'],
+                        'producto_nombre' => $linea['producto_nombre'],
+                        'talla_codigo' => $linea['talla_codigo'],
+                        'talla_nombre' => $linea['talla_nombre'],
+                    ]);
 
                     $producto->update([
-                        'stock' => $producto->stock + $cantidad,
+                        'stock_total' => $producto->variantes()->where('estado', 1)->sum('stock_actual'),
                     ]);
 
-                    $ultimoSaldo = Kardex::where('producto_id', $producto->id)
-                        ->latest('id')
-                        ->value('saldo') ?? 0;
-
                     Kardex::create([
-                        'producto_id' => $producto->id,
-                        'tipo_transaccion' => 'ANULACION',
-                        'descripcion' => 'Anulación de venta #' . $venta->id,
-                        'entrada' => $cantidad,
-                        'salida' => 0,
-                        'saldo' => $ultimoSaldo + $cantidad,
+                        'producto_variante_id' => $variante->id,
+                        'tipo_transaccion' => 'VENTA',
+                        'origen_type' => Venta::class,
+                        'origen_id' => $venta->id,
+                        'descripcion' => 'Venta #' . $venta->id,
+                        'entrada' => 0,
+                        'salida' => $linea['cantidad'],
+                        'saldo_anterior' => $saldoAnterior,
+                        'saldo_posterior' => $saldoPosterior,
                         'costo_unitario' => $producto->precio_compra,
+                        'costo_total' => round($linea['cantidad'] * $producto->precio_compra, 2),
                         'user_id' => Auth::id(),
                     ]);
                 }
 
-                $metodo = strtoupper((string) optional($venta->pagos->first())->metodo_pago);
+                foreach ($paymentRows as $payment) {
+                    $metodoPago = strtoupper($payment['metodo_pago']);
+                    $montoPago = (float) $payment['monto'];
+                    $referencia = $payment['referencia_operacion'] ?? null;
 
-                if ($metodo === 'EFECTIVO') {
-                    $sesion = $venta->sesionCaja;
+                    $venta->pagos()->create([
+                        'metodo_pago' => $metodoPago,
+                        'monto' => $montoPago,
+                        'referencia_operacion' => $referencia,
+                        'moneda' => $data['moneda'] ?? 'PEN',
+                        'estado' => 1,
+                    ]);
 
-                    if ($sesion && (int) $sesion->estado === 1) {
+                    if ($metodoPago === 'EFECTIVO') {
                         MovimientoCaja::create([
-                            'sesion_caja_id' => $sesion->id,
-                            'tipo' => 'EGRESO',
-                            'descripcion' => 'Anulación de venta #' . $venta->id,
-                            'monto' => $venta->monto_recibido,
+                            'sesion_caja_id' => $sesionAbierta->id,
+                            'tipo' => 'INGRESO',
+                            'origen' => 'VENTA',
+                            'descripcion' => 'Cobro de venta #' . $venta->id,
+                            'monto' => $montoPago,
+                            'referencia_type' => Venta::class,
+                            'referencia_id' => $venta->id,
                         ]);
 
-                        if ((float) $venta->vuelto_entregado > 0) {
+                        if ($soloUnPagoEfectivo && $vueltoEntregado > 0) {
                             MovimientoCaja::create([
-                                'sesion_caja_id' => $sesion->id,
-                                'tipo' => 'INGRESO',
-                                'descripcion' => 'Reverso de vuelto por anulación venta #' . $venta->id,
-                                'monto' => $venta->vuelto_entregado,
+                                'sesion_caja_id' => $sesionAbierta->id,
+                                'tipo' => 'EGRESO',
+                                'origen' => 'VENTA',
+                                'descripcion' => 'Vuelto de venta #' . $venta->id,
+                                'monto' => $vueltoEntregado,
+                                'referencia_type' => Venta::class,
+                                'referencia_id' => $venta->id,
+                            ]);
+                        }
+                    } else {
+                        $tesoreriaCodigo = in_array($metodoPago, ['TARJETA'], true) ? 'TES-BANCO' : 'TES-BANCO';
+                        $tesoreria = Tesoreria::where('codigo', $tesoreriaCodigo)->lockForUpdate()->first();
+
+                        if (!$tesoreria) {
+                            $tesoreria = Tesoreria::create([
+                                'codigo' => $tesoreriaCodigo,
+                                'nombre' => 'Banco Principal',
+                                'tipo_cuenta' => 'BANCO',
+                                'saldo_actual' => 0,
+                                'estado' => 1,
                             ]);
                         }
 
-                        $this->recalcularSaldoEsperadoSesion($sesion->id);
-                    } else {
-                        $tesoreria = Tesoreria::withTrashed()
-                            ->lockForUpdate()
-                            ->first();
-
-                        $saldoAnterior = (float) $tesoreria->saldo_efectivo;
-                        $montoAjuste = (float) $venta->total;
-
-                        if ($saldoAnterior < $montoAjuste) {
-                            return redirect()->route('ventas.index')->with('success', 'Saldo insuficiente en tesorería efectivo para anular la venta.');
-                        }
-
-                        $saldoPosterior = round($saldoAnterior - $montoAjuste, 2);
+                        $saldoAnterior = (float) $tesoreria->saldo_actual;
+                        $saldoPosterior = round($saldoAnterior + $montoPago, 2);
 
                         $tesoreria->update([
-                            'saldo_efectivo' => $saldoPosterior,
+                            'saldo_actual' => $saldoPosterior,
                         ]);
 
                         MovimientoTesoreria::create([
                             'tesoreria_id' => $tesoreria->id,
                             'user_id' => Auth::id(),
+                            'sesion_caja_id' => $sesionAbierta->id,
                             'venta_id' => $venta->id,
-                            'tipo' => 'EGRESO',
-                            'origen' => 'AJUSTE',
-                            'descripcion' => 'Anulación de venta #' . $venta->id,
-                            'monto' => $montoAjuste,
+                            'compra_id' => null,
+                            'tipo' => 'INGRESO',
+                            'medio' => 'BANCO',
+                            'origen' => in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
+                            'descripcion' => 'Cobro de venta #' . $venta->id,
+                            'monto' => $montoPago,
                             'saldo_anterior' => $saldoAnterior,
                             'saldo_posterior' => $saldoPosterior,
+                            'numero_operacion' => $referencia,
+                            'referencia' => null,
                         ]);
                     }
-                } else {
-                    $tesoreria = Tesoreria::withTrashed()
-                        ->lockForUpdate()
-                        ->first();
-
-                    $campoSaldo = in_array($metodo, ['TARJETA', 'TRANSFERENCIA'], true)
-                        ? 'saldo_banco'
-                        : 'saldo_efectivo';
-
-                    $saldoAnterior = (float) $tesoreria->{$campoSaldo};
-
-                    if ($saldoAnterior < (float) $venta->total) {
-                        return redirect()->route('ventas.index')->with('success', 'Saldo insuficiente en tesorería para anular la venta.');
-                    }
-
-                    $saldoPosterior = round($saldoAnterior - (float) $venta->total, 2);
-
-                    $tesoreria->update([
-                        $campoSaldo => $saldoPosterior,
-                    ]);
-
-                    MovimientoTesoreria::create([
-                        'tesoreria_id' => $tesoreria->id,
-                        'user_id' => Auth::id(),
-                        'venta_id' => $venta->id,
-                        'tipo' => 'EGRESO',
-                        'origen' => 'AJUSTE',
-                        'descripcion' => 'Anulación de venta #' . $venta->id,
-                        'monto' => $venta->total,
-                        'saldo_anterior' => $saldoAnterior,
-                        'saldo_posterior' => $saldoPosterior,
-                    ]);
                 }
 
-                $venta->update(['estado' => 0]);
+                $this->recalcularSaldoEsperadoSesion($sesionAbierta->id);
             });
 
-            return redirect()->route('ventas.index')->with('success', 'Venta anulada');
+            return redirect()->route('ventas.index')->with('success', 'Venta registrada correctamente');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al modificar la venta: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Error al registrar la venta: ' . $e->getMessage()])->withInput();
         }
+    }
+
+    public function show(Venta $venta)
+    {
+        $venta->load([
+            'comprobante',
+            'cliente.persona.documento',
+            'user',
+            'sesionCaja.caja',
+            'detalles.productoVariante.producto.marca',
+            'detalles.productoVariante.talla',
+            'pagos',
+        ]);
+
+        return view('venta.show', compact('venta'));
+    }
+
+    public function destroy(string $id)
+    {
+        return app(AnulacionVentaController::class)->destroy(request(), $id);
+    }
+
+    private function generarDatosComprobante(Comprobante $comprobante): array
+    {
+        $nuevoCorrelativo = (int) $comprobante->correlativo_actual + 1;
+        $comprobante->update(['correlativo_actual' => $nuevoCorrelativo]);
+
+        return [
+            $comprobante->tipo_comprobante,
+            $comprobante->serie,
+            str_pad((string) $nuevoCorrelativo, 8, '0', STR_PAD_LEFT),
+        ];
     }
 
     private function recalcularSaldoEsperadoSesion(int $sesionCajaId): void
@@ -357,13 +465,5 @@ class VentaController extends Controller implements HasMiddleware
         $sesion->update([
             'saldo_final_esperado' => $saldoEsperado,
         ]);
-    }
-
-    private function generarNumeroComprobante(Comprobante $comprobante): string
-    {
-        $nuevoCorrelativo = (int) $comprobante->correlativo_actual + 1;
-        $comprobante->update(['correlativo_actual' => $nuevoCorrelativo]);
-
-        return $comprobante->serie . '-' . str_pad((string) $nuevoCorrelativo, 8, '0', STR_PAD_LEFT);
     }
 }

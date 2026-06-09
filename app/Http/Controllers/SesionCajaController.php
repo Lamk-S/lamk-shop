@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreSesionCajaRequest;
 use App\Models\Caja;
 use App\Models\MovimientoTesoreria;
 use App\Models\SesionCaja;
@@ -18,36 +19,41 @@ class SesionCajaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-sesion-caja|abrir-sesion-caja|cerrar-sesion-caja', only: ['index', 'show']),
-            new Middleware('permission:abrir-sesion-caja', only: ['create', 'store']),
-            new Middleware('permission:cerrar-sesion-caja', only: ['destroy']),
+            new Middleware('permission:gestionar_cajas|abrir_caja|cerrar_caja', only: ['index', 'show']),
+            new Middleware('permission:abrir_caja', only: ['create', 'store']),
+            new Middleware('permission:cerrar_caja', only: ['destroy']),
         ];
     }
 
     public function index()
     {
-        $sesiones = SesionCaja::with('caja', 'user')->latest()->get();
+        $sesiones = SesionCaja::with(['caja', 'user', 'userCierre'])
+            ->latest('id')
+            ->get();
+
         return view('sesion_caja.index', compact('sesiones'));
     }
 
     public function create()
     {
-        $cajas = Caja::where('estado', 1)->get();
+        $cajas = Caja::where('estado', 1)->latest('id')->get();
+
         return view('sesion_caja.create', compact('cajas'));
     }
 
-    public function store(Request $request)
+    public function store(StoreSesionCajaRequest $request)
     {
-        $data = $request->validate([
-            'caja_id' => 'required|exists:cajas,id',
-        ]);
+        $data = $request->validated();
 
         try {
             DB::transaction(function () use ($data) {
-                $caja = Caja::whereKey($data['caja_id'])->lockForUpdate()->firstOrFail();
+                $caja = Caja::whereKey($data['caja_id'])
+                    ->where('estado', 1)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
                 $sesionActivaCaja = SesionCaja::where('caja_id', $caja->id)
-                    ->where('estado', 1)
+                    ->where('estado_sesion', 'ABIERTA')
                     ->lockForUpdate()
                     ->exists();
 
@@ -56,7 +62,7 @@ class SesionCajaController extends Controller implements HasMiddleware
                 }
 
                 $sesionActivaUsuario = SesionCaja::where('user_id', Auth::id())
-                    ->where('estado', 1)
+                    ->where('estado_sesion', 'ABIERTA')
                     ->lockForUpdate()
                     ->exists();
 
@@ -68,15 +74,17 @@ class SesionCajaController extends Controller implements HasMiddleware
                     'caja_id' => $caja->id,
                     'user_id' => Auth::id(),
                     'fecha_hora_apertura' => now(),
-                    'saldo_inicial' => $caja->fondo_fijo,
+                    'saldo_inicial' => $data['saldo_inicial'] ?? $caja->fondo_fijo,
                     'saldo_final_declarado' => null,
                     'saldo_final_esperado' => null,
                     'diferencia' => null,
-                    'estado' => 1,
+                    'estado_sesion' => 'ABIERTA',
+                    'observacion_apertura' => $data['observacion_apertura'] ?? null,
+                    'observacion_cierre' => null,
                 ]);
             });
 
-            return redirect()->route('sesiones-caja.index')->with('success', 'Sesión de caja abierta');
+            return redirect()->route('sesiones-caja.index')->with('success', 'Sesión de caja abierta correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => $e->getMessage()]);
         }
@@ -84,7 +92,15 @@ class SesionCajaController extends Controller implements HasMiddleware
 
     public function show(SesionCaja $sesionCaja)
     {
-        $sesionCaja->load('caja', 'user', 'movimientosCaja', 'ventas');
+        $sesionCaja->load([
+            'caja',
+            'user',
+            'userCierre',
+            'movimientosCaja',
+            'ventas.detalles',
+            'movimientosTesoreria',
+        ]);
+
         return view('sesion_caja.show', compact('sesionCaja'));
     }
 
@@ -92,16 +108,22 @@ class SesionCajaController extends Controller implements HasMiddleware
     {
         $data = $request->validate([
             'saldo_final_declarado' => 'required|numeric|min:0',
+            'observacion_cierre' => 'nullable|string|max:1000',
         ]);
 
         try {
-            $sesion = SesionCaja::with(['movimientosCaja', 'caja'])->findOrFail($id);
+            $sesion = SesionCaja::with(['movimientosCaja', 'caja'])
+                ->findOrFail($id);
 
-            if ((int) $sesion->estado === 0) {
-                return back()->withErrors(['error' => 'La sesión ya está cerrada.']);
+            if ($sesion->estado_sesion !== 'ABIERTA') {
+                return back()->withErrors(['error' => 'La sesión ya está cerrada o anulada.']);
             }
 
             DB::transaction(function () use ($sesion, $data) {
+                $sesion = SesionCaja::whereKey($sesion->id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
+
                 $ingresos = $sesion->movimientosCaja()
                     ->where('tipo', 'INGRESO')
                     ->sum('monto');
@@ -114,31 +136,41 @@ class SesionCajaController extends Controller implements HasMiddleware
                 $saldoDeclarado = (float) $data['saldo_final_declarado'];
                 $diferencia = $saldoDeclarado - $saldoEsperado;
 
-                $fondoFijo = (float) ($sesion->caja->fondo_fijo ?? 100);
+                $fondoFijo = (float) ($sesion->caja->fondo_fijo ?? 0);
                 $montoTransferir = max(0, $saldoDeclarado - $fondoFijo);
 
-                $tesoreria = Tesoreria::withTrashed()->firstOrCreate(
-                    ['nombre' => 'Tesorería Principal'],
-                    ['saldo_efectivo' => 0, 'saldo_banco' => 0, 'estado' => 1]
+                $tesoreria = Tesoreria::firstOrCreate(
+                    ['codigo' => 'TES-EFECTIVO'],
+                    [
+                        'nombre' => 'Caja General',
+                        'tipo_cuenta' => 'EFECTIVO',
+                        'saldo_actual' => 0,
+                        'estado' => 1,
+                    ]
                 );
 
-                $saldoAnterior = (float) $tesoreria->saldo_efectivo;
+                $saldoAnterior = (float) $tesoreria->saldo_actual;
                 $saldoPosterior = $saldoAnterior + $montoTransferir;
 
                 $tesoreria->update([
-                    'saldo_efectivo' => $saldoPosterior,
+                    'saldo_actual' => $saldoPosterior,
                 ]);
 
                 MovimientoTesoreria::create([
                     'tesoreria_id' => $tesoreria->id,
                     'user_id' => Auth::id(),
                     'sesion_caja_id' => $sesion->id,
+                    'venta_id' => null,
+                    'compra_id' => null,
                     'tipo' => 'INGRESO',
+                    'medio' => 'EFECTIVO',
                     'origen' => 'CIERRE_CAJA',
-                    'descripcion' => 'Traslado de efectivo desde sesión de caja #' . $sesion->id,
+                    'descripcion' => 'Traslado de efectivo desde cierre de sesión de caja #' . $sesion->id,
                     'monto' => $montoTransferir,
                     'saldo_anterior' => $saldoAnterior,
                     'saldo_posterior' => $saldoPosterior,
+                    'numero_operacion' => null,
+                    'referencia' => null,
                 ]);
 
                 $sesion->update([
@@ -146,11 +178,13 @@ class SesionCajaController extends Controller implements HasMiddleware
                     'saldo_final_esperado' => $saldoEsperado,
                     'saldo_final_declarado' => $saldoDeclarado,
                     'diferencia' => $diferencia,
-                    'estado' => 0,
+                    'estado_sesion' => 'CERRADA',
+                    'user_cierre_id' => Auth::id(),
+                    'observacion_cierre' => $data['observacion_cierre'] ?? null,
                 ]);
             });
 
-            return redirect()->route('sesiones-caja.index')->with('success', 'Sesión de caja cerrada');
+            return redirect()->route('sesiones-caja.index')->with('success', 'Sesión de caja cerrada correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al cerrar la sesión: ' . $e->getMessage()]);
         }

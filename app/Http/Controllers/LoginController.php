@@ -20,8 +20,14 @@ class LoginController extends Controller
     {
         $credentials = $request->only('email', 'password');
 
-        if (!Auth::attempt(['email' => $credentials['email'], 'password' => $credentials['password'], 'estado' => 1], $request->boolean('remember'))) {
-            return back()->withErrors(['email' => 'Credenciales incorrectas o usuario inactivo.']);
+        if (!Auth::attempt([
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+            'estado' => 1,
+        ], $request->boolean('remember'))) {
+            return back()->withErrors([
+                'email' => 'Credenciales incorrectas o usuario inactivo.',
+            ]);
         }
 
         $request->session()->regenerate();

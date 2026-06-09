@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\StoreMovimientoCajaRequest;
 use App\Models\MovimientoCaja;
 use App\Models\SesionCaja;
 use Exception;
@@ -15,43 +16,53 @@ class MovimientoCajaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-movimiento-caja|crear-movimiento-caja', only: ['index']),
-            new Middleware('permission:crear-movimiento-caja', only: ['create', 'store']),
+            new Middleware('permission:movimientos_caja', only: ['index', 'create', 'store']),
         ];
     }
 
     public function index()
     {
-        $movimientos = MovimientoCaja::with('sesionCaja.caja', 'sesionCaja.user')->latest()->get();
+        $movimientos = MovimientoCaja::with([
+            'sesionCaja.caja',
+            'sesionCaja.user',
+        ])->latest('id')->get();
+
         return view('movimiento_caja.index', compact('movimientos'));
     }
 
     public function create()
     {
-        $sesionesAbiertas = SesionCaja::where('estado', 1)->with('caja', 'user')->get();
+        $sesionesAbiertas = SesionCaja::with(['caja', 'user'])
+            ->where('estado_sesion', 'ABIERTA')
+            ->latest('id')
+            ->get();
+
         return view('movimiento_caja.create', compact('sesionesAbiertas'));
     }
 
-    public function store(Request $request)
+    public function store(StoreMovimientoCajaRequest $request)
     {
-        $data = $request->validate([
-            'sesion_caja_id' => 'required|exists:sesiones_caja,id',
-            'tipo' => 'required|in:INGRESO,EGRESO',
-            'descripcion' => 'required|string|max:255',
-            'monto' => 'required|numeric|min:0.01',
-        ]);
-
+        $data = $request->validated();
+        
         try {
             DB::transaction(function () use ($data) {
                 $sesion = SesionCaja::whereKey($data['sesion_caja_id'])
-                    ->where('estado', 1)
+                    ->where('estado_sesion', 'ABIERTA')
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                MovimientoCaja::create($data);
+                MovimientoCaja::create([
+                    'sesion_caja_id' => $sesion->id,
+                    'tipo' => $data['tipo'],
+                    'origen' => $data['origen'],
+                    'descripcion' => $data['descripcion'],
+                    'monto' => $data['monto'],
+                    'referencia_type' => $data['referencia_type'] ?? null,
+                    'referencia_id' => $data['referencia_id'] ?? null,
+                ]);
             });
 
-            return redirect()->route('movimientos-caja.index')->with('success', 'Movimiento registrado');
+            return redirect()->route('movimientos-caja.index')->with('success', 'Movimiento registrado correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar el movimiento: ' . $e->getMessage()]);
         }

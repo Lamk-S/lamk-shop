@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateMarcaRequest extends FormRequest
 {
@@ -17,9 +17,14 @@ class UpdateMarcaRequest extends FormRequest
         $marca = $this->route('marca');
 
         return [
-            'nombre' => 'required|string|max:60|unique:marcas,nombre,' . $marca->id,
-            'descripcion' => 'nullable|string|max:255',
-            'estado' => 'nullable|boolean',
+            'nombre' => [
+                'required',
+                'string',
+                'max:60',
+                Rule::unique('marcas', 'nombre')->ignore($marca?->id),
+            ],
+            'descripcion' => ['nullable', 'string', 'max:255'],
+            'estado' => ['required', 'boolean'],
         ];
     }
 }

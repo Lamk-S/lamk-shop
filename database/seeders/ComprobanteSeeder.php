@@ -2,28 +2,53 @@
 
 namespace Database\Seeders;
 
-use App\Models\Comprobante;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
-class ComprobanteSeeder extends Seeder
+class ComprobantesSeeder extends Seeder
 {
     public function run(): void
     {
-        $comprobantes = [
-            ['tipo_comprobante' => 'Boleta',  'uso_comprobante' => 'VENTA',  'serie' => 'BOLVENT', 'correlativo_actual' => 0],
-            ['tipo_comprobante' => 'Boleta',  'uso_comprobante' => 'COMPRA', 'serie' => 'BOLCOMP', 'correlativo_actual' => 0],
-            ['tipo_comprobante' => 'Factura', 'uso_comprobante' => 'VENTA',  'serie' => 'FACVENT', 'correlativo_actual' => 0],
-            ['tipo_comprobante' => 'Factura', 'uso_comprobante' => 'COMPRA', 'serie' => 'FACCOMP', 'correlativo_actual' => 0],
+        $now = Carbon::now();
+
+        $items = [
+            [
+                'tipo_comprobante' => 'TICKET',
+                'serie' => 'T001',
+                'uso_comprobante' => 'VENTA',
+            ],
+            [
+                'tipo_comprobante' => 'BOLETA',
+                'serie' => 'B001',
+                'uso_comprobante' => 'VENTA',
+            ],
+            [
+                'tipo_comprobante' => 'FACTURA',
+                'serie' => 'F001',
+                'uso_comprobante' => 'VENTA',
+            ],
+            [
+                'tipo_comprobante' => 'FACTURA_COMPRA',
+                'serie' => 'C001',
+                'uso_comprobante' => 'COMPRA',
+            ],
         ];
 
-        foreach ($comprobantes as $item) {
-            Comprobante::firstOrCreate(
-                ['serie' => $item['serie']],
+        foreach ($items as $item) {
+            DB::table('comprobantes')->updateOrInsert(
                 [
                     'tipo_comprobante' => $item['tipo_comprobante'],
+                    'serie' => $item['serie'],
+                ],
+                [
                     'uso_comprobante' => $item['uso_comprobante'],
-                    'correlativo_actual' => $item['correlativo_actual'],
+                    'correlativo_actual' => 0,
+                    'es_electronico' => false,
+                    'ambiente' => 'SIMULADO',
                     'estado' => 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ]
             );
         }

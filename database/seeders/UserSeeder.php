@@ -5,47 +5,45 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
-use Spatie\Permission\Models\Role;
 
 class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        $usuarios = [
+        $users = [
             [
-                'name' => 'Administrador',
-                'email' => 'admin@demo.com',
-                'password' => 'password',
-                'role' => 'Administrador',
+                'name' => 'Administrador Lamk',
+                'email' => 'admin@lamksports.test',
+                'role' => 'administrador',
             ],
             [
-                'name' => 'Usuario Vendedor',
-                'email' => 'vendedor@demo.com',
-                'password' => 'password',
-                'role' => 'Vendedor',
+                'name' => 'Vendedor Principal',
+                'email' => 'vendedor@lamksports.test',
+                'role' => 'vendedor',
             ],
             [
-                'name' => 'Usuario Cajero',
-                'email' => 'cajero@demo.com',
-                'password' => 'password',
-                'role' => 'Cajero',
+                'name' => 'Cajero Principal',
+                'email' => 'cajero@lamksports.test',
+                'role' => 'cajero',
+            ],
+            [
+                'name' => 'Encargado de Almacén',
+                'email' => 'almacen@lamksports.test',
+                'role' => 'encargado_almacen',
             ],
         ];
 
-        foreach ($usuarios as $item) {
-            $user = User::firstOrCreate(
-                ['email' => $item['email']],
+        foreach ($users as $data) {
+            $user = User::updateOrCreate(
+                ['email' => $data['email']],
                 [
-                    'name' => $item['name'],
-                    'password' => Hash::make($item['password']),
+                    'name' => $data['name'],
+                    'password' => Hash::make('password'),
                     'estado' => 1,
                 ]
             );
 
-            $role = Role::where('name', $item['role'])->first();
-            if ($role && !$user->hasRole($role->name)) {
-                $user->syncRoles([$role->name]);
-            }
+            $user->syncRoles([$data['role']]);
         }
     }
 }

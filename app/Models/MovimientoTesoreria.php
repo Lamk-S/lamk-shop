@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class MovimientoTesoreria extends Model
 {
@@ -18,11 +18,14 @@ class MovimientoTesoreria extends Model
         'venta_id',
         'compra_id',
         'tipo',
+        'medio',
         'origen',
         'descripcion',
         'monto',
         'saldo_anterior',
         'saldo_posterior',
+        'numero_operacion',
+        'referencia',
     ];
 
     protected $casts = [
@@ -33,26 +36,26 @@ class MovimientoTesoreria extends Model
 
     public function tesoreria()
     {
-        return $this->belongsTo(Tesoreria::class);
+        return $this->belongsTo(Tesoreria::class, 'tesoreria_id');
     }
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function sesionCaja()
     {
-        return $this->belongsTo(SesionCaja::class);
+        return $this->belongsTo(SesionCaja::class, 'sesion_caja_id');
     }
 
     public function venta()
     {
-        return $this->belongsTo(Venta::class);
+        return $this->belongsTo(Venta::class, 'venta_id');
     }
 
     public function compra()
     {
-        return $this->belongsTo(Compra::class);
+        return $this->belongsTo(Compra::class, 'compra_id');
     }
 }

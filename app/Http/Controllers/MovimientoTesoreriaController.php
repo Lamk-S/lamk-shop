@@ -13,14 +13,20 @@ class MovimientoTesoreriaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-movimiento-tesoreria', only: ['index']),
+            new Middleware('permission:gestionar_tesoreria', only: ['index']),
         ];
     }
 
     public function index(Request $request)
     {
-        $query = MovimientoTesoreria::with(['tesoreria', 'user', 'venta', 'compra', 'sesionCaja.caja'])
-            ->latest();
+        $query = MovimientoTesoreria::with([
+                'tesoreria',
+                'user',
+                'venta',
+                'compra',
+                'sesionCaja.caja',
+            ])
+            ->latest('id');
 
         if ($request->filled('tesoreria_id')) {
             $query->where('tesoreria_id', $request->tesoreria_id);
@@ -30,12 +36,16 @@ class MovimientoTesoreriaController extends Controller implements HasMiddleware
             $query->where('tipo', $request->tipo);
         }
 
+        if ($request->filled('medio')) {
+            $query->where('medio', $request->medio);
+        }
+
         if ($request->filled('origen')) {
             $query->where('origen', $request->origen);
         }
 
         $movimientos = $query->get();
-        $tesorerias = Tesoreria::all();
+        $tesorerias = Tesoreria::orderBy('nombre')->get();
 
         return view('movimiento_tesoreria.index', compact('movimientos', 'tesorerias'));
     }

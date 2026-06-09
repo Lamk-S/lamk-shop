@@ -2,40 +2,41 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
+use App\Http\Requests\UpdateUserRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class ProfileController extends Controller
 {
     public function index()
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+
         return view('profile.index', compact('user'));
     }
 
-    public function update(Request $request, User $profile)
+    public function update(UpdateUserRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $profile->id,
-            'password' => 'nullable|min:8|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
-        ], [
-            'name.required' => 'El nombre es obligatorio.',
-            'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email' => 'Ingrese un correo válido.',
-            'email.unique' => 'Este correo ya está registrado.',
-            'password.min' => 'La contraseña debe tener mínimo 8 caracteres.',
-        ]);
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
 
-        $data = $request->only('name', 'email');
+        $data = $request->validated();
 
-        if ($request->filled('password')) {
-            $data['password'] = $request->password;
+        $payload = [
+            'name' => $data['name'],
+            'email' => $data['email'],
+        ];
+
+        if (!empty($data['password'])) {
+            $payload['password'] = $data['password'];
         }
 
-        $profile->update($data);
+        $user->update($payload);
 
-        return redirect()->route('profile.index')->with('success', 'Perfil actualizado');
+        return redirect()
+            ->route('profile.index')
+            ->with('success', 'Perfil actualizado correctamente');
     }
 }

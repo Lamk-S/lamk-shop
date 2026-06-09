@@ -12,13 +12,13 @@ class TesoreriaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-tesoreria', only: ['index']),
+            new Middleware('permission:gestionar_tesoreria', only: ['index']),
         ];
     }
 
     public function index()
     {
-        $tesoreria = Tesoreria::first();
+        $tesoreria = Tesoreria::where('estado', 1)->first();
 
         if (!$tesoreria) {
             return redirect()
@@ -27,7 +27,8 @@ class TesoreriaController extends Controller implements HasMiddleware
         }
 
         $movimientos = MovimientoTesoreria::with(['user', 'venta', 'compra', 'sesionCaja.caja'])
-            ->latest()
+            ->where('tesoreria_id', $tesoreria->id)
+            ->latest('id')
             ->limit(20)
             ->get();
 

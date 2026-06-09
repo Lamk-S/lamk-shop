@@ -17,22 +17,21 @@ class ProveedorController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-proveedor|crear-proveedor|editar-proveedor|eliminar-proveedor', only: ['index']),
-            new Middleware('permission:crear-proveedor', only: ['create', 'store']),
-            new Middleware('permission:editar-proveedor', only: ['edit', 'update']),
-            new Middleware('permission:eliminar-proveedor', only: ['destroy']),
+            new Middleware('permission:gestionar_proveedores', only: ['index', 'create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
     public function index()
     {
-        $proveedores = Proveedor::with('persona.documento')->latest()->get();
+        $proveedores = Proveedor::with('persona.documento')->withTrashed()->latest('id')->get();
+
         return view('proveedor.index', compact('proveedores'));
     }
 
     public function create()
     {
         $documentos = Documento::where('estado', 1)->get();
+
         $optionsTipoPersona = [
             'natural' => 'Natural',
             'juridica' => 'Jurídica',
@@ -46,10 +45,13 @@ class ProveedorController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request) {
                 $persona = Persona::create($request->validated());
-                $persona->proveedor()->create();
+
+                $persona->proveedor()->create([
+                    'estado' => 1,
+                ]);
             });
 
-            return redirect()->route('proveedores.index')->with('success', 'Proveedor registrado');
+            return redirect()->route('proveedores.index')->with('success', 'Proveedor registrado correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar el proveedor: ' . $e->getMessage()]);
         }
@@ -60,7 +62,12 @@ class ProveedorController extends Controller implements HasMiddleware
         $proveedor->load('persona.documento');
         $documentos = Documento::where('estado', 1)->get();
 
-        return view('proveedor.edit', compact('proveedor', 'documentos'));
+        $optionsTipoPersona = [
+            'natural' => 'Natural',
+            'juridica' => 'Jurídica',
+        ];
+
+        return view('proveedor.edit', compact('proveedor', 'documentos', 'optionsTipoPersona'));
     }
 
     public function update(UpdateProveedorRequest $request, Proveedor $proveedor)
@@ -70,7 +77,7 @@ class ProveedorController extends Controller implements HasMiddleware
                 $proveedor->persona->update($request->validated());
             });
 
-            return redirect()->route('proveedores.index')->with('success', 'Proveedor editado');
+            return redirect()->route('proveedores.index')->with('success', 'Proveedor editado correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al editar el proveedor: ' . $e->getMessage()]);
         }
@@ -79,16 +86,17 @@ class ProveedorController extends Controller implements HasMiddleware
     public function destroy(string $id)
     {
         try {
-            $proveedor = Proveedor::with('persona')->findOrFail($id);
+            $proveedor = Proveedor::withTrashed()->findOrFail($id);
+            $persona = Persona::withTrashed()->findOrFail($proveedor->persona_id);
 
-            if ($proveedor->persona->deleted_at) {
-                $proveedor->persona->restore();
+            if ($proveedor->trashed()) {
+                $persona->restore();
                 $proveedor->restore();
-                $message = 'Proveedor restaurado';
+                $message = 'Proveedor restaurado correctamente';
             } else {
                 $proveedor->delete();
-                $proveedor->persona->delete();
-                $message = 'Proveedor eliminado';
+                $persona->delete();
+                $message = 'Proveedor eliminado correctamente';
             }
 
             return redirect()->route('proveedores.index')->with('success', $message);
