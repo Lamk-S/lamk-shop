@@ -10,18 +10,16 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             DocumentoSeeder::class,
-            CategoriaSeeder::class,
-            MarcaSeeder::class,
-            PresentacionSeeder::class,
-            ComprobanteSeeder::class,
-            PermissionSeeder::class,
-            RoleSeeder::class,
+            EmpresaConfiguracionSeeder::class,
+            RolesAndPermissionsSeeder::class,
             UserSeeder::class,
+            CatalogosSeeder::class,
+            TallaSeeder::class,
+            ComprobantesSeeder::class,
             CajaSeeder::class,
             TesoreriaSeeder::class,
-            ClienteSeeder::class,
-            ProveedorSeeder::class,
             ProductoSeeder::class,
+            ProductoVariantesSeeder::class,
         ]);
     }
 }

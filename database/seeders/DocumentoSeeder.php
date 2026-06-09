@@ -2,26 +2,34 @@
 
 namespace Database\Seeders;
 
-use App\Models\Documento;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 class DocumentoSeeder extends Seeder
 {
     public function run(): void
     {
-        $documentos = [
-            'DNI',
-            'Pasaporte',
-            'RUC',
-            'Carnet Extranjería',
+        $now = Carbon::now();
+
+        $items = [
+            ['codigo' => 'DNI', 'tipo_documento' => 'Documento Nacional de Identidad'],
+            ['codigo' => 'RUC', 'tipo_documento' => 'Registro Único de Contribuyentes'],
+            ['codigo' => 'CE', 'tipo_documento' => 'Carné de Extranjería'],
+            ['codigo' => 'PAS', 'tipo_documento' => 'Pasaporte'],
+            ['codigo' => 'OTRO', 'tipo_documento' => 'Otro documento'],
         ];
 
-        foreach ($documentos as $tipo) {
-            Documento::firstOrCreate([
-                'tipo_documento' => $tipo,
-            ], [
-                'estado' => 1,
-            ]);
+        foreach ($items as $item) {
+            DB::table('documentos')->updateOrInsert(
+                ['codigo' => $item['codigo']],
+                [
+                    'tipo_documento' => $item['tipo_documento'],
+                    'estado' => 1,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]
+            );
         }
     }
 }
