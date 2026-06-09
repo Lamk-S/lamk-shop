@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Cliente extends Model
@@ -12,6 +12,7 @@ class Cliente extends Model
 
     protected $fillable = [
         'persona_id',
+        'estado',
     ];
 
     public function persona()

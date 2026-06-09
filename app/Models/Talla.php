@@ -6,23 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Categoria extends Model
+class Talla extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'codigo',
         'nombre',
-        'descripcion',
+        'tipo_talla',
+        'orden',
         'estado',
     ];
 
-    public function productos()
+    public function productoVariantes()
     {
-        return $this->belongsToMany(
-            Producto::class,
-            'categoria_producto',
-            'categoria_id',
-            'producto_id'
-        )->withTimestamps();
+        return $this->hasMany(ProductoVariante::class);
     }
 }

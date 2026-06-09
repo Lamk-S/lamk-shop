@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Comprobante extends Model
@@ -12,10 +12,18 @@ class Comprobante extends Model
 
     protected $fillable = [
         'tipo_comprobante',
-        'uso_comprobante',
         'serie',
+        'uso_comprobante',
         'correlativo_actual',
+        'es_electronico',
+        'ambiente',
         'estado',
+    ];
+
+    protected $casts = [
+        'correlativo_actual' => 'integer',
+        'es_electronico' => 'boolean',
+        'estado' => 'boolean',
     ];
 
     public function compras()
