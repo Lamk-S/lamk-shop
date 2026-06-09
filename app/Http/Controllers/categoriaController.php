@@ -15,16 +15,14 @@ class CategoriaController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-categoria|crear-categoria|editar-categoria|eliminar-categoria', only: ['index']),
-            new Middleware('permission:crear-categoria', only: ['create', 'store']),
-            new Middleware('permission:editar-categoria', only: ['edit', 'update']),
-            new Middleware('permission:eliminar-categoria', only: ['destroy']),
+            new Middleware('permission:gestionar_categorias', only: ['index', 'create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
     public function index()
     {
-        $categorias = Categoria::withTrashed()->latest()->get();
+        $categorias = Categoria::withTrashed()->latest('id')->get();
+
         return view('categoria.index', compact('categorias'));
     }
 
@@ -40,7 +38,7 @@ class CategoriaController extends Controller implements HasMiddleware
                 Categoria::create($request->validated());
             });
 
-            return redirect()->route('categorias.index')->with('success', 'Categoría registrada');
+            return redirect()->route('categorias.index')->with('success', 'Categoría registrada correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar la categoría: ' . $e->getMessage()]);
         }
@@ -54,9 +52,11 @@ class CategoriaController extends Controller implements HasMiddleware
     public function update(UpdateCategoriaRequest $request, Categoria $categoria)
     {
         try {
-            $categoria->update($request->validated());
+            DB::transaction(function () use ($request, $categoria) {
+                $categoria->update($request->validated());
+            });
 
-            return redirect()->route('categorias.index')->with('success', 'Categoría editada');
+            return redirect()->route('categorias.index')->with('success', 'Categoría editada correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al editar la categoría: ' . $e->getMessage()]);
         }
@@ -64,15 +64,15 @@ class CategoriaController extends Controller implements HasMiddleware
 
     public function destroy(string $id)
     {
-        $categoria = Categoria::withTrashed()->findOrFail($id);
-
         try {
+            $categoria = Categoria::withTrashed()->findOrFail($id);
+
             if ($categoria->trashed()) {
                 $categoria->restore();
-                $message = 'Categoría restaurada';
+                $message = 'Categoría restaurada correctamente';
             } else {
                 $categoria->delete();
-                $message = 'Categoría eliminada';
+                $message = 'Categoría eliminada correctamente';
             }
 
             return redirect()->route('categorias.index')->with('success', $message);

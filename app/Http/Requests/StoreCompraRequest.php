@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreCompraRequest extends FormRequest
 {
@@ -14,23 +15,18 @@ class StoreCompraRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'proveedor_id' => 'nullable|integer|exists:proveedores,id',
-            'comprobante_id' => 'nullable|integer|exists:comprobantes,id',
-            'metodo_pago' => 'required|in:EFECTIVO,TARJETA,TRANSFERENCIA',
-            'fecha_hora' => 'required|date',
-            'subtotal' => 'required|numeric|min:0',
-            'impuesto' => 'required|numeric|min:0',
-            'total' => 'required|numeric|min:0',
-            'estado' => 'nullable|boolean',
-
-            'arrayidproducto' => 'required|array|min:1',
-            'arrayidproducto.*' => 'integer|exists:productos,id',
-            'arraycantidad' => 'required|array|min:1',
-            'arraycantidad.*' => 'integer|min:1',
-            'arraypreciocompra' => 'required|array|min:1',
-            'arraypreciocompra.*' => 'numeric|min:0',
-            'arrayprecioventa' => 'required|array|min:1',
-            'arrayprecioventa.*' => 'numeric|min:0',
+            'proveedor_id' => ['required', 'integer', Rule::exists('proveedores', 'id')],
+            'comprobante_id' => ['nullable', 'integer', Rule::exists('comprobantes', 'id')],
+            'fecha_emision' => ['nullable', 'date'],
+            'metodo_pago' => ['required', 'in:EFECTIVO,TARJETA,TRANSFERENCIA,CREDITO'],
+            'moneda' => ['nullable', 'string', 'max:10'],
+            'observacion' => ['nullable', 'string', 'max:1000'],
+            'detalles' => ['required', 'array', 'min:1'],
+            'detalles.*.producto_variante_id' => ['required', 'integer', Rule::exists('producto_variantes', 'id')],
+            'detalles.*.cantidad' => ['required', 'integer', 'min:1'],
+            'detalles.*.costo_unitario' => ['required', 'numeric', 'min:0'],
+            'detalles.*.precio_venta' => ['nullable', 'numeric', 'min:0'],
+            'detalles.*.descuento' => ['nullable', 'numeric', 'min:0'],
         ];
     }
 }

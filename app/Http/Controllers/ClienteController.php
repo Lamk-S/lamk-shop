@@ -17,22 +17,21 @@ class ClienteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:ver-cliente|crear-cliente|editar-cliente|eliminar-cliente', only: ['index']),
-            new Middleware('permission:crear-cliente', only: ['create', 'store']),
-            new Middleware('permission:editar-cliente', only: ['edit', 'update']),
-            new Middleware('permission:eliminar-cliente', only: ['destroy']),
+            new Middleware('permission:gestionar_clientes', only: ['index', 'create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
     public function index()
     {
-        $clientes = Cliente::with('persona.documento')->latest()->get();
+        $clientes = Cliente::with('persona.documento')->withTrashed()->latest('id')->get();
+
         return view('cliente.index', compact('clientes'));
     }
 
     public function create()
     {
         $documentos = Documento::where('estado', 1)->get();
+
         $optionsTipoPersona = [
             'natural' => 'Natural',
             'juridica' => 'Jurídica',
@@ -46,10 +45,12 @@ class ClienteController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request) {
                 $persona = Persona::create($request->validated());
-                $persona->cliente()->create();
+                $persona->cliente()->create([
+                    'estado' => 1,
+                ]);
             });
 
-            return redirect()->route('clientes.index')->with('success', 'Cliente registrado');
+            return redirect()->route('clientes.index')->with('success', 'Cliente registrado correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar el cliente: ' . $e->getMessage()]);
         }
@@ -60,7 +61,12 @@ class ClienteController extends Controller implements HasMiddleware
         $cliente->load('persona.documento');
         $documentos = Documento::where('estado', 1)->get();
 
-        return view('cliente.edit', compact('cliente', 'documentos'));
+        $optionsTipoPersona = [
+            'natural' => 'Natural',
+            'juridica' => 'Jurídica',
+        ];
+
+        return view('cliente.edit', compact('cliente', 'documentos', 'optionsTipoPersona'));
     }
 
     public function update(UpdateClienteRequest $request, Cliente $cliente)
@@ -70,7 +76,7 @@ class ClienteController extends Controller implements HasMiddleware
                 $cliente->persona->update($request->validated());
             });
 
-            return redirect()->route('clientes.index')->with('success', 'Cliente editado');
+            return redirect()->route('clientes.index')->with('success', 'Cliente editado correctamente');
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al editar el cliente: ' . $e->getMessage()]);
         }
@@ -79,16 +85,17 @@ class ClienteController extends Controller implements HasMiddleware
     public function destroy(string $id)
     {
         try {
-            $cliente = Cliente::with('persona')->findOrFail($id);
+            $cliente = Cliente::withTrashed()->findOrFail($id);
+            $persona = Persona::withTrashed()->findOrFail($cliente->persona_id);
 
-            if ($cliente->persona->deleted_at) {
-                $cliente->persona->restore();
+            if ($cliente->trashed()) {
+                $persona->restore();
                 $cliente->restore();
-                $message = 'Cliente restaurado';
+                $message = 'Cliente restaurado correctamente';
             } else {
                 $cliente->delete();
-                $cliente->persona->delete();
-                $message = 'Cliente eliminado';
+                $persona->delete();
+                $message = 'Cliente eliminado correctamente';
             }
 
             return redirect()->route('clientes.index')->with('success', $message);

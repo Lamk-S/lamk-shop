@@ -2,8 +2,8 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreUserRequest extends FormRequest
 {
@@ -15,8 +15,8 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255|unique:users,email',
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:150', 'unique:users,email'],
             'password' => [
                 'required',
                 'string',
@@ -24,8 +24,12 @@ class StoreUserRequest extends FormRequest
                 'confirmed',
                 'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/',
             ],
-            'role' => 'required|exists:roles,name',
-            'estado' => 'nullable|boolean',
+            'role' => [
+                'required',
+                'string',
+                Rule::exists('roles', 'name')->where('guard_name', 'web'),
+            ],
+            'estado' => ['nullable', 'boolean'],
         ];
     }
 }

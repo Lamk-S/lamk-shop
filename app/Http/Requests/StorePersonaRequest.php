@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\Documento;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StorePersonaRequest extends FormRequest
 {
@@ -15,24 +17,46 @@ class StorePersonaRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'razon_social' => 'required|string|max:150',
-            'direccion' => 'nullable|string|max:255',
-            'telefono' => 'nullable|string|max:20',
-            'email' => 'nullable|email|max:255',
-            'tipo_persona' => 'required|in:natural,juridica',
-            'numero_documento' => 'required|string|max:25|unique:personas,numero_documento',
-            'documento_id' => 'required|integer|exists:documentos,id',
-            'estado' => 'nullable|boolean',
+            'tipo_persona' => ['required', 'in:natural,juridica'],
+            'documento_id' => ['required', 'integer', Rule::exists('documentos', 'id')],
+            'numero_documento' => [
+                'required',
+                'string',
+                'max:25',
+                Rule::unique('personas', 'numero_documento')
+                    ->where(fn ($query) => $query->where('documento_id', $this->input('documento_id'))),
+            ],
+            'nombres' => ['nullable', 'string', 'max:120'],
+            'apellidos' => ['nullable', 'string', 'max:120'],
+            'razon_social' => ['nullable', 'string', 'max:150'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+            'telefono' => ['nullable', 'string', 'max:20'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'estado' => ['nullable', 'boolean'],
         ];
     }
 
-    public function attributes(): array
+    public function withValidator(Validator $validator): void
     {
-        return [
-            'razon_social' => 'razón social',
-            'tipo_persona' => 'tipo de persona',
-            'documento_id' => 'tipo de documento',
-            'numero_documento' => 'número de documento',
-        ];
+        $validator->after(function ($validator) {
+            $tipo = $this->input('tipo_persona');
+            $documento = Documento::find($this->input('documento_id'));
+
+            if ($tipo === 'natural') {
+                if (!$this->filled('nombres') || !$this->filled('apellidos')) {
+                    $validator->errors()->add('nombres', 'Para una persona natural debes registrar nombres y apellidos.');
+                }
+            }
+
+            if ($tipo === 'juridica') {
+                if (!$this->filled('razon_social')) {
+                    $validator->errors()->add('razon_social', 'Para una persona jurídica debes registrar la razón social.');
+                }
+
+                if ($documento && $documento->codigo !== 'RUC') {
+                    $validator->errors()->add('documento_id', 'Una persona jurídica debe usar RUC.');
+                }
+            }
+        });
     }
 }
