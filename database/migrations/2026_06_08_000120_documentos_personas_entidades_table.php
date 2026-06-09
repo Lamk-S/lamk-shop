@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('documentos', function (Blueprint $table) {
             $table->id();
             $table->string('codigo', 10)->unique(); // DNI, RUC, CE, PAS, etc.
-            $table->string('tipo_documento', 30);
+            $table->string('tipo_documento', 35);
             $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
         });

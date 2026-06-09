@@ -55,25 +55,5 @@ class CatalogosSeeder extends Seeder
                 ]
             );
         }
-
-        $presentaciones = [
-            ['nombre' => 'Par', 'sigla' => 'PAR', 'descripcion' => 'Presentación por par'],
-            ['nombre' => 'Unidad', 'sigla' => 'UND', 'descripcion' => 'Presentación por unidad'],
-            ['nombre' => 'Pack', 'sigla' => 'PK', 'descripcion' => 'Presentación por paquete'],
-            ['nombre' => 'Set', 'sigla' => 'SET', 'descripcion' => 'Presentación por conjunto'],
-        ];
-
-        foreach ($presentaciones as $item) {
-            DB::table('presentaciones')->updateOrInsert(
-                ['nombre' => $item['nombre']],
-                [
-                    'sigla' => $item['sigla'],
-                    'descripcion' => $item['descripcion'],
-                    'estado' => 1,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]
-            );
-        }
     }
 }
