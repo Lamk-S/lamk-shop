@@ -26,16 +26,6 @@ return new class extends Migration
             $table->softDeletes();
         });
 
-        Schema::create('presentaciones', function (Blueprint $table) {
-            $table->id();
-            $table->string('nombre', 60)->unique();
-            $table->string('sigla', 10)->nullable()->unique();
-            $table->string('descripcion', 255)->nullable();
-            $table->tinyInteger('estado')->default(1)->index();
-            $table->timestamps();
-            $table->softDeletes();
-        });
-
         Schema::create('tallas', function (Blueprint $table) {
             $table->id();
             $table->string('codigo', 20)->unique(); // 35, 36, 37, S, M, L, XL, UNICA
@@ -51,7 +41,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('tallas');
-        Schema::dropIfExists('presentaciones');
         Schema::dropIfExists('marcas');
         Schema::dropIfExists('categorias');
     }

@@ -6,7 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
-class ComprobantesSeeder extends Seeder
+class ComprobanteSeeder extends Seeder
 {
     public function run(): void
     {

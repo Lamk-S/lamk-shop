@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             CatalogosSeeder::class,
             TallaSeeder::class,
-            ComprobantesSeeder::class,
+            ComprobanteSeeder::class,
             CajaSeeder::class,
             TesoreriaSeeder::class,
             ProductoSeeder::class,
