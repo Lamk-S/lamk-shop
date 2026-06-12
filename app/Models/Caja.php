@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Caja extends Model
@@ -37,5 +38,10 @@ class Caja extends Model
             'id',
             'id'
         );
+    }
+
+    public function scopeActivas(Builder $query): Builder
+    {
+        return $query->where('estado', true);
     }
 }

@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -61,5 +62,10 @@ class User extends Authenticatable
     public function auditoriasOperaciones()
     {
         return $this->hasMany(AuditoriaOperacion::class, 'user_id');
+    }
+
+    public function scopeActivos(Builder $query) : Builder
+    {
+        return $query->where('estado', true);
     }
 }

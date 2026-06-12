@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Venta extends Model
@@ -89,5 +90,10 @@ class Venta extends Model
     public function movimientosTesoreria()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'venta_id');
+    }
+
+    public function scopeNoAnuladas(Builder $query) : Builder
+    {
+        return $query->where('estado_documento', '!=', 'ANULADA');
     }
 }

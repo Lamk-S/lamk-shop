@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Compra extends Model
@@ -68,5 +69,10 @@ class Compra extends Model
     public function movimientosTesoreria()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'compra_id');
+    }
+
+    public function scopeNoAnuladas(Builder $query) : Builder
+    {
+        return $query->where('estado_documento', '!=', 'ANULADA');
     }
 }

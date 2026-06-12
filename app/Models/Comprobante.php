@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Comprobante extends Model
@@ -28,11 +29,16 @@ class Comprobante extends Model
 
     public function compras()
     {
-        return $this->hasMany(Compra::class);
+        return $this->hasMany(Compra::class, 'comprobante_id');
     }
 
     public function ventas()
     {
-        return $this->hasMany(Venta::class);
+        return $this->hasMany(Venta::class, 'comprobante_id');
+    }
+
+    public function scopeActivos(Builder $query) : Builder
+    {
+        return $query->where('estado', true);
     }
 }
