@@ -9,7 +9,7 @@ class UpdateTallaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_tallas') ?? false;
     }
 
     public function rules(): array
@@ -24,7 +24,7 @@ class UpdateTallaRequest extends FormRequest
                 Rule::unique('tallas', 'codigo')->ignore($talla?->id),
             ],
             'nombre' => ['required', 'string', 'max:50'],
-            'tipo_talla' => ['required', 'in:CALZADO,ROPA,UNICA'],
+            'tipo_talla' => ['required', Rule::in(['CALZADO', 'ROPA', 'UNICA'])],
             'orden' => ['nullable', 'integer', 'min:0'],
             'estado' => ['required', 'boolean'],
         ];

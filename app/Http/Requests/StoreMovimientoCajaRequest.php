@@ -2,28 +2,32 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreMovimientoCajaRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return $this->user()?->can('movimientos_caja') ?? false;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'sesion_caja_id' => [
+                'required',
+                'integer',
+                Rule::exists('sesiones_caja', 'id')->where(function ($query) {
+                    $query->where('estado_sesion', 'ABIERTA');
+                }),
+            ],
+            'tipo' => ['required', Rule::in(['INGRESO', 'EGRESO'])],
+            'origen' => ['required', Rule::in(['APERTURA', 'VENTA', 'CIERRE', 'AJUSTE', 'INGRESO_MANUAL', 'EGRESO_MANUAL', 'ANULACION'])],
+            'descripcion' => ['required', 'string', 'max:255'],
+            'monto' => ['required', 'numeric', 'min:0.01'],
+            'referencia_type' => ['nullable', 'string', 'max:100'],
+            'referencia_id' => ['nullable', 'integer', 'min:1'],
         ];
     }
 }

@@ -9,13 +9,13 @@ class StoreCategoriaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_categorias') ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'nombre' => ['required', 'string', 'max:60', 'unique:categorias,nombre'],
+            'nombre' => ['required', 'string', 'max:60', Rule::unique('categorias', 'nombre')],
             'descripcion' => ['nullable', 'string', 'max:255'],
             'estado' => ['nullable', 'boolean'],
         ];

@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Producto;
+use App\Models\ProductoVariante;
 use App\Models\Talla;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,7 +13,7 @@ class UpdateProductoVarianteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_productos') ?? false;
     }
 
     public function rules(): array
@@ -39,6 +40,7 @@ class UpdateProductoVarianteRequest extends FormRequest
         $validator->after(function ($validator) {
             $producto = Producto::find($this->input('producto_id'));
             $talla = Talla::find($this->input('talla_id'));
+            $varianteId = $this->route('producto_variante')?->id;
 
             if (!$producto || !$talla) {
                 return;
@@ -50,6 +52,15 @@ class UpdateProductoVarianteRequest extends FormRequest
 
             if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
                 $validator->errors()->add('talla_id', 'Los accesorios deben usar talla única.');
+            }
+
+            $duplicate = ProductoVariante::where('producto_id', $producto->id)
+                ->where('talla_id', $talla->id)
+                ->when($varianteId, fn ($q) => $q->where('id', '!=', $varianteId))
+                ->exists();
+
+            if ($duplicate) {
+                $validator->errors()->add('talla_id', 'Ya existe otra variante para este producto y esta talla.');
             }
         });
     }
