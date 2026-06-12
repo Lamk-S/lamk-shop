@@ -19,51 +19,53 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = AuditoriaOperacion::with('user')
-            ->latest('id');
+        $query = AuditoriaOperacion::with('user')->latest('id');
 
-        if ($request->filled('user_id')) {
-            $query->where('user_id', $request->user_id);
+        if ($request->filled('usuario_id')) {
+            $query->where('user_id', $request->usuario_id);
         }
 
-        if ($request->filled('entidad')) {
-            $query->where('entidad', $request->entidad);
+        if ($request->filled('modulo')) {
+            $query->where('entidad', $request->modulo);
         }
 
         if ($request->filled('accion')) {
             $query->where('accion', $request->accion);
         }
 
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('created_at', '>=', $request->fecha_desde);
+        if ($request->filled('fecha')) {
+            $query->whereDate('created_at', $request->fecha);
         }
 
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('created_at', '<=', $request->fecha_hasta);
-        }
+        $auditorias = $query->paginate(50)->withQueryString();
 
-        $auditorias = $query->get();
         $usuarios = User::orderBy('name')->get();
-
-        $entidades = AuditoriaOperacion::query()
+        $modulos = AuditoriaOperacion::query()
+            ->whereNotNull('entidad')
             ->select('entidad')
             ->distinct()
             ->orderBy('entidad')
             ->pluck('entidad');
 
         $acciones = AuditoriaOperacion::query()
+            ->whereNotNull('accion')
             ->select('accion')
             ->distinct()
             ->orderBy('accion')
             ->pluck('accion');
 
-        return view('auditoria_operacion.index', compact('auditorias', 'usuarios', 'entidades', 'acciones'));
+        return view('auditoria_operacion.index', compact(
+            'auditorias',
+            'usuarios',
+            'modulos',
+            'acciones'
+        ));
     }
 
-    public function show(AuditoriaOperacion $auditoriaOperacion)
+    public function show(AuditoriaOperacion $auditoriaOperacione)
     {
-        $auditoriaOperacion->load('user');
+        $auditoria = $auditoriaOperacione->load('user');
 
-        return view('auditoria_operacion.show', compact('auditoriaOperacion'));
+        return view('auditoria_operacion.show', compact('auditoria'));
     }
 }

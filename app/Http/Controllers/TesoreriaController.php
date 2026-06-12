@@ -18,12 +18,13 @@ class TesoreriaController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $tesoreria = Tesoreria::where('estado', 1)->first();
+        $tesorerias = Tesoreria::withTrashed()->orderBy('nombre')->get();
+        $tesoreria = $tesorerias->first();
 
         if (!$tesoreria) {
             return redirect()
                 ->route('panel')
-                ->with('warning', 'No existe la tesorería principal.');
+                ->with('warning', 'No existe ninguna tesorería registrada.');
         }
 
         $movimientos = MovimientoTesoreria::with(['user', 'venta', 'compra', 'sesionCaja.caja'])
@@ -32,6 +33,6 @@ class TesoreriaController extends Controller implements HasMiddleware
             ->limit(20)
             ->get();
 
-        return view('tesoreria.index', compact('tesoreria', 'movimientos'));
+        return view('tesoreria.index', compact('tesoreria', 'tesorerias', 'movimientos'));
     }
 }

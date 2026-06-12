@@ -27,7 +27,7 @@ class LoginController extends Controller
         ], $request->boolean('remember'))) {
             return back()->withErrors([
                 'email' => 'Credenciales incorrectas o usuario inactivo.',
-            ]);
+            ])->withInput();
         }
 
         $request->session()->regenerate();

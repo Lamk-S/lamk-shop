@@ -9,8 +9,8 @@ use App\Models\Tesoreria;
 use App\Models\Venta;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -21,41 +21,32 @@ class HomeController extends Controller
         }
 
         $tesoreria = null;
-
         if (Gate::allows('gestionar_tesoreria')) {
-            $tesoreria = Tesoreria::where('estado', 1)->first();
+            $tesoreria = Tesoreria::where('estado', 1)->orderBy('id')->first();
         }
 
         $kpis = [
             'ventas_hoy' => Venta::whereDate('fecha_emision', today())
                 ->where('estado_documento', '!=', 'ANULADA')
                 ->sum('total'),
-
             'compras_hoy' => Compra::whereDate('fecha_emision', today())
                 ->where('estado_documento', '!=', 'ANULADA')
                 ->sum('total'),
-
             'ventas_mes' => Venta::whereMonth('fecha_emision', now()->month)
                 ->whereYear('fecha_emision', now()->year)
                 ->where('estado_documento', '!=', 'ANULADA')
                 ->sum('total'),
-
             'compras_mes' => Compra::whereMonth('fecha_emision', now()->month)
                 ->whereYear('fecha_emision', now()->year)
                 ->where('estado_documento', '!=', 'ANULADA')
                 ->sum('total'),
-
             'sesiones_activas' => SesionCaja::where('estado_sesion', 'ABIERTA')->count(),
-
-            'productos_stock_bajo' => Producto::where('estado', 1)
-                ->where('stock_total', '<=', 10)
-                ->count(),
+            'productos_stock_bajo' => Producto::where('estado', 1)->get()->filter(fn ($producto) => $producto->stock_total <= 10)->count(),
         ];
 
         $ventasCompras = [];
         for ($i = 6; $i >= 0; $i--) {
             $fecha = Carbon::today()->subDays($i);
-
             $ventasCompras[] = [
                 'fecha' => $fecha->format('d/m'),
                 'ventas' => Venta::whereDate('fecha_emision', $fecha)
@@ -97,12 +88,12 @@ class HomeController extends Controller
             ];
         })->values()->all();
 
-        $stockBajo = Producto::select('id', 'codigo', 'nombre', 'stock_total')
-            ->where('estado', 1)
-            ->where('stock_total', '<=', 10)
-            ->orderBy('stock_total')
-            ->limit(10)
-            ->get();
+        $stockBajo = Producto::where('estado', 1)
+            ->get()
+            ->filter(fn ($producto) => $producto->stock_total <= 10)
+            ->sortBy('stock_total')
+            ->take(10)
+            ->values();
 
         return view('panel.index', compact(
             'tesoreria',

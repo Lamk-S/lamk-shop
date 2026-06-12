@@ -41,12 +41,9 @@ class KardexController extends Controller implements HasMiddleware
             });
         }
 
-        $kardex = $query->get();
+        $kardex = $query->paginate(50)->withQueryString();
 
-        $productos = Producto::where('estado', 1)
-            ->orderBy('nombre')
-            ->get();
-
+        $productos = Producto::where('estado', 1)->orderBy('nombre')->get();
         $productoVariantes = ProductoVariante::with(['producto', 'talla'])
             ->where('estado', 1)
             ->whereNull('deleted_at')

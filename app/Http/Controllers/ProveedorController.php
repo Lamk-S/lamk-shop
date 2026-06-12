@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateProveedorRequest;
 use App\Models\Documento;
 use App\Models\Persona;
 use App\Models\Proveedor;
-use Exception;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +30,7 @@ class ProveedorController extends Controller implements HasMiddleware
     public function create()
     {
         $documentos = Documento::where('estado', 1)->get();
-
-        $optionsTipoPersona = [
-            'natural' => 'Natural',
-            'juridica' => 'Jurídica',
-        ];
+        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('proveedor.create', compact('documentos', 'optionsTipoPersona'));
     }
@@ -45,15 +40,12 @@ class ProveedorController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request) {
                 $persona = Persona::create($request->validated());
-
-                $persona->proveedor()->create([
-                    'estado' => 1,
-                ]);
+                $persona->proveedor()->create(['estado' => 1]);
             });
 
             return redirect()->route('proveedores.index')->with('success', 'Proveedor registrado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar el proveedor: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al registrar el proveedor: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -61,11 +53,7 @@ class ProveedorController extends Controller implements HasMiddleware
     {
         $proveedor->load('persona.documento');
         $documentos = Documento::where('estado', 1)->get();
-
-        $optionsTipoPersona = [
-            'natural' => 'Natural',
-            'juridica' => 'Jurídica',
-        ];
+        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('proveedor.edit', compact('proveedor', 'documentos', 'optionsTipoPersona'));
     }
@@ -75,18 +63,18 @@ class ProveedorController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request, $proveedor) {
                 $proveedor->persona->update($request->validated());
+                $proveedor->update(['estado' => $request->boolean('estado', true)]);
             });
 
             return redirect()->route('proveedores.index')->with('success', 'Proveedor editado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al editar el proveedor: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al editar el proveedor: ' . $e->getMessage()])->withInput();
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Proveedor $proveedor)
     {
         try {
-            $proveedor = Proveedor::withTrashed()->findOrFail($id);
             $persona = Persona::withTrashed()->findOrFail($proveedor->persona_id);
 
             if ($proveedor->trashed()) {
@@ -100,7 +88,7 @@ class ProveedorController extends Controller implements HasMiddleware
             }
 
             return redirect()->route('proveedores.index')->with('success', $message);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar el proveedor: ' . $e->getMessage()]);
         }
     }
