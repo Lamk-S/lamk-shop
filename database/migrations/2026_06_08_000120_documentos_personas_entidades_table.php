@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('documentos', function (Blueprint $table) {
             $table->id();
-            $table->string('codigo', 10)->unique(); // DNI, RUC, CE, PAS, etc.
+            $table->string('codigo', 10)->unique();
             $table->string('tipo_documento', 35);
             $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
@@ -18,7 +18,7 @@ return new class extends Migration
 
         Schema::create('personas', function (Blueprint $table) {
             $table->id();
-            $table->enum('tipo_persona', ['natural', 'juridica']);
+            $table->enum('tipo_persona', ['natural', 'juridica'])->index();
             $table->foreignId('documento_id')->constrained('documentos')->restrictOnDelete();
             $table->string('numero_documento', 25);
             $table->string('nombres', 120)->nullable();

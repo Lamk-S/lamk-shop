@@ -3,14 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ProductoVariantesSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $productos = DB::table('productos')->orderBy('codigo')->get();
         $tallas = DB::table('tallas')->pluck('id', 'codigo')->toArray();
@@ -28,32 +27,32 @@ class ProductoVariantesSeeder extends Seeder
             $sizes = [];
             $weights = [];
 
-            if ($producto->tipo_producto === 'ZAPATILLA') {
-                $sizes = $shoeSizes;
-                $weights = $shoeWeights;
-                $totalStock = [12, 14, 16, 18, 20, 22][$index % 6];
-            } elseif ($producto->tipo_producto === 'ROPA') {
-                $sizes = $clothingSizes;
-                $weights = $clothingWeights;
-                $totalStock = [18, 21, 24, 27, 30][$index % 5];
+            if ($producto->maneja_tallas) {
+                if ($producto->tipo_producto === 'ZAPATILLA') {
+                    $sizes = $shoeSizes;
+                    $weights = $shoeWeights;
+                    $totalStock = [12, 14, 16, 18][$index % 4];
+                } else {
+                    $sizes = $clothingSizes;
+                    $weights = $clothingWeights;
+                    $totalStock = [18, 21, 24, 27][$index % 4];
+                }
             } else {
                 $sizes = $uniqueSizes;
                 $weights = $uniqueWeights;
-                $totalStock = [10, 12, 14, 16, 18][$index % 5];
+                $totalStock = [10, 12, 14, 16][$index % 4];
             }
 
             $distribution = $this->distribute($totalStock, $weights);
-            $sum = 0;
 
             foreach ($sizes as $i => $sizeCode) {
                 $tallaId = $tallas[$sizeCode] ?? null;
+
                 if (! $tallaId) {
                     continue;
                 }
 
                 $cantidad = (int) ($distribution[$i] ?? 0);
-                $sum += $cantidad;
-
                 $variantCode = $producto->codigo . '-' . $sizeCode;
 
                 DB::table('producto_variantes')->updateOrInsert(
@@ -72,26 +71,17 @@ class ProductoVariantesSeeder extends Seeder
                     ]
                 );
             }
-
-            DB::table('productos')
-                ->where('id', $producto->id)
-                ->update([
-                    'stock_total' => $sum,
-                    'updated_at' => $now,
-                ]);
         }
     }
 
     private function distribute(int $total, array $weights): array
     {
         $weightSum = array_sum($weights);
-        $raw = [];
         $floor = [];
         $remainders = [];
 
         foreach ($weights as $i => $weight) {
             $value = ($total * $weight) / $weightSum;
-            $raw[$i] = $value;
             $floor[$i] = (int) floor($value);
             $remainders[$i] = $value - $floor[$i];
         }
@@ -100,7 +90,6 @@ class ProductoVariantesSeeder extends Seeder
         $remaining = $total - $distributed;
 
         arsort($remainders);
-
         $keys = array_keys($remainders);
         $countKeys = count($keys);
 

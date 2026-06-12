@@ -4,13 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class EmpresaConfiguracionSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         DB::table('empresa_configuracion')->updateOrInsert(
             ['ruc' => '20123456789'],
@@ -21,6 +20,7 @@ class EmpresaConfiguracionSeeder extends Seeder
                 'telefono' => '999888777',
                 'email' => 'contacto@lamksports.test',
                 'logo_path' => null,
+                'mensaje_ticket' => 'Gracias por su compra. Vuelva pronto.',
                 'moneda' => 'PEN',
                 'igv_porcentaje' => 18.00,
                 'modo_emision' => 'SIMULADA',

@@ -3,14 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class TallaSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $items = [];
 
@@ -24,12 +23,12 @@ class TallaSeeder extends Seeder
         }
 
         foreach ([
-            ['codigo' => 'XS',  'nombre' => 'XS',      'tipo_talla' => 'ROPA', 'orden' => 1],
-            ['codigo' => 'S',   'nombre' => 'S',       'tipo_talla' => 'ROPA', 'orden' => 2],
-            ['codigo' => 'M',   'nombre' => 'M',       'tipo_talla' => 'ROPA', 'orden' => 3],
-            ['codigo' => 'L',   'nombre' => 'L',       'tipo_talla' => 'ROPA', 'orden' => 4],
-            ['codigo' => 'XL',  'nombre' => 'XL',      'tipo_talla' => 'ROPA', 'orden' => 5],
-            ['codigo' => 'XXL', 'nombre' => 'XXL',     'tipo_talla' => 'ROPA', 'orden' => 6],
+            ['codigo' => 'XS', 'nombre' => 'XS', 'tipo_talla' => 'ROPA', 'orden' => 1],
+            ['codigo' => 'S', 'nombre' => 'S', 'tipo_talla' => 'ROPA', 'orden' => 2],
+            ['codigo' => 'M', 'nombre' => 'M', 'tipo_talla' => 'ROPA', 'orden' => 3],
+            ['codigo' => 'L', 'nombre' => 'L', 'tipo_talla' => 'ROPA', 'orden' => 4],
+            ['codigo' => 'XL', 'nombre' => 'XL', 'tipo_talla' => 'ROPA', 'orden' => 5],
+            ['codigo' => 'XXL', 'nombre' => 'XXL', 'tipo_talla' => 'ROPA', 'orden' => 6],
             ['codigo' => 'UNICA', 'nombre' => 'Única', 'tipo_talla' => 'UNICA', 'orden' => 99],
         ] as $item) {
             $items[] = $item;
