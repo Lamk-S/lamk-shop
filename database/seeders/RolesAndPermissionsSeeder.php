@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use Exception;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -37,7 +36,6 @@ class RolesAndPermissionsSeeder extends Seeder
             'ver_kardex',
             'ver_auditoria',
             'gestionar_comprobantes',
-            'imprimir_comprobantes',
         ];
 
         foreach ($permissions as $permission) {
@@ -62,19 +60,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'gestionar_clientes',
             'gestionar_productos',
             'registrar_ventas',
-            'imprimir_comprobantes',
+            'gestionar_comprobantes',
         ]);
 
         Role::findByName('cajero', 'web')->givePermissionTo([
             'ver_dashboard',
             'gestionar_clientes',
-            'gestionar_productos',
             'registrar_ventas',
             'anular_ventas',
             'abrir_caja',
             'cerrar_caja',
             'movimientos_caja',
-            'imprimir_comprobantes',
+            'gestionar_comprobantes',
         ]);
 
         Role::findByName('encargado_almacen', 'web')->givePermissionTo([

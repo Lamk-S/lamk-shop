@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class SesionCaja extends Model
 {
@@ -63,5 +64,10 @@ class SesionCaja extends Model
     public function movimientosTesoreria()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'sesion_caja_id');
+    }
+
+    public function scopeAbiertas(Builder $query) : Builder
+    {
+        return $query->where('estado_sesion', 'ABIERTA');
     }
 }

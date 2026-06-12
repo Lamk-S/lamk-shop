@@ -9,7 +9,7 @@ class UpdateCategoriaRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_categorias') ?? false;
     }
 
     public function rules(): array

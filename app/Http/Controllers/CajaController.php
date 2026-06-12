@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Caja;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -33,10 +32,10 @@ class CajaController extends Controller implements HasMiddleware
     public function store(Request $request)
     {
         $data = $request->validate([
-            'codigo' => 'required|string|max:20|unique:cajas,codigo',
-            'nombre' => 'required|string|max:50|unique:cajas,nombre',
-            'fondo_fijo' => 'required|numeric|min:0',
-            'estado' => 'nullable|boolean',
+            'codigo' => ['required', 'string', 'max:20', 'unique:cajas,codigo'],
+            'nombre' => ['required', 'string', 'max:50'],
+            'fondo_fijo' => ['required', 'numeric', 'min:0'],
+            'estado' => ['nullable', 'boolean'],
         ]);
 
         try {
@@ -48,7 +47,7 @@ class CajaController extends Controller implements HasMiddleware
             ]);
 
             return redirect()->route('cajas.index')->with('success', 'Caja registrada correctamente');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Error al registrar la caja: ' . $e->getMessage()]);
         }
     }
@@ -61,26 +60,24 @@ class CajaController extends Controller implements HasMiddleware
     public function update(Request $request, Caja $caja)
     {
         $data = $request->validate([
-            'codigo' => 'required|string|max:20|unique:cajas,codigo,' . $caja->id,
-            'nombre' => 'required|string|max:50|unique:cajas,nombre,' . $caja->id,
-            'fondo_fijo' => 'required|numeric|min:0',
-            'estado' => 'required|boolean',
+            'codigo' => ['required', 'string', 'max:20', 'unique:cajas,codigo,' . $caja->id],
+            'nombre' => ['required', 'string', 'max:50'],
+            'fondo_fijo' => ['required', 'numeric', 'min:0'],
+            'estado' => ['required', 'boolean'],
         ]);
 
         try {
             $caja->update($data);
 
             return redirect()->route('cajas.index')->with('success', 'Caja editada correctamente');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Error al editar la caja: ' . $e->getMessage()]);
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Caja $caja)
     {
         try {
-            $caja = Caja::withTrashed()->findOrFail($id);
-
             if ($caja->sesionesCaja()->where('estado_sesion', 'ABIERTA')->exists()) {
                 return back()->withErrors(['error' => 'No se puede eliminar una caja con una sesión abierta.']);
             }
@@ -94,7 +91,7 @@ class CajaController extends Controller implements HasMiddleware
             }
 
             return redirect()->route('cajas.index')->with('success', $message);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar la caja: ' . $e->getMessage()]);
         }
     }

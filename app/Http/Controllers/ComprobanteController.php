@@ -5,12 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreComprobanteRequest;
 use App\Http\Requests\UpdateComprobanteRequest;
 use App\Models\Comprobante;
-use Exception;
-use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 
 class ComprobanteController extends Controller implements HasMiddleware
 {
@@ -23,9 +19,7 @@ class ComprobanteController extends Controller implements HasMiddleware
 
     public function index()
     {
-        $comprobantes = Comprobante::withTrashed()
-            ->latest('id')
-            ->get();
+        $comprobantes = Comprobante::withTrashed()->latest('id')->get();
 
         return view('comprobante.index', compact('comprobantes'));
     }
@@ -59,35 +53,21 @@ class ComprobanteController extends Controller implements HasMiddleware
 
     public function store(StoreComprobanteRequest $request)
     {
-        $data = $request->validated();
-
         try {
-            DB::transaction(function () use ($data) {
-                Comprobante::create([
-                    'tipo_comprobante' => $data['tipo_comprobante'],
-                    'serie' => $data['serie'],
-                    'uso_comprobante' => $data['uso_comprobante'],
-                    'correlativo_actual' => $data['correlativo_actual'] ?? 0,
-                    'es_electronico' => $data['es_electronico'] ?? false,
-                    'ambiente' => $data['ambiente'],
-                    'estado' => $data['estado'] ?? 1,
-                ]);
-            });
+            Comprobante::create($request->validated());
 
             return redirect()
                 ->route('comprobantes.index')
                 ->with('success', 'Comprobante registrado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al registrar el comprobante: ' . $e->getMessage(),
-            ])->withInput();
+        } catch (\Exception $e) {
+            return back()
+                ->withErrors(['error' => 'Error al registrar el comprobante: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
-    public function edit(string $id)
+    public function edit(Comprobante $comprobante)
     {
-        $comprobante = Comprobante::withTrashed()->findOrFail($id);
-
         $optionsTipoComprobante = [
             'TICKET' => 'Ticket',
             'BOLETA' => 'Boleta',
@@ -114,44 +94,28 @@ class ComprobanteController extends Controller implements HasMiddleware
         ));
     }
 
-    public function update(UpdateComprobanteRequest $request, string $id)
+    public function update(UpdateComprobanteRequest $request, Comprobante $comprobante)
     {
-        $comprobante = Comprobante::withTrashed()->findOrFail($id);
-
-        $data = $request->validated();
-
         try {
-            DB::transaction(function () use ($data, $comprobante) {
-                if ($comprobante->trashed()) {
-                    $comprobante->restore();
-                }
+            if ($comprobante->trashed()) {
+                $comprobante->restore();
+            }
 
-                $comprobante->update([
-                    'tipo_comprobante' => $data['tipo_comprobante'],
-                    'serie' => $data['serie'],
-                    'uso_comprobante' => $data['uso_comprobante'],
-                    'correlativo_actual' => $data['correlativo_actual'],
-                    'es_electronico' => $data['es_electronico'] ?? false,
-                    'ambiente' => $data['ambiente'],
-                    'estado' => $data['estado'],
-                ]);
-            });
+            $comprobante->update($request->validated());
 
             return redirect()
                 ->route('comprobantes.index')
                 ->with('success', 'Comprobante actualizado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al actualizar el comprobante: ' . $e->getMessage(),
-            ])->withInput();
+        } catch (\Exception $e) {
+            return back()
+                ->withErrors(['error' => 'Error al actualizar el comprobante: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Comprobante $comprobante)
     {
         try {
-            $comprobante = Comprobante::withTrashed()->findOrFail($id);
-
             if ($comprobante->trashed()) {
                 $comprobante->restore();
                 $message = 'Comprobante restaurado correctamente';
@@ -163,10 +127,8 @@ class ComprobanteController extends Controller implements HasMiddleware
             return redirect()
                 ->route('comprobantes.index')
                 ->with('success', $message);
-        } catch (Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al modificar el comprobante: ' . $e->getMessage(),
-            ]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al modificar el comprobante: ' . $e->getMessage()]);
         }
     }
 }

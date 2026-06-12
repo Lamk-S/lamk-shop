@@ -4,13 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class DocumentoSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $items = [
             ['codigo' => 'DNI', 'tipo_documento' => 'Documento Nacional de Identidad'],

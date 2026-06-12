@@ -3,20 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Models\MovimientoCaja;
-use App\Models\MovimientoTesoreria;
 use App\Models\PagoVenta;
 use App\Models\SesionCaja;
-use App\Models\Tesoreria;
 use App\Models\Venta;
-use Exception;
+use App\Services\TesoreriaService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class PagoVentaController extends Controller implements HasMiddleware
 {
+    public function __construct(protected TesoreriaService $tesoreriaService) { }
+
     public static function middleware(): array
     {
         return [
@@ -57,24 +56,24 @@ class PagoVentaController extends Controller implements HasMiddleware
         ]);
 
         try {
-            DB::transaction(function () use ($venta, $data) {
+            DB::transaction(function () use ($venta, $data, $request) {
                 $venta = Venta::with(['pagos', 'sesionCaja'])
                     ->whereKey($venta->id)
                     ->lockForUpdate()
                     ->firstOrFail();
 
                 if ($venta->estado_documento === 'ANULADA') {
-                    throw new Exception('No se puede registrar un pago sobre una venta anulada.');
+                    throw new \Exception('No se puede registrar un pago sobre una venta anulada.');
                 }
 
                 $pagado = (float) $venta->pagos->sum('monto');
                 $restante = round((float) $venta->total - $pagado, 2);
 
                 if ((float) $data['monto'] > $restante) {
-                    throw new Exception('El monto del pago supera el saldo pendiente.');
+                    throw new \Exception('El monto del pago supera el saldo pendiente.');
                 }
 
-                $venta->pagos()->create([
+                $pago = $venta->pagos()->create([
                     'metodo_pago' => strtoupper($data['metodo_pago']),
                     'monto' => $data['monto'],
                     'referencia_operacion' => $data['referencia_operacion'] ?? null,
@@ -83,7 +82,6 @@ class PagoVentaController extends Controller implements HasMiddleware
                 ]);
 
                 $nuevoPagado = round($pagado + (float) $data['monto'], 2);
-
                 $venta->update([
                     'monto_recibido' => $nuevoPagado,
                     'vuelto_entregado' => max(0, $nuevoPagado - (float) $venta->total),
@@ -92,64 +90,39 @@ class PagoVentaController extends Controller implements HasMiddleware
                 $metodo = strtoupper($data['metodo_pago']);
 
                 if ($metodo === 'EFECTIVO') {
-                    $sesion = SesionCaja::whereKey($venta->sesion_caja_id)
-                        ->lockForUpdate()
-                        ->first();
+                    $sesion = SesionCaja::whereKey($venta->sesion_caja_id)->lockForUpdate()->first();
 
-                    if ($sesion && $sesion->estado_sesion === 'ABIERTA') {
-                        MovimientoCaja::create([
-                            'sesion_caja_id' => $sesion->id,
-                            'tipo' => 'INGRESO',
-                            'origen' => 'VENTA',
-                            'descripcion' => 'Pago de venta #' . $venta->id,
-                            'monto' => $data['monto'],
-                            'referencia_type' => Venta::class,
-                            'referencia_id' => $venta->id,
-                        ]);
-                    }
-                } else {
-                    $tesoreria = Tesoreria::where('codigo', 'TES-BANCO')->lockForUpdate()->first();
-
-                    if (!$tesoreria) {
-                        $tesoreria = Tesoreria::create([
-                            'codigo' => 'TES-BANCO',
-                            'nombre' => 'Banco Principal',
-                            'tipo_cuenta' => 'BANCO',
-                            'saldo_actual' => 0,
-                            'estado' => 1,
-                        ]);
+                    if (!$sesion || $sesion->estado_sesion !== 'ABIERTA') {
+                        throw new \Exception('No hay una sesión de caja abierta para registrar el pago en efectivo.');
                     }
 
-                    $saldoAnterior = (float) $tesoreria->saldo_actual;
-                    $saldoPosterior = round($saldoAnterior + (float) $data['monto'], 2);
-
-                    $tesoreria->update([
-                        'saldo_actual' => $saldoPosterior,
-                    ]);
-
-                    MovimientoTesoreria::create([
-                        'tesoreria_id' => $tesoreria->id,
-                        'user_id' => Auth::id(),
-                        'sesion_caja_id' => $venta->sesion_caja_id,
-                        'venta_id' => $venta->id,
-                        'compra_id' => null,
+                    MovimientoCaja::create([
+                        'sesion_caja_id' => $sesion->id,
                         'tipo' => 'INGRESO',
-                        'medio' => 'BANCO',
-                        'origen' => in_array($metodo, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
+                        'origen' => 'VENTA',
                         'descripcion' => 'Pago de venta #' . $venta->id,
                         'monto' => $data['monto'],
-                        'saldo_anterior' => $saldoAnterior,
-                        'saldo_posterior' => $saldoPosterior,
-                        'numero_operacion' => $data['referencia_operacion'] ?? null,
-                        'referencia' => null,
+                        'referencia_type' => Venta::class,
+                        'referencia_id' => $venta->id,
                     ]);
+                } else {
+                    $origen = in_array($metodo, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA';
+
+                    $this->tesoreriaService->registrarVentaIngreso(
+                        $venta,
+                        $metodo,
+                        (float) $data['monto'],
+                        $data['referencia_operacion'] ?? null,
+                        $venta->sesionCaja,
+                        $request->user()
+                    );
                 }
             });
 
             return redirect()
                 ->route('ventas.show', $venta)
                 ->with('success', 'Pago registrado correctamente');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors([
                 'error' => 'Error al registrar el pago: ' . $e->getMessage(),
             ]);

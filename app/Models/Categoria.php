@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Categoria extends Model
@@ -16,6 +17,10 @@ class Categoria extends Model
         'estado',
     ];
 
+    protected $casts = [
+        'estado' => 'boolean',
+    ];
+
     public function productos()
     {
         return $this->belongsToMany(
@@ -24,5 +29,10 @@ class Categoria extends Model
             'categoria_id',
             'producto_id'
         )->withTimestamps();
+    }
+
+    public function scopeActivas(Builder $query): Builder
+    {
+        return $query->where('estado', true);
     }
 }

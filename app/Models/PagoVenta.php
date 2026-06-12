@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class PagoVenta extends Model
 {
@@ -28,5 +29,10 @@ class PagoVenta extends Model
     public function venta()
     {
         return $this->belongsTo(Venta::class, 'venta_id');
+    }
+
+    public function scopeActivos(Builder $query) : Builder
+    {
+        return $query->where('estado', true);
     }
 }

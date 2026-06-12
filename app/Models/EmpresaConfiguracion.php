@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class EmpresaConfiguracion extends Model
 {
@@ -19,6 +20,7 @@ class EmpresaConfiguracion extends Model
         'telefono',
         'email',
         'logo_path',
+        'mensaje_ticket',
         'moneda',
         'igv_porcentaje',
         'modo_emision',
@@ -29,4 +31,9 @@ class EmpresaConfiguracion extends Model
         'igv_porcentaje' => 'decimal:2',
         'estado' => 'boolean',
     ];
+
+    public function scopeActiva(Builder $query): Builder
+    {
+        return $query->where('estado', true);
+    }
 }

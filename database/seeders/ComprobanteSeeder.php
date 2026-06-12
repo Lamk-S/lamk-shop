@@ -4,13 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class ComprobanteSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $items = [
             [
@@ -29,7 +28,7 @@ class ComprobanteSeeder extends Seeder
                 'uso_comprobante' => 'VENTA',
             ],
             [
-                'tipo_comprobante' => 'FACTURA_COMPRA',
+                'tipo_comprobante' => 'FACTURA',
                 'serie' => 'C001',
                 'uso_comprobante' => 'COMPRA',
             ],
@@ -40,9 +39,9 @@ class ComprobanteSeeder extends Seeder
                 [
                     'tipo_comprobante' => $item['tipo_comprobante'],
                     'serie' => $item['serie'],
+                    'uso_comprobante' => $item['uso_comprobante'],
                 ],
                 [
-                    'uso_comprobante' => $item['uso_comprobante'],
                     'correlativo_actual' => 0,
                     'es_electronico' => false,
                     'ambiente' => 'SIMULADO',

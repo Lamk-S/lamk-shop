@@ -8,7 +8,7 @@ class StoreAnulacionCompraRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('anular_compras') ?? false;
     }
 
     public function rules(): array

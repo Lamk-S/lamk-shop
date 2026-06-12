@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ProductoVariante extends Model
@@ -30,26 +31,31 @@ class ProductoVariante extends Model
 
     public function producto()
     {
-        return $this->belongsTo(Producto::class);
+        return $this->belongsTo(Producto::class, 'producto_id');
     }
 
     public function talla()
     {
-        return $this->belongsTo(Talla::class);
+        return $this->belongsTo(Talla::class, 'talla_id');
     }
 
     public function kardex()
     {
-        return $this->hasMany(Kardex::class);
+        return $this->hasMany(Kardex::class, 'producto_variante_id');
     }
 
     public function compraDetalles()
     {
-        return $this->hasMany(CompraProducto::class);
+        return $this->hasMany(CompraProducto::class, 'producto_variante_id');
     }
 
     public function ventaDetalles()
     {
-        return $this->hasMany(ProductoVenta::class);
+        return $this->hasMany(ProductoVenta::class, 'producto_variante_id');
+    }
+
+    public function scopeActivas(Builder $query) : Builder
+    {
+        return $query->where('estado', true);
     }
 }

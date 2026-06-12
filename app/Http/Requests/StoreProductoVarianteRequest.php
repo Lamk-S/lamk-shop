@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\Producto;
+use App\Models\ProductoVariante;
 use App\Models\Talla;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -12,7 +13,7 @@ class StoreProductoVarianteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_productos') ?? false;
     }
 
     public function rules(): array
@@ -20,7 +21,7 @@ class StoreProductoVarianteRequest extends FormRequest
         return [
             'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')],
             'talla_id' => ['required', 'integer', Rule::exists('tallas', 'id')],
-            'codigo_barra' => ['nullable', 'string', 'max:80', 'unique:producto_variantes,codigo_barra'],
+            'codigo_barra' => ['nullable', 'string', 'max:80', Rule::unique('producto_variantes', 'codigo_barra')],
             'stock_actual' => ['required', 'integer', 'min:0'],
             'stock_minimo' => ['required', 'integer', 'min:0'],
             'estado' => ['nullable', 'boolean'],
@@ -43,6 +44,14 @@ class StoreProductoVarianteRequest extends FormRequest
 
             if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
                 $validator->errors()->add('talla_id', 'Los accesorios deben usar talla única.');
+            }
+
+            $duplicate = ProductoVariante::where('producto_id', $producto->id)
+                ->where('talla_id', $talla->id)
+                ->exists();
+
+            if ($duplicate) {
+                $validator->errors()->add('talla_id', 'Ya existe una variante para este producto y esta talla.');
             }
         });
     }

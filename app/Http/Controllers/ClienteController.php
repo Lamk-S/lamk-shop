@@ -7,7 +7,6 @@ use App\Http\Requests\UpdateClienteRequest;
 use App\Models\Cliente;
 use App\Models\Documento;
 use App\Models\Persona;
-use Exception;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -31,11 +30,7 @@ class ClienteController extends Controller implements HasMiddleware
     public function create()
     {
         $documentos = Documento::where('estado', 1)->get();
-
-        $optionsTipoPersona = [
-            'natural' => 'Natural',
-            'juridica' => 'Jurídica',
-        ];
+        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('cliente.create', compact('documentos', 'optionsTipoPersona'));
     }
@@ -45,14 +40,12 @@ class ClienteController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request) {
                 $persona = Persona::create($request->validated());
-                $persona->cliente()->create([
-                    'estado' => 1,
-                ]);
+                $persona->cliente()->create(['estado' => 1]);
             });
 
             return redirect()->route('clientes.index')->with('success', 'Cliente registrado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar el cliente: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al registrar el cliente: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -60,11 +53,7 @@ class ClienteController extends Controller implements HasMiddleware
     {
         $cliente->load('persona.documento');
         $documentos = Documento::where('estado', 1)->get();
-
-        $optionsTipoPersona = [
-            'natural' => 'Natural',
-            'juridica' => 'Jurídica',
-        ];
+        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('cliente.edit', compact('cliente', 'documentos', 'optionsTipoPersona'));
     }
@@ -74,18 +63,18 @@ class ClienteController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request, $cliente) {
                 $cliente->persona->update($request->validated());
+                $cliente->update(['estado' => $request->boolean('estado', true)]);
             });
 
             return redirect()->route('clientes.index')->with('success', 'Cliente editado correctamente');
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al editar el cliente: ' . $e->getMessage()]);
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al editar el cliente: ' . $e->getMessage()])->withInput();
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Cliente $cliente)
     {
         try {
-            $cliente = Cliente::withTrashed()->findOrFail($id);
             $persona = Persona::withTrashed()->findOrFail($cliente->persona_id);
 
             if ($cliente->trashed()) {
@@ -99,7 +88,7 @@ class ClienteController extends Controller implements HasMiddleware
             }
 
             return redirect()->route('clientes.index')->with('success', $message);
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar el cliente: ' . $e->getMessage()]);
         }
     }

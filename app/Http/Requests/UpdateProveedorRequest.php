@@ -11,7 +11,20 @@ class UpdateProveedorRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_proveedores') ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'numero_documento' => $this->filled('numero_documento')
+                ? preg_replace('/\s+/', '', strtoupper(trim($this->input('numero_documento'))))
+                : null,
+            'nombres' => $this->filled('nombres') ? trim($this->input('nombres')) : null,
+            'apellidos' => $this->filled('apellidos') ? trim($this->input('apellidos')) : null,
+            'razon_social' => $this->filled('razon_social') ? trim($this->input('razon_social')) : null,
+            'email' => $this->filled('email') ? strtolower(trim($this->input('email'))) : null,
+        ]);
     }
 
     public function rules(): array
@@ -20,7 +33,7 @@ class UpdateProveedorRequest extends FormRequest
         $personaId = $proveedor?->persona_id;
 
         return [
-            'tipo_persona' => ['required', 'in:natural,juridica'],
+            'tipo_persona' => ['required', Rule::in(['natural', 'juridica'])],
             'documento_id' => ['required', 'integer', Rule::exists('documentos', 'id')],
             'numero_documento' => [
                 'required',
@@ -36,7 +49,7 @@ class UpdateProveedorRequest extends FormRequest
             'direccion' => ['nullable', 'string', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:100'],
-            'estado' => ['nullable', 'boolean'],
+            'estado' => ['required', 'boolean'],
         ];
     }
 

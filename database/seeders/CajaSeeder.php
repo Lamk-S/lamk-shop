@@ -4,13 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class CajaSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         DB::table('cajas')->updateOrInsert(
             ['codigo' => 'CAJ-01'],

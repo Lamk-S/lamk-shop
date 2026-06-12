@@ -15,21 +15,14 @@ return new class extends Migration
             $table->string('nombre', 120)->index();
             $table->text('descripcion')->nullable();
             $table->string('img_path', 2048)->nullable();
-
             $table->enum('tipo_producto', ['ZAPATILLA', 'ROPA', 'ACCESORIO'])->index();
             $table->boolean('maneja_tallas')->default(false)->index();
-
             $table->decimal('precio_compra', 12, 2)->default(0);
             $table->decimal('precio_venta', 12, 2)->default(0);
-
-            $table->integer('stock_total')->default(0)->index();
             $table->integer('stock_minimo')->default(0)->index();
-
             $table->boolean('afecto_igv')->default(true);
-            $table->tinyInteger('estado')->default(1)->index();
-
             $table->foreignId('marca_id')->nullable()->constrained('marcas')->nullOnDelete();
-
+            $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -39,6 +32,7 @@ return new class extends Migration
             $table->foreignId('producto_id')->constrained('productos')->cascadeOnDelete();
             $table->foreignId('categoria_id')->constrained('categorias')->cascadeOnDelete();
             $table->timestamps();
+
             $table->unique(['producto_id', 'categoria_id']);
         });
     }

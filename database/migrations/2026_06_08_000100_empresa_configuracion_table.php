@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('telefono', 20)->nullable();
             $table->string('email', 100)->nullable();
             $table->string('logo_path', 2048)->nullable();
+            $table->text('mensaje_ticket')->nullable();
             $table->string('moneda', 10)->default('PEN');
             $table->decimal('igv_porcentaje', 5, 2)->default(18.00);
             $table->enum('modo_emision', ['SIMULADA', 'REAL'])->default('SIMULADA');

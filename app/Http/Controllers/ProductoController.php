@@ -9,14 +9,12 @@ use App\Models\Marca;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\Talla;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class ProductoController extends Controller implements HasMiddleware
@@ -46,20 +44,9 @@ class ProductoController extends Controller implements HasMiddleware
     {
         $categorias = Categoria::where('estado', 1)->orderBy('nombre')->get();
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
-
-        $tallasCalzado = Talla::where('estado', 1)
-            ->where('tipo_talla', 'CALZADO')
-            ->orderBy('orden')
-            ->get();
-
-        $tallasRopa = Talla::where('estado', 1)
-            ->where('tipo_talla', 'ROPA')
-            ->orderBy('orden')
-            ->get();
-
-        $tallaUnica = Talla::where('estado', 1)
-            ->where('codigo', 'UNICA')
-            ->first();
+        $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();
+        $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', 'ROPA')->orderBy('orden')->get();
+        $tallaUnica = Talla::where('estado', 1)->where('codigo', 'UNICA')->first();
 
         $optionsTipoProducto = [
             'ZAPATILLA' => 'Zapatilla',
@@ -81,12 +68,6 @@ class ProductoController extends Controller implements HasMiddleware
     {
         $data = $request->validated();
 
-        if (in_array($data['tipo_producto'], ['ZAPATILLA', 'ROPA'], true) && !$request->boolean('maneja_tallas')) {
-            throw ValidationException::withMessages([
-                'maneja_tallas' => 'Las zapatillas y la ropa deportiva deben manejar tallas.',
-            ]);
-        }
-
         try {
             DB::transaction(function () use ($request, $data) {
                 $producto = new Producto();
@@ -106,28 +87,21 @@ class ProductoController extends Controller implements HasMiddleware
                     'maneja_tallas' => $request->boolean('maneja_tallas'),
                     'precio_compra' => $data['precio_compra'],
                     'precio_venta' => $data['precio_venta'],
-                    'stock_total' => 0,
                     'stock_minimo' => $data['stock_minimo'],
                     'afecto_igv' => $request->boolean('afecto_igv', true),
                     'marca_id' => $data['marca_id'] ?? null,
                     'estado' => 1,
                 ]);
-
                 $producto->save();
 
                 $producto->categorias()->sync($data['categoria_id']);
-
                 $this->syncVariantes($producto, $request);
-
-                $producto->update([
-                    'stock_total' => $producto->variantes()->where('estado', 1)->sum('stock_actual'),
-                ]);
             });
 
             return redirect()
                 ->route('productos.index')
                 ->with('success', 'Producto registrado correctamente');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors([
                 'error' => 'Error al registrar el producto: ' . $e->getMessage(),
             ])->withInput();
@@ -137,23 +111,11 @@ class ProductoController extends Controller implements HasMiddleware
     public function edit(Producto $producto)
     {
         $producto->load(['categorias', 'marca', 'variantes.talla']);
-
         $categorias = Categoria::where('estado', 1)->orderBy('nombre')->get();
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
-
-        $tallasCalzado = Talla::where('estado', 1)
-            ->where('tipo_talla', 'CALZADO')
-            ->orderBy('orden')
-            ->get();
-
-        $tallasRopa = Talla::where('estado', 1)
-            ->where('tipo_talla', 'ROPA')
-            ->orderBy('orden')
-            ->get();
-
-        $tallaUnica = Talla::where('estado', 1)
-            ->where('codigo', 'UNICA')
-            ->first();
+        $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();
+        $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', 'ROPA')->orderBy('orden')->get();
+        $tallaUnica = Talla::where('estado', 1)->where('codigo', 'UNICA')->first();
 
         $optionsTipoProducto = [
             'ZAPATILLA' => 'Zapatilla',
@@ -175,12 +137,6 @@ class ProductoController extends Controller implements HasMiddleware
     public function update(UpdateProductoRequest $request, Producto $producto)
     {
         $data = $request->validated();
-
-        if (in_array($data['tipo_producto'], ['ZAPATILLA', 'ROPA'], true) && !$request->boolean('maneja_tallas')) {
-            throw ValidationException::withMessages([
-                'maneja_tallas' => 'Las zapatillas y la ropa deportiva deben manejar tallas.',
-            ]);
-        }
 
         try {
             DB::transaction(function () use ($request, $data, $producto) {
@@ -212,29 +168,22 @@ class ProductoController extends Controller implements HasMiddleware
                 ]);
 
                 $producto->categorias()->sync($data['categoria_id']);
-
                 $this->syncVariantes($producto, $request, true);
-
-                $producto->update([
-                    'stock_total' => $producto->variantes()->where('estado', 1)->sum('stock_actual'),
-                ]);
             });
 
             return redirect()
                 ->route('productos.index')
                 ->with('success', 'Producto actualizado correctamente');
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return back()->withErrors([
                 'error' => 'Error al editar el producto: ' . $e->getMessage(),
             ])->withInput();
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Producto $producto)
     {
         try {
-            $producto = Producto::withTrashed()->findOrFail($id);
-
             if ($producto->trashed()) {
                 $producto->restore();
                 $message = 'Producto restaurado correctamente';
@@ -243,10 +192,8 @@ class ProductoController extends Controller implements HasMiddleware
                 $message = 'Producto eliminado correctamente';
             }
 
-            return redirect()
-                ->route('productos.index')
-                ->with('success', $message);
-        } catch (Exception $e) {
+            return redirect()->route('productos.index')->with('success', $message);
+        } catch (\Exception $e) {
             return back()->withErrors([
                 'error' => 'Error al modificar el producto: ' . $e->getMessage(),
             ]);
@@ -296,7 +243,6 @@ class ProductoController extends Controller implements HasMiddleware
 
         foreach ($variantes as $row) {
             $talla = Talla::findOrFail($row['talla_id']);
-
             $codigoVariante = $producto->codigo . '-' . $talla->codigo;
 
             $variantData = [

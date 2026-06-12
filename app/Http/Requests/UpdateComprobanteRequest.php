@@ -9,7 +9,7 @@ class UpdateComprobanteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return $this->user()?->can('gestionar_comprobantes') ?? false;
     }
 
     public function rules(): array
@@ -17,17 +17,23 @@ class UpdateComprobanteRequest extends FormRequest
         $comprobante = $this->route('comprobante');
 
         return [
-            'tipo_comprobante' => ['required', 'string', 'max:50'],
+            'tipo_comprobante' => ['required', Rule::in(['TICKET', 'BOLETA', 'FACTURA', 'NOTA_CREDITO', 'NOTA_DEBITO'])],
             'serie' => [
                 'required',
                 'string',
                 'max:20',
-                Rule::unique('comprobantes', 'serie')->ignore($comprobante?->id),
+                Rule::unique('comprobantes', 'serie')
+                    ->ignore($comprobante?->id)
+                    ->where(function ($query) {
+                        return $query
+                            ->where('tipo_comprobante', $this->input('tipo_comprobante'))
+                            ->where('uso_comprobante', $this->input('uso_comprobante'));
+                    }),
             ],
-            'uso_comprobante' => ['required', 'in:COMPRA,VENTA'],
+            'uso_comprobante' => ['required', Rule::in(['COMPRA', 'VENTA'])],
             'correlativo_actual' => ['required', 'integer', 'min:0'],
             'es_electronico' => ['nullable', 'boolean'],
-            'ambiente' => ['required', 'in:SIMULADO,PRODUCCION'],
+            'ambiente' => ['required', Rule::in(['SIMULADO', 'PRODUCCION'])],
             'estado' => ['required', 'boolean'],
         ];
     }

@@ -2,8 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Tesoreria extends Model
@@ -26,5 +27,10 @@ class Tesoreria extends Model
     public function movimientos()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'tesoreria_id');
+    }
+
+    public function scopeActivas(Builder $query) : Builder
+    {
+        return $query->where('estado', true);
     }
 }

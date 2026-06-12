@@ -3,14 +3,13 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class ProductoSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $categoryIds = DB::table('categorias')->pluck('id', 'nombre')->toArray();
         $brandIds = DB::table('marcas')->pluck('id', 'nombre')->toArray();
@@ -30,7 +29,6 @@ class ProductoSeeder extends Seeder
                         'maneja_tallas' => $item['maneja_tallas'],
                         'precio_compra' => $item['precio_compra'],
                         'precio_venta' => $item['precio_venta'],
-                        'stock_total' => 0,
                         'stock_minimo' => $item['stock_minimo'],
                         'afecto_igv' => true,
                         'marca_id' => $brandIds[$item['marca']] ?? null,

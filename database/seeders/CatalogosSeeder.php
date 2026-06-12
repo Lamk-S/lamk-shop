@@ -4,13 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Carbon;
 
 class CatalogosSeeder extends Seeder
 {
     public function run(): void
     {
-        $now = Carbon::now();
+        $now = now();
 
         $categorias = [
             ['nombre' => 'Zapatillas', 'descripcion' => 'Calzado deportivo y casual'],

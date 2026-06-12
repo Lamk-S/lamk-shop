@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Persona extends Model
@@ -23,18 +23,31 @@ class Persona extends Model
         'estado',
     ];
 
+    protected $casts = [
+        'estado' => 'boolean',
+    ];
+
     public function documento()
     {
-        return $this->belongsTo(Documento::class);
+        return $this->belongsTo(Documento::class, 'documento_id');
     }
 
     public function cliente()
     {
-        return $this->hasOne(Cliente::class);
+        return $this->hasOne(Cliente::class, 'persona_id');
     }
 
     public function proveedor()
     {
-        return $this->hasOne(Proveedor::class);
+        return $this->hasOne(Proveedor::class, 'persona_id');
+    }
+
+    public function getNombreCompletoAttribute(): string
+    {
+        if ($this->razon_social) {
+            return $this->razon_social;
+        }
+
+        return trim(($this->nombres ?? '') . ' ' . ($this->apellidos ?? ''));
     }
 }
