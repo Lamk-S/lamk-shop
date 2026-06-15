@@ -8,8 +8,10 @@ use App\Models\Comprobante;
 use App\Models\EmpresaConfiguracion;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
+use App\Models\Proveedor;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 class CompraService
 {
@@ -17,7 +19,8 @@ class CompraService
         protected InventarioService $inventarioService,
         protected TesoreriaService $tesoreriaService,
         protected ComprobanteService $comprobanteService,
-        protected AuditoriaService $auditoriaService
+        protected AuditoriaService $auditoriaService,
+        protected CuentasPorPagarService $cuentasPorPagarService
     ) {
     }
 
@@ -27,7 +30,12 @@ class CompraService
             $empresa = EmpresaConfiguracion::query()->first();
             $igv = (float) ($empresa?->igv_porcentaje ?? 18.00);
 
-            $comprobante = null;
+            $proveedor = Proveedor::query()
+                ->with(['persona.documento'])
+                ->whereKey($data['proveedor_id'])
+                ->lockForUpdate()
+                ->firstOrFail();
+
             $datosComprobante = [
                 'comprobante_id' => null,
                 'tipo_comprobante' => null,
@@ -45,8 +53,6 @@ class CompraService
 
                 $datosComprobante = $this->comprobanteService->reservarCorrelativo($comprobante);
             }
-
-            $proveedorId = $data['proveedor_id'];
 
             $subtotal = 0.0;
             $descuentoTotal = 0.0;
@@ -95,24 +101,39 @@ class CompraService
                 $total += $totalLinea;
             }
 
+            $persona = $proveedor->persona;
+            $documento = $persona?->documento;
+
             $compra = Compra::create([
-                'proveedor_id' => $proveedorId,
+                'proveedor_id' => $proveedor->id,
                 'user_id' => $user->id,
                 'comprobante_id' => $datosComprobante['comprobante_id'],
                 'tipo_comprobante' => $datosComprobante['tipo_comprobante'],
                 'serie' => $datosComprobante['serie'],
                 'correlativo' => $datosComprobante['correlativo'],
-                'proveedor_tipo_documento' => null,
-                'proveedor_numero_documento' => null,
-                'proveedor_nombre' => null,
-                'proveedor_direccion' => null,
-                'metodo_pago' => $data['metodo_pago'],
+
+                'proveedor_tipo_documento' => $documento?->codigo,
+                'proveedor_numero_documento' => $persona?->numero_documento,
+                'proveedor_nombre' => $persona?->nombre_completo,
+                'proveedor_direccion' => $persona?->direccion,
+                'proveedor_telefono' => $persona?->telefono,
+                'proveedor_email' => $persona?->email,
+
+                'metodo_pago' => strtoupper((string) $data['metodo_pago']),
                 'moneda' => $data['moneda'] ?? 'PEN',
                 'fecha_emision' => $data['fecha_emision'] ?? now(),
+
                 'subtotal' => round($subtotal, 2),
                 'descuento_total' => round($descuentoTotal, 2),
                 'impuesto_total' => round($impuestoTotal, 2),
                 'total' => round($total, 2),
+
+                'monto_pagado' => 0,
+                'saldo_pendiente' => round($total, 2),
+                'estado_pago' => 'PENDIENTE',
+                'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
+                'fecha_pago_total' => null,
+
                 'estado_documento' => 'RECEPCIONADA',
                 'observacion' => $data['observacion'] ?? null,
                 'motivo_anulacion' => null,
@@ -146,21 +167,28 @@ class CompraService
 
                 $linea['producto']->update([
                     'precio_compra' => $linea['costo_unitario'],
-                    'precio_venta' => (!empty($data['actualizar_precio_venta']) && !empty($data['precio_venta']))
+                    'precio_venta' => !empty($data['actualizar_precio_venta']) && !empty($data['precio_venta'])
                         ? $data['precio_venta']
                         : $linea['producto']->precio_venta,
                 ]);
             }
 
-            if (in_array($data['metodo_pago'], ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'], true)) {
-                $this->tesoreriaService->registrarCompraPago(
-                    $compra,
-                    $data['metodo_pago'],
-                    $compra->total,
-                    null,
-                    $user
-                );
-            }
+            $pagos = $this->normalizarPagosCompra($data, (float) $compra->total);
+
+            $cuenta = $this->cuentasPorPagarService->crearDesdeCompra(
+                $compra,
+                $pagos,
+                $data['fecha_vencimiento'] ?? null,
+                $user
+            );
+
+            $compra->update([
+                'monto_pagado' => $cuenta->monto_pagado,
+                'saldo_pendiente' => $cuenta->saldo_pendiente,
+                'estado_pago' => $cuenta->estado,
+                'fecha_vencimiento' => $cuenta->fecha_vencimiento,
+                'fecha_pago_total' => $cuenta->estado === 'PAGADA' ? now() : null,
+            ]);
 
             $this->auditoriaService->registrar(
                 'Compra',
@@ -171,7 +199,12 @@ class CompraService
                 $user
             );
 
-            return $compra->fresh(['detalles', 'comprobante', 'proveedor.persona.documento']);
+            return $compra->fresh([
+                'detalles',
+                'comprobante',
+                'proveedor.persona.documento',
+                'cuentaPorPagar.pagos',
+            ]);
         });
     }
 
@@ -179,7 +212,12 @@ class CompraService
     {
         return DB::transaction(function () use ($compra, $motivo, $user) {
             $compra = Compra::query()
-                ->with(['detalles.productoVariante.producto', 'comprobante'])
+                ->with([
+                    'detalles.productoVariante.producto',
+                    'comprobante',
+                    'cuentaPorPagar.pagos',
+                    'proveedor.persona.documento',
+                ])
                 ->whereKey($compra->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -193,24 +231,13 @@ class CompraService
                     $detalle->productoVariante,
                     (int) $detalle->cantidad,
                     (float) $detalle->costo_unitario,
-                    'Anulación de compra #' . $compra->id,
+                    'Anulación de compra #' . $compra->id . ' - reversa de ingreso de mercadería',
                     $compra,
                     $user
                 );
             }
 
-            if (in_array($compra->metodo_pago, ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'], true)) {
-                $this->tesoreriaService->registrarAnulacion(
-                    $compra->metodo_pago,
-                    (float) $compra->total,
-                    'ANULACION',
-                    'Anulación de compra #' . $compra->id,
-                    $user->id,
-                    null,
-                    null,
-                    $compra->id
-                );
-            }
+            $this->cuentasPorPagarService->anularPorCompra($compra, $user);
 
             $compra->update([
                 'estado_documento' => 'ANULADA',
@@ -227,7 +254,51 @@ class CompraService
                 $user
             );
 
-            return $compra->fresh(['detalles', 'comprobante', 'proveedor.persona.documento']);
+            return $compra->fresh([
+                'detalles',
+                'comprobante',
+                'proveedor.persona.documento',
+                'cuentaPorPagar.pagos',
+            ]);
         });
+    }
+
+    protected function normalizarPagosCompra(array $data, float $total): array
+    {
+        $pagos = collect($data['pagos'] ?? [])
+            ->map(function (array $pago) {
+                return [
+                    'metodo_pago' => strtoupper(trim((string) ($pago['metodo_pago'] ?? ''))),
+                    'monto' => (float) ($pago['monto'] ?? 0),
+                    'referencia_operacion' => $pago['referencia_operacion'] ?? null,
+                    'observacion' => $pago['observacion'] ?? null,
+                ];
+            })
+            ->filter(fn (array $pago) => $pago['metodo_pago'] !== '' && $pago['monto'] > 0)
+            ->values()
+            ->all();
+
+        if (!empty($pagos)) {
+            return $pagos;
+        }
+
+        $metodoPago = strtoupper((string) ($data['metodo_pago'] ?? 'CREDITO'));
+
+        if ($metodoPago === 'CREDITO') {
+            return [];
+        }
+
+        if ($metodoPago === 'MIXTO') {
+            throw new RuntimeException('Para una compra mixta debes enviar el detalle de pagos.');
+        }
+
+        return [
+            [
+                'metodo_pago' => $metodoPago,
+                'monto' => $total,
+                'referencia_operacion' => null,
+                'observacion' => 'Pago registrado junto con la compra.',
+            ],
+        ];
     }
 }
