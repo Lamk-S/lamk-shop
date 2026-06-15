@@ -294,7 +294,11 @@ class VentaService
     {
         return DB::transaction(function () use ($venta, $motivo, $user) {
             $venta = Venta::query()
-                ->with(['detalles.productoVariante.producto', 'pagos', 'sesionCaja'])
+                ->with([
+                    'detalles.productoVariante.producto',
+                    'pagos',
+                    'sesionCaja.caja',
+                ])
                 ->whereKey($venta->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -308,7 +312,7 @@ class VentaService
                     $detalle->productoVariante,
                     (int) $detalle->cantidad,
                     (float) $detalle->costo_unitario,
-                    'Anulación de venta #' . $venta->id,
+                    'Anulación de venta #' . $venta->id . ' - reversa de salida de inventario',
                     $venta,
                     $user
                 );
@@ -327,7 +331,7 @@ class VentaService
                             'sesion_caja_id' => $sesion->id,
                             'tipo' => 'EGRESO',
                             'origen' => 'ANULACION',
-                            'descripcion' => 'Anulación de venta #' . $venta->id,
+                            'descripcion' => 'Anulación de venta #' . $venta->id . ' - devolución de efectivo',
                             'monto' => $montoPago,
                             'referencia_type' => Venta::class,
                             'referencia_id' => $venta->id,
@@ -337,7 +341,7 @@ class VentaService
                             'EFECTIVO',
                             $montoPago,
                             'ANULACION',
-                            'Anulación de venta #' . $venta->id,
+                            'Anulación de venta #' . $venta->id . ' - reversa de ingreso en efectivo',
                             $user->id,
                             $sesion?->id,
                             $venta->id,
@@ -345,19 +349,21 @@ class VentaService
                             $pago->referencia_operacion
                         );
                     }
-                } else {
-                    $this->tesoreriaService->registrarAnulacion(
-                        'BANCO',
-                        $montoPago,
-                        in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
-                        'Anulación de venta #' . $venta->id,
-                        $user->id,
-                        $sesion?->id,
-                        $venta->id,
-                        null,
-                        $pago->referencia_operacion
-                    );
+
+                    continue;
                 }
+
+                $this->tesoreriaService->registrarAnulacion(
+                    'BANCO',
+                    $montoPago,
+                    in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
+                    'Anulación de venta #' . $venta->id . ' - reversa de ingreso bancario',
+                    $user->id,
+                    $sesion?->id,
+                    $venta->id,
+                    null,
+                    $pago->referencia_operacion
+                );
             }
 
             if ($sesionActiva) {
@@ -381,7 +387,15 @@ class VentaService
                 $user
             );
 
-            return $venta->fresh(['comprobante', 'cliente.persona.documento', 'user', 'sesionCaja.caja', 'detalles.productoVariante.producto.marca', 'detalles.productoVariante.talla', 'pagos']);
+            return $venta->fresh([
+                'comprobante',
+                'cliente.persona.documento',
+                'user',
+                'sesionCaja.caja',
+                'detalles.productoVariante.producto.marca',
+                'detalles.productoVariante.talla',
+                'pagos',
+            ]);
         });
     }
 }
