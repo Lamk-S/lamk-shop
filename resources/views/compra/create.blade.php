@@ -5,19 +5,30 @@
 @push('css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
-    .table-custom th {
-        background-color: #f8f9fa;
-        color: #495057;
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.85rem;
-    }
+    .help-text-soft { font-size: 0.8rem; color: #6c757d; }
+    .purchase-alert { border-left: 4px solid #198754; }
+    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap; }
+    .table-custom td { vertical-align: middle; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
 
 @section('content')
+@php
+    $defaultComprobanteId = old('comprobante_id', optional($comprobantes->first())->id);
+    $variantData = $variantes->map(function ($v) {
+        return [
+            'id' => $v->id,
+            'stock' => (int) $v->stock_actual,
+            'precio_compra' => (float) ($v->producto->precio_compra ?? 0),
+            'precio_venta' => (float) ($v->producto->precio_venta ?? 0),
+            'producto' => $v->producto->nombre,
+            'codigo' => $v->producto->codigo,
+            'talla' => $v->talla?->nombre ?? 'Sin talla',
+            'afecto_igv' => (bool) ($v->producto->afecto_igv ?? true),
+        ];
+    })->values();
+@endphp
+
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
         <h2 class="fw-bold text-dark mb-0">Registrar Compra</h2>
@@ -28,90 +39,27 @@
         </ol>
     </div>
 
-    <form action="{{ route('compras.store') }}" method="post">
+    <div class="alert alert-success purchase-alert rounded-4 border-0 shadow-sm mb-4">
+        <div class="d-flex align-items-start gap-3">
+            <div class="fs-4 text-success"><i class="fa-solid fa-circle-info"></i></div>
+            <div>
+                <div class="fw-semibold mb-1">Ingreso de mercadería</div>
+                <div class="small mb-0">
+                    Toda compra debe quedar vinculada a un proveedor identificado. La compra puede ser al contado, a crédito o mixta.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form action="{{ route('compras.store') }}" method="post" id="formCompra">
         @csrf
         <div class="row g-4">
-
             <div class="col-xl-8">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white border-bottom border-light p-4 d-flex align-items-center">
-                        <i class="fa-solid fa-cart-plus text-primary fs-5 me-2"></i>
-                        <h5 class="mb-0 fw-semibold text-dark">Detalle de Productos</h5>
-                    </div>
+                @include('compra.partials.buscador_producto')
 
+                <div class="card border-0 shadow-sm rounded-4 mt-4">
                     <div class="card-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-12">
-                                <label for="producto_id" class="form-label fw-medium text-secondary small">Buscar Producto</label>
-                                <select name="producto_id" id="producto_id" class="form-control selectpicker show-tick" data-live-search="true" data-size="5" title="Seleccione o busque un producto...">
-                                    @foreach ($productos as $item)
-                                    <option value="{{ $item->id }}" data-subtext="Cod: {{ $item->codigo }}" data-precio-compra="{{ $item->precio_compra }}" data-precio-venta="{{ $item->precio_venta }}">{{ $item->nombre }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label for="cantidad" class="form-label fw-medium text-secondary small">Cantidad</label>
-                                <input type="number" name="cantidad" id="cantidad" class="form-control" min="1">
-                            </div>
-
-                            <div class="col-md-4">
-                                <label for="precio_compra" class="form-label fw-medium text-secondary small">Precio de Compra (S/)</label>
-                                <input type="number" name="precio_compra" id="precio_compra" class="form-control" step="0.01" min="0">
-                            </div>
-
-                            <div class="col-md-4">
-                                <label for="precio_venta" class="form-label fw-medium text-secondary small">Precio de Venta (S/)</label>
-                                <input type="number" name="precio_venta" id="precio_venta" class="form-control" step="0.01" min="0">
-                            </div>
-
-                            <div class="col-md-12 text-end mt-3">
-                                <button id="btn_agregar" class="btn btn-primary shadow-sm px-4" type="button">
-                                    <i class="fas fa-plus me-2"></i>Agregar a la lista
-                                </button>
-                            </div>
-
-                            <div class="col-md-12 mt-4">
-                                <div class="table-responsive border rounded-3">
-                                    <table id="tabla_detalle" class="table table-hover table-custom mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th class="border-bottom-0">#</th>
-                                                <th class="border-bottom-0">Producto</th>
-                                                <th class="border-bottom-0">Cant.</th>
-                                                <th class="border-bottom-0">P. Compra</th>
-                                                <th class="border-bottom-0">P. Venta</th>
-                                                <th class="border-bottom-0 text-end">Subtotal</th>
-                                                <th class="border-bottom-0 text-center"><i class="fas fa-cog"></i></th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                        <tfoot class="bg-light">
-                                            <tr>
-                                                <th colspan="5" class="text-end fw-semibold">Subtotal:</th>
-                                                <th class="text-end text-dark">S/ <span id="sumas">0.00</span></th>
-                                                <th></th>
-                                            </tr>
-                                            <tr>
-                                                <th colspan="5" class="text-end fw-semibold">IGV (18%):</th>
-                                                <th class="text-end text-dark">S/ <span id="igv">0.00</span></th>
-                                                <th></th>
-                                            </tr>
-                                            <tr>
-                                                <th colspan="5" class="text-end fw-bold text-dark fs-6">TOTAL:</th>
-                                                <th class="text-end fw-bold text-primary fs-6">
-                                                    S/ <span id="total">0.00</span>
-                                                    <input type="hidden" name="subtotal" value="0" id="inputSubtotal">
-                                                    <input type="hidden" name="impuesto" value="0" id="inputImpuesto">
-                                                    <input type="hidden" name="total" value="0" id="inputTotal">
-                                                </th>
-                                                <th></th>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
+                        @include('compra.partials.detalle')
                     </div>
                 </div>
             </div>
@@ -125,12 +73,25 @@
 
                     <div class="card-body p-4">
                         <div class="row g-4">
-
                             <div class="col-12">
-                                <label for="proveedor_id" class="form-label fw-medium text-secondary small">Proveedor <span class="text-danger">*</span></label>
-                                <select name="proveedor_id" id="proveedor_id" class="form-control selectpicker show-tick" data-live-search="true" title="Seleccione proveedor" data-size="5">
+                                <label for="proveedor_id" class="form-label fw-medium text-secondary small">
+                                    Proveedor <span class="text-danger">*</span>
+                                </label>
+                                <div class="d-flex justify-content-between align-items-center mb-2 gap-2">
+                                    <small class="help-text-soft">Proveedor natural o jurídico identificado.</small>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#quickProveedorModal">
+                                            <i class="fa-solid fa-user-plus me-1"></i>Nuevo
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <select name="proveedor_id" id="proveedor_id" class="form-control selectpicker show-tick" data-live-search="true" title="Seleccione proveedor" data-size="6">
                                     @foreach ($proveedores as $item)
-                                    <option value="{{ $item->id }}">{{ $item->persona->razon_social }}</option>
+                                        <option value="{{ $item->id }}" @selected((string) old('proveedor_id') === (string) $item->id)>
+                                            {{ $item->persona?->razon_social ?? $item->persona?->nombre_completo }}
+                                            — {{ $item->persona?->documento?->codigo ?? 'DOC' }} {{ $item->persona?->numero_documento ?? '' }}
+                                        </option>
                                     @endforeach
                                 </select>
                                 @error('proveedor_id') <small class="text-danger">{{ $message }}</small> @enderror
@@ -138,51 +99,66 @@
 
                             <div class="col-12">
                                 <label for="comprobante_id" class="form-label fw-medium text-secondary small">
-                                    Tipo de Comprobante <span class="text-danger">*</span>
+                                    Comprobante de Compra
                                 </label>
-                                <select name="comprobante_id" id="comprobante_id"
-                                    class="form-control selectpicker show-tick"
-                                    title="Seleccione tipo" data-size="4">
+                                <select name="comprobante_id" id="comprobante_id" class="form-control selectpicker show-tick" data-live-search="true" title="Seleccione comprobante" data-size="5">
+                                    <option value="">Sin comprobante</option>
                                     @foreach ($comprobantes as $item)
-                                    <option value="{{ $item->id }}" @selected(old('comprobante_id')==$item->id)>
-                                        {{ $item->tipo_comprobante }} - {{ $item->serie }}
-                                    </option>
+                                        <option value="{{ $item->id }}" @selected((string) old('comprobante_id', $defaultComprobanteId) === (string) $item->id)>
+                                            {{ $item->tipo_comprobante }} - {{ $item->serie }}
+                                        </option>
                                     @endforeach
                                 </select>
                                 @error('comprobante_id') <small class="text-danger">{{ $message }}</small> @enderror
-                            </div>
-
-                            <div class="col-12">
-                                <label class="form-label fw-medium text-secondary small">Número de comprobante</label>
-                                <input type="text" id="numero_comprobante_preview" class="form-control bg-light text-muted"
-                                    value="Se generará automáticamente al guardar" readonly>
-                                <small class="text-muted">El número final se generará según la serie y el correlativo automático.</small>
+                                <small class="help-text-soft d-block mt-2">La serie y correlativo se asignan automáticamente al guardar.</small>
                             </div>
 
                             <div class="col-12">
                                 <label class="form-label fw-medium text-secondary small">Fecha de Emisión</label>
                                 <input readonly type="text" class="form-control bg-light" value="{{ date('d/m/Y') }}">
-                                <input type="hidden" name="fecha_hora" value="{{ \Carbon\Carbon::now()->toDateTimeString() }}">
+                                <input type="hidden" name="fecha_emision" value="{{ old('fecha_emision', now()->toDateTimeString()) }}">
                             </div>
 
                             <div class="col-12">
-                                <label for="metodo_pago" class="form-label fw-medium text-secondary small">Método de pago <span class="text-danger">*</span></label>
-                                <select name="metodo_pago" id="metodo_pago" class="form-control selectpicker show-tick" title="Seleccione método">
-                                    <option value="EFECTIVO">EFECTIVO</option>
-                                    <option value="TARJETA">TARJETA</option>
-                                    <option value="TRANSFERENCIA">TRANSFERENCIA</option>
+                                <label for="fecha_vencimiento" class="form-label fw-medium text-secondary small">Fecha de Vencimiento</label>
+                                <input type="date" name="fecha_vencimiento" id="fecha_vencimiento" class="form-control" value="{{ old('fecha_vencimiento') }}">
+                                @error('fecha_vencimiento') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label for="metodo_pago" class="form-label fw-medium text-secondary small">
+                                    Método de pago <span class="text-danger">*</span>
+                                </label>
+                                <select name="metodo_pago" id="metodo_pago" class="form-control selectpicker show-tick" title="Seleccione método" data-size="5">
+                                    <option value="EFECTIVO" @selected(old('metodo_pago') === 'EFECTIVO')>EFECTIVO</option>
+                                    <option value="TARJETA" @selected(old('metodo_pago') === 'TARJETA')>TARJETA</option>
+                                    <option value="TRANSFERENCIA" @selected(old('metodo_pago') === 'TRANSFERENCIA')>TRANSFERENCIA</option>
+                                    <option value="CREDITO" @selected(old('metodo_pago') === 'CREDITO')>CRÉDITO</option>
+                                    <option value="MIXTO" @selected(old('metodo_pago') === 'MIXTO')>MIXTO</option>
                                 </select>
                                 @error('metodo_pago') <small class="text-danger">{{ $message }}</small> @enderror
                             </div>
 
                             <div class="col-12">
-                                <label for="impuesto" class="form-label fw-medium text-secondary small">Monto Impuesto (Automático)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text bg-light border-end-0">S/</span>
-                                    <input readonly type="text" name="impuesto_display" id="impuesto" class="form-control bg-light border-start-0" value="0.00">
+                                <label for="observacion" class="form-label fw-medium text-secondary small">Observación</label>
+                                <textarea name="observacion" id="observacion" rows="3" class="form-control" placeholder="Opcional">{{ old('observacion') }}</textarea>
+                                @error('observacion') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="actualizar_precio_venta" name="actualizar_precio_venta" value="1" @checked(old('actualizar_precio_venta'))>
+                                    <label for="actualizar_precio_venta" class="form-check-label">
+                                        Actualizar precio de venta desde esta compra
+                                    </label>
                                 </div>
                             </div>
 
+                            <div class="col-12">
+                                <label for="precio_venta" class="form-label fw-medium text-secondary small">Nuevo precio de venta</label>
+                                <input type="number" step="0.01" min="0" name="precio_venta" id="precio_venta" class="form-control" value="{{ old('precio_venta') }}">
+                                @error('precio_venta') <small class="text-danger">{{ $message }}</small> @enderror
+                            </div>
                         </div>
                     </div>
 
@@ -198,7 +174,6 @@
                     </div>
                 </div>
             </div>
-
         </div>
     </form>
 
@@ -206,7 +181,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body text-center pb-4">
                     <div class="text-danger mb-3"><i class="fas fa-trash-alt fa-4x"></i></div>
@@ -221,188 +196,266 @@
         </div>
     </div>
 </div>
+
+@include('proveedor.partials.quick-create-modal')
 @endsection
 
 @push('js')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    $(document).ready(function() {
-        $('#producto_id').change(function() {
-            mostrarPrecios();
-        });
-        $('#btn_agregar').click(function() {
-            agregarProducto();
-        });
-        $('#btnCancelarCompra').click(function() {
-            cancelarCompra();
-        });
-        disableButtons();
+    const variantData = @json($variantData, JSON_UNESCAPED_UNICODE);
+    const oldDetails = @json(old('detalles', []), JSON_UNESCAPED_UNICODE);
+    let lineItems = [];
+
+    $(document).ready(function () {
+        $('.selectpicker').selectpicker();
+
+        if (Array.isArray(oldDetails) && oldDetails.length > 0) {
+            lineItems = oldDetails.map((detail) => {
+                const variantId = Number(detail.producto_variante_id);
+                const meta = variantData.find(v => Number(v.id) === variantId) || {};
+
+                return {
+                    producto_variante_id: variantId,
+                    cantidad: Number(detail.cantidad ?? 1),
+                    costo_unitario: Number(detail.costo_unitario ?? meta.precio_compra ?? 0),
+                    precio_venta: Number(detail.precio_venta ?? meta.precio_venta ?? 0),
+                    descuento: Number(detail.descuento ?? 0),
+                    producto: meta.producto ?? 'Producto',
+                    codigo: meta.codigo ?? '',
+                    talla: meta.talla ?? 'Sin talla',
+                    stock: meta.stock ?? 0,
+                    afecto_igv: !!meta.afecto_igv
+                };
+            });
+
+            renderRows();
+        } else {
+            updateTotals();
+        }
+
+        $('#variante_id').on('change', mostrarValores);
+        $('#btn_agregar').on('click', agregarProducto);
+        $('#btnCancelarCompra').on('click', cancelarCompra);
+        $('#producto_id').on('change', mostrarValores);
+
+        mostrarValores();
     });
 
-    let cont = 0;
-    let subTotal = [];
-    let sumas = 0;
-    let igv = 0;
-    let total = 0;
-    const impuesto = 18;
-
-    function mostrarPrecios() {
-        let $option = $('#producto_id option:selected');
+    function mostrarValores() {
+        const $option = $('#variante_id option:selected');
 
         if (!$option.val()) {
+            $('#stock').val('');
             $('#precio_compra').val('');
             $('#precio_venta').val('');
+            $('#variante_resumen').text('Seleccione un producto para ver stock y costo');
             return;
         }
 
-        $('#precio_compra').val($option.data('precio-compra'));
-        $('#precio_venta').val($option.data('precio-venta'));
+        $('#stock').val($option.data('stock') ?? '');
+        $('#precio_compra').val(Number($option.data('precio-compra') ?? 0).toFixed(2));
+        $('#precio_venta').val(Number($option.data('precio-venta') ?? 0).toFixed(2));
+        $('#variante_resumen').html(
+            `<strong>${$option.data('producto') ?? 'Producto'}</strong> · ${$option.data('talla') ?? 'Sin talla'}`
+        );
     }
 
     function agregarProducto() {
-        let idProducto = $('#producto_id').val();
-        let nameProducto = $('#producto_id option:selected').text();
-        let cantidad = parseInt($('#cantidad').val());
-        let precioCompra = parseFloat($('#precio_compra').val());
-        let precioVenta = parseFloat($('#precio_venta').val());
+        const idVariante = Number($('#variante_id').val());
 
-        if (!idProducto) {
-            showModal('Seleccione un producto');
-            return;
-        }
-        if (!cantidad || cantidad <= 0 || !Number.isInteger(cantidad)) {
-            showModal('Ingrese una cantidad entera válida');
-            return;
-        }
-        if (!precioCompra || precioCompra <= 0) {
-            showModal('Precio de compra inválido');
-            return;
-        }
-        if (!precioVenta || precioVenta <= 0) {
-            showModal('Precio de venta inválido');
-            return;
-        }
-        if (precioVenta <= precioCompra) {
-            showModal('El precio de venta debe ser mayor al de compra');
+        if (!idVariante) {
+            showToast('Seleccione un producto', 'error');
             return;
         }
 
-        subTotal[cont] = round(cantidad * precioCompra);
-        sumas = round(sumas + subTotal[cont]);
-        igv = round((sumas * impuesto) / 100);
-        total = round(sumas + igv);
+        const $option = $('#variante_id option:selected');
+        const stock = Number($option.data('stock')) || 0;
+        const costoUnitario = Number($option.data('precio-compra')) || 0;
+        const precioVenta = Number($option.data('precio-venta')) || 0;
+        const producto = $option.data('producto') || 'Producto';
+        const codigo = $option.data('codigo') || '';
+        const talla = $option.data('talla') || 'Sin talla';
+        const afectoIgv = Number($option.data('afecto-igv')) === 1 || $option.data('afecto-igv') === true || $option.data('afectoigv') === 1;
+        const cantidad = Number($('#cantidad').val());
+        const descuento = Number($('#descuento').val()) || 0;
 
-        let fila = `
-            <tr id="fila${cont}">
-                <th class="fila-numero align-middle"></th>
-                <td class="align-middle">
-                    <input type="hidden" name="arrayidproducto[]" value="${idProducto}">
-                    <span class="fw-medium">${nameProducto}</span>
-                </td>
-                <td class="align-middle">
-                    <input type="hidden" name="arraycantidad[]" value="${cantidad}">
-                    ${cantidad}
-                </td>
-                <td class="align-middle">
-                    <input type="hidden" name="arraypreciocompra[]" value="${precioCompra}">
-                    S/ ${precioCompra.toFixed(2)}
-                </td>
-                <td class="align-middle">
-                    <input type="hidden" name="arrayprecioventa[]" value="${precioVenta}">
-                    S/ ${precioVenta.toFixed(2)}
-                </td>
-                <td class="align-middle text-end fw-medium text-dark">
-                    S/ ${subTotal[cont].toFixed(2)}
-                </td>
-                <td class="text-center align-middle">
-                    <button class="btn btn-sm btn-outline-danger border-0" type="button" onclick="eliminarProducto(${cont})">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        `;
+        if (!Number.isInteger(cantidad) || cantidad <= 0) {
+            showToast('Ingrese una cantidad válida', 'error');
+            return;
+        }
 
-        $('#tabla_detalle tbody').append(fila);
-        reordenarFilas();
-        actualizarTotales();
+        if (costoUnitario <= 0) {
+            showToast('Costo unitario inválido', 'error');
+            return;
+        }
+
+        if (precioVenta <= 0) {
+            showToast('Precio de venta de referencia inválido', 'error');
+            return;
+        }
+
+        if (descuento < 0) {
+            showToast('Descuento inválido', 'error');
+            return;
+        }
+
+        const existingIndex = lineItems.findIndex(item => Number(item.producto_variante_id) === idVariante);
+
+        if (existingIndex !== -1) {
+            const current = lineItems[existingIndex];
+            const nuevaCantidad = Number(current.cantidad) + cantidad;
+
+            current.cantidad = nuevaCantidad;
+            current.costo_unitario = round(
+                ((Number(current.cantidad) - cantidad) * Number(current.costo_unitario) + (cantidad * costoUnitario)) / nuevaCantidad
+            );
+            current.precio_venta = precioVenta;
+            current.descuento = round(Number(current.descuento) + descuento);
+            current.producto = producto;
+            current.codigo = codigo;
+            current.talla = talla;
+            current.stock = stock;
+            current.afecto_igv = afectoIgv;
+
+            showToast('La variante ya estaba en el detalle; se sumó la cantidad.', 'success');
+        } else {
+            lineItems.push({
+                producto_variante_id: idVariante,
+                cantidad,
+                costo_unitario: costoUnitario,
+                precio_venta: precioVenta,
+                descuento,
+                producto,
+                codigo,
+                talla,
+                stock,
+                afecto_igv: afectoIgv
+            });
+
+            showToast('Producto agregado correctamente', 'success');
+        }
+
+        renderRows();
         limpiarCampos();
-        cont++;
-        disableButtons();
+    }
+
+    function renderRows() {
+        const $tbody = $('#tabla_detalle tbody');
+        $tbody.empty();
+
+        if (lineItems.length === 0) {
+            updateTotals();
+            toggleActions();
+            return;
+        }
+
+        lineItems.forEach((item, index) => {
+            const base = round((item.cantidad * item.costo_unitario) - item.descuento);
+            const igv = item.afecto_igv ? round(base * 0.18) : 0;
+            const totalLinea = round(base + igv);
+
+            const row = `
+                <tr>
+                    <th class="align-middle text-center text-muted fw-normal">${index + 1}</th>
+                    <td class="align-middle fw-medium">
+                        <input type="hidden" name="detalles[${index}][producto_variante_id]" value="${item.producto_variante_id}">
+                        <input type="hidden" name="detalles[${index}][cantidad]" value="${item.cantidad}">
+                        <input type="hidden" name="detalles[${index}][costo_unitario]" value="${item.costo_unitario}">
+                        <input type="hidden" name="detalles[${index}][precio_venta]" value="${item.precio_venta}">
+                        <input type="hidden" name="detalles[${index}][descuento]" value="${item.descuento}">
+                        <div>${item.producto}</div>
+                        <div class="small text-muted">${item.codigo}</div>
+                    </td>
+                    <td class="align-middle text-center">${item.talla}</td>
+                    <td class="align-middle text-center">${item.cantidad}</td>
+                    <td class="align-middle text-end">${item.costo_unitario.toFixed(2)}</td>
+                    <td class="align-middle text-end text-muted">${item.precio_venta.toFixed(2)}</td>
+                    <td class="align-middle text-end text-danger">${item.descuento > 0 ? '-S/ ' + item.descuento.toFixed(2) : 'S/ 0.00'}</td>
+                    <td class="align-middle text-end">${igv.toFixed(2)}</td>
+                    <td class="align-middle text-end fw-bold text-dark">${totalLinea.toFixed(2)}</td>
+                    <td class="align-middle text-center">
+                        <button class="btn btn-sm btn-outline-danger border-0" type="button" onclick="eliminarProducto(${index})" title="Quitar">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+
+            $tbody.append(row);
+        });
+
+        updateTotals();
+        toggleActions();
     }
 
     function eliminarProducto(indice) {
-        sumas = round(sumas - subTotal[indice]);
-        igv = round((sumas * impuesto) / 100);
-        total = round(sumas + igv);
-        $('#fila' + indice).remove();
-        actualizarTotales();
-        disableButtons();
-        limpiarCampos();
-        reordenarFilas();
+        lineItems.splice(indice, 1);
+        renderRows();
+        showToast('Producto eliminado', 'success');
     }
 
     function cancelarCompra() {
-        $('#tabla_detalle tbody').empty();
-        cont = 0;
-        subTotal = [];
-        sumas = 0;
-        igv = 0;
-        total = 0;
-        actualizarTotales();
+        lineItems = [];
+        renderRows();
         limpiarCampos();
-        disableButtons();
-        showModal('Compra cancelada', 'success');
+        showToast('Compra cancelada', 'success');
     }
 
-    function actualizarTotales() {
-        $('#sumas').html(sumas.toFixed(2));
-        $('#igv').html(igv.toFixed(2));
-        $('#total').html(total.toFixed(2));
+    function updateTotals() {
+        const subtotalBruto = lineItems.reduce((acc, item) => acc + (Number(item.cantidad) * Number(item.costo_unitario)), 0);
+        const descuentoTotal = lineItems.reduce((acc, item) => acc + Number(item.descuento), 0);
+        const baseImponible = Math.max(0, subtotalBruto - descuentoTotal);
+        const igv = lineItems.reduce((acc, item) => {
+            const base = Math.max(0, (Number(item.cantidad) * Number(item.costo_unitario)) - Number(item.descuento));
+            return acc + (item.afecto_igv ? (base * 0.18) : 0);
+        }, 0);
+        const total = round(baseImponible + igv);
 
-        $('#impuesto').val(igv.toFixed(2));
-        $('#inputSubtotal').val(sumas.toFixed(2));
-        $('#inputImpuesto').val(igv.toFixed(2));
+        $('#subtotal_bruto').text(subtotalBruto.toFixed(2));
+        $('#descuento_total').text(descuentoTotal.toFixed(2));
+        $('#igv').text(igv.toFixed(2));
+        $('#total').text(total.toFixed(2));
+        $('#inputSubtotal').val(subtotalBruto.toFixed(2));
+        $('#inputDescuentoTotal').val(descuentoTotal.toFixed(2));
+        $('#inputIgvTotal').val(igv.toFixed(2));
         $('#inputTotal').val(total.toFixed(2));
+        $('#impuesto').val(igv.toFixed(2));
     }
 
-    function disableButtons() {
-        if (!total || total <= 0) {
-            $('#guardar').hide();
-            $('#cancelar').hide();
+    function toggleActions() {
+        if (lineItems.length === 0) {
+            $('#guardar').prop('disabled', true).addClass('disabled');
+            $('#cancelar').prop('disabled', true).addClass('disabled');
         } else {
-            $('#guardar').show();
-            $('#cancelar').show();
+            $('#guardar').prop('disabled', false).removeClass('disabled');
+            $('#cancelar').prop('disabled', false).removeClass('disabled');
         }
     }
 
     function limpiarCampos() {
-        $('#producto_id').selectpicker('val', '');
-        $('#cantidad').val('');
+        $('#variante_id').selectpicker('val', '');
+        $('#cantidad').val('1');
         $('#precio_compra').val('');
         $('#precio_venta').val('');
-    }
-
-    function reordenarFilas() {
-        $('#tabla_detalle tbody tr').each(function(index) {
-            $(this).children('th').text(index + 1);
-        });
+        $('#descuento').val('0');
+        $('#stock').val('');
+        $('#variante_resumen').text('Seleccione un producto para ver stock y costo');
     }
 
     function round(num, decimales = 2) {
         return Number(parseFloat(num).toFixed(decimales));
     }
 
-    function showModal(message, icon = 'error') {
-        Swal.mixin({
+    function showToast(message, icon = 'error') {
+        Swal.fire({
             toast: true,
-            position: "top-end",
+            position: 'top-end',
             showConfirmButton: false,
             timer: 2000,
             timerProgressBar: true,
-            customClass: {
-                popup: 'shadow-sm border-0 rounded-3'
-            }
-        }).fire({
             icon: icon,
             title: message
         });

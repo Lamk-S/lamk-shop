@@ -2,20 +2,23 @@
 
 @section('title', 'Directorio de Proveedores')
 
-@push('css-datatable')
-<link href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css" rel="stylesheet" type="text/css">
-@endpush
-
 @push('css')
 <style>
-    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; }
+    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: .02em; white-space: nowrap; }
     .table-custom td { vertical-align: middle; color: #495057; }
+    .fs-7 { font-size: 0.875rem; }
+    .fs-8 { font-size: 0.8rem; }
+    .table-wrap { border-radius: 1rem; overflow: hidden; }
+    .pagination { margin-bottom: 0; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 @endpush
 
 @section('content')
-@include('layouts.partials.alert')
+@php
+    $qActual = request('q');
+    $tipoActual = request('tipo_persona');
+    $estadoActual = request('estado');
+@endphp
 
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
@@ -27,13 +30,58 @@
             </ol>
         </div>
 
-        @can('crear-proveedor')
-        <div class="mt-3 mt-md-0">
-            <a href="{{ route('proveedores.create') }}" class="btn btn-primary shadow-sm rounded-3 px-4">
-                <i class="fas fa-plus me-2"></i>Nuevo Proveedor
-            </a>
-        </div>
+        @can('gestionar_proveedores')
+            <div class="mt-3 mt-md-0">
+                <a href="{{ route('proveedores.create') }}" class="btn btn-primary shadow-sm rounded-3 px-4">
+                    <i class="fas fa-plus me-2"></i>Nuevo Proveedor
+                </a>
+            </div>
         @endcan
+    </div>
+
+    @include('layouts.partials.alert')
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form method="GET" action="{{ route('proveedores.index') }}" class="row g-3 align-items-end">
+                <div class="col-lg-5 col-md-6">
+                    <label class="form-label">Buscar</label>
+                    <input type="text" name="q" class="form-control" value="{{ $qActual }}" placeholder="Documento, nombres, razón social, correo">
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Tipo</label>
+                    <select name="tipo_persona" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="natural" @selected($tipoActual === 'natural')>Natural</option>
+                        <option value="juridica" @selected($tipoActual === 'juridica')>Jurídica</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Estado</label>
+                    <select name="estado" class="form-select">
+                        <option value="">Todos</option>
+                        <option value="1" @selected((string) $estadoActual === '1')>Activo</option>
+                        <option value="0" @selected((string) $estadoActual === '0')>Inactivo</option>
+                    </select>
+                </div>
+
+                <div class="col-lg-1 col-md-6">
+                    <label class="form-label">Filas</label>
+                    <select name="per_page" class="form-select">
+                        @foreach ([10, 15, 25, 50] as $size)
+                            <option value="{{ $size }}" @selected((int) request('per_page', $perPage) === $size)>{{ $size }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-12 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                    <a href="{{ route('proveedores.index') }}" class="btn btn-outline-secondary">Limpiar</a>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -41,12 +89,15 @@
             <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                 <i class="fa-solid fa-truck-moving"></i>
             </div>
-            <h5 class="mb-0 fw-semibold text-dark">Registros Actuales</h5>
+            <div>
+                <h5 class="mb-0 fw-semibold text-dark">Registros Actuales</h5>
+                <small class="text-muted">Proveedores naturales y jurídicos para compras e ingreso de mercadería</small>
+            </div>
         </div>
 
-        <div class="card-body p-4">
-            <div class="table-responsive">
-                <table id="datatablesSimple" class="table table-hover table-custom">
+        <div class="card-body p-0">
+            <div class="table-responsive table-wrap">
+                <table class="table table-hover table-custom align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Entidad / Nombre</th>
@@ -54,96 +105,83 @@
                             <th>Documento</th>
                             <th class="text-center">Tipo</th>
                             <th class="text-center">Estado</th>
-                            @canany(['editar-proveedor', 'eliminar-proveedor'])
+                            @can('gestionar_proveedores')
                                 <th class="text-center">Acciones</th>
-                            @endcanany
+                            @endcan
                         </tr>
                     </thead>
-
                     <tbody>
                         @forelse($proveedores as $item)
                             @php
                                 $estaEliminado = method_exists($item, 'trashed') ? $item->trashed() : false;
+                                $persona = $item->persona;
+                                $nombreMostrado = $persona?->tipo_persona === 'juridica'
+                                    ? ($persona?->razon_social ?? 'Sin razón social')
+                                    : trim(($persona?->nombres ?? '') . ' ' . ($persona?->apellidos ?? ''));
                             @endphp
-
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">{{ $item->persona->razon_social }}</div>
-                                    @if($item->persona->email)
+                                    <div class="fw-bold text-dark">{{ $nombreMostrado ?: 'Sin nombre' }}</div>
+                                    @if($persona?->email)
                                         <div class="small text-muted">
-                                            <i class="fas fa-envelope me-1"></i>{{ $item->persona->email }}
+                                            <i class="fas fa-envelope me-1"></i>{{ $persona->email }}
                                         </div>
                                     @endif
                                 </td>
-
                                 <td>
-                                    <div class="text-muted small text-truncate" style="max-width: 200px;" title="{{ $item->persona->direccion }}">
-                                        <i class="fas fa-map-marker-alt me-1"></i>{{ $item->persona->direccion ?? 'No registrada' }}
+                                    <div class="text-muted small text-truncate" style="max-width: 200px;" title="{{ $persona?->direccion }}">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ $persona?->direccion ?? 'No registrada' }}
                                     </div>
-                                    @if($item->persona->telefono)
+                                    @if($persona?->telefono)
                                         <div class="text-muted small mt-1">
-                                            <i class="fas fa-phone-alt me-1"></i>{{ $item->persona->telefono }}
+                                            <i class="fas fa-phone-alt me-1"></i>{{ $persona->telefono }}
                                         </div>
                                     @endif
                                 </td>
-
                                 <td>
-                                    <div class="small mb-1 text-muted">{{ $item->persona->documento->tipo_documento }}</div>
+                                    <div class="small mb-1 text-muted">{{ optional($persona?->documento)->tipo_documento ?? 'Sin documento' }}</div>
                                     <div class="fw-medium text-dark">
-                                        <i class="fas fa-id-card text-secondary me-1"></i>{{ $item->persona->numero_documento }}
+                                        <i class="fas fa-id-card text-secondary me-1"></i>{{ $persona?->numero_documento ?? '—' }}
                                     </div>
                                 </td>
-
-                                <td class="text-center align-content-center">
+                                <td class="text-center">
                                     <span class="badge bg-light text-secondary border px-2 py-1 fs-7">
-                                        {{ ucfirst($item->persona->tipo_persona) }}
+                                        {{ ucfirst($persona?->tipo_persona ?? 'N/A') }}
                                     </span>
                                 </td>
-
-                                <td class="text-center align-content-center">
+                                <td class="text-center">
                                     @if($estaEliminado)
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Inactivo</span>
                                     @else
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Activo</span>
                                     @endif
                                 </td>
-
-                                @canany(['editar-proveedor', 'eliminar-proveedor'])
-                                    <td class="text-center align-content-center">
+                                @can('gestionar_proveedores')
+                                    <td class="text-center">
                                         <div class="btn-group shadow-sm" role="group">
-                                            @can('editar-proveedor')
-                                                <a href="{{ route('proveedores.edit', $item->id) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                            @endcan
-
-                                            @can('eliminar-proveedor')
-                                                <button type="button"
-                                                        class="btn btn-sm btn-outline-secondary {{ $estaEliminado ? 'text-success' : 'text-danger' }} border-light"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#confirmModal-{{ $item->id }}"
-                                                        title="{{ $estaEliminado ? 'Restaurar' : 'Desactivar' }}">
-                                                    <i class="fas {{ $estaEliminado ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
-                                                </button>
-                                            @endcan
+                                            <a href="{{ route('proveedores.edit', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary {{ $estaEliminado ? 'text-success' : 'text-danger' }} border-light"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#confirmModal-{{ $item->id }}"
+                                                    title="{{ $estaEliminado ? 'Restaurar' : 'Desactivar' }}">
+                                                <i class="fas {{ $estaEliminado ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
+                                            </button>
                                         </div>
                                     </td>
-                                @endcanany
+                                @endcan
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ auth()->user()->canAny(['editar-proveedor', 'eliminar-proveedor']) ? 6 : 5 }}" class="py-5">
+                                <td colspan="{{ auth()->user()->can('gestionar_proveedores') ? 6 : 5 }}" class="py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center text-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3"
-                                            style="width: 90px; height: 90px;">
+                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 90px; height: 90px;">
                                             <i class="fas fa-truck-loading text-secondary fs-1"></i>
                                         </div>
-                                        <h5 class="fw-semibold text-dark mb-1">
-                                            No hay proveedores registrados
-                                        </h5>
-                                        <p class="text-muted mb-0">
-                                            Todavía no se han agregado proveedores al sistema.
-                                        </p>
+                                        <h5 class="fw-semibold text-dark mb-1">No hay proveedores registrados</h5>
+                                        <p class="text-muted mb-0">Todavía no se han agregado proveedores al sistema.</p>
                                     </div>
                                 </td>
                             </tr>
@@ -152,12 +190,25 @@
                 </table>
             </div>
         </div>
+
+        <div class="card-footer bg-white border-top border-light p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+            <div class="text-muted small">
+                Mostrando {{ $proveedores->firstItem() ?? 0 }} a {{ $proveedores->lastItem() ?? 0 }} de {{ $proveedores->total() }} registros
+            </div>
+            <div>
+                {{ $proveedores->links() }}
+            </div>
+        </div>
     </div>
 </div>
 
 @foreach($proveedores as $item)
     @php
         $estaEliminado = method_exists($item, 'trashed') ? $item->trashed() : false;
+        $persona = $item->persona;
+        $nombreMostrado = $persona?->tipo_persona === 'juridica'
+            ? ($persona?->razon_social ?? 'Sin razón social')
+            : trim(($persona?->nombres ?? '') . ' ' . ($persona?->apellidos ?? ''));
     @endphp
 
     <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
@@ -166,22 +217,20 @@
                 <div class="modal-header border-0 pb-0">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-
                 <div class="modal-body text-center pb-4">
                     @if($estaEliminado)
                         <div class="text-success mb-3"><i class="fas fa-check-circle fa-4x"></i></div>
                         <h4 class="fw-bold text-dark">¿Restaurar proveedor?</h4>
-                        <p class="text-muted">El proveedor "{{ $item->persona->razon_social }}" volverá a estar activo.</p>
+                        <p class="text-muted">El proveedor "{{ $nombreMostrado }}" volverá a estar activo.</p>
                     @else
                         <div class="text-danger mb-3"><i class="fas fa-exclamation-circle fa-4x"></i></div>
                         <h4 class="fw-bold text-dark">¿Desactivar proveedor?</h4>
-                        <p class="text-muted">El proveedor "{{ $item->persona->razon_social }}" pasará a estado inactivo.</p>
+                        <p class="text-muted">El proveedor "{{ $nombreMostrado }}" pasará a estado inactivo.</p>
                     @endif
                 </div>
-
                 <div class="modal-footer border-0 pt-0 justify-content-center">
                     <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <form action="{{ route('proveedores.destroy', $item->id) }}" method="post">
+                    <form action="{{ route('proveedores.destroy', $item) }}" method="post">
                         @method('DELETE')
                         @csrf
                         <button type="submit" class="btn {{ $estaEliminado ? 'btn-success' : 'btn-danger' }} px-4">
@@ -194,8 +243,3 @@
     </div>
 @endforeach
 @endsection
-
-@push('js')
-<script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest" type="text/javascript"></script>
-<script src="{{ asset('js/datatables-simple-demo.js') }}"></script>
-@endpush
