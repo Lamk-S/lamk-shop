@@ -4,6 +4,7 @@ use App\Http\Controllers\AuditoriaOperacionController;
 use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\ClienteQuickController;
 use App\Http\Controllers\CompraController;
 use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\EmpresaConfiguracionController;
@@ -14,11 +15,13 @@ use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\MarcaController;
 use App\Http\Controllers\MovimientoCajaController;
 use App\Http\Controllers\MovimientoTesoreriaController;
+use App\Http\Controllers\PagoCompraController;
 use App\Http\Controllers\PagoVentaController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProductoVarianteController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProveedorController;
+use App\Http\Controllers\ProveedorQuickController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SesionCajaController;
 use App\Http\Controllers\TallaController;
@@ -55,17 +58,36 @@ Route::middleware('auth')->group(function () {
         ->except(['show'])
         ->parameters(['proveedores' => 'proveedor']);
 
+    Route::post('/clientes/quick', [ClienteController::class, 'quickStore'])
+        ->name('clientes.quick.store');
+
+    Route::post('/proveedores/quick', [ProveedorController::class, 'quickStore'])
+        ->name('proveedores.quick.store');
+
+    Route::post('/clientes/quick-store', [ClienteQuickController::class, 'store'])
+        ->name('clientes.quick-store');
+
+    Route::post('/proveedores/quick-store', [ProveedorQuickController::class, 'store'])
+        ->name('proveedores.quick-store');
+
     Route::resource('comprobantes', ComprobanteController::class)
         ->except(['show']);
 
     Route::resource('compras', CompraController::class)
         ->only(['index', 'create', 'store', 'show', 'destroy']);
 
+        
     Route::resource('ventas', VentaController::class)
-        ->only(['index', 'create', 'store', 'show', 'destroy']);
-
+    ->only(['index', 'create', 'store', 'show', 'destroy']);
+    
     Route::post('/ventas/{venta}/pagos', [PagoVentaController::class, 'store'])
-        ->name('ventas.pagos.store');
+    ->name('ventas.pagos.store');
+    
+    Route::get('/cuentas-por-pagar', [PagoCompraController::class, 'index'])
+        ->name('cuentas-por-pagar.index');
+
+    Route::post('/cuentas-por-pagar/{cuenta_por_pagar}/pagos', [PagoCompraController::class, 'store'])
+        ->name('cuentas-por-pagar.pagos.store');
 
     Route::resource('cajas', CajaController::class)->except(['show']);
 
