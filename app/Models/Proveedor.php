@@ -32,7 +32,12 @@ class Proveedor extends Model
         return $this->hasMany(Compra::class, 'proveedor_id');
     }
 
-    public function scopeActivos(Builder $query) : Builder
+    public function cuentasPorPagar()
+    {
+        return $this->hasMany(CuentaPorPagar::class, 'proveedor_id');
+    }
+
+    public function scopeActivos(Builder $query): Builder
     {
         return $query->where('estado', true);
     }

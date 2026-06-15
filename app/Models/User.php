@@ -44,6 +44,16 @@ class User extends Authenticatable
         return $this->hasMany(Compra::class, 'user_id');
     }
 
+    public function pagosCompra()
+    {
+        return $this->hasMany(PagoCompra::class, 'user_id');
+    }
+
+    public function cuentasPorPagar()
+    {
+        return $this->hasMany(CuentaPorPagar::class, 'user_id');
+    }
+
     public function kardex()
     {
         return $this->hasMany(Kardex::class, 'user_id');
@@ -64,7 +74,7 @@ class User extends Authenticatable
         return $this->hasMany(AuditoriaOperacion::class, 'user_id');
     }
 
-    public function scopeActivos(Builder $query) : Builder
+    public function scopeActivos(Builder $query)
     {
         return $query->where('estado', true);
     }
