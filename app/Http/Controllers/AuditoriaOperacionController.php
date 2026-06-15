@@ -62,9 +62,9 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
         ));
     }
 
-    public function show(AuditoriaOperacion $auditoriaOperacione)
+    public function show(AuditoriaOperacion $auditoriaOperacion)
     {
-        $auditoria = $auditoriaOperacione->load('user');
+        $auditoria = $auditoriaOperacion->load('user');
 
         return view('auditoria_operacion.show', compact('auditoria'));
     }

@@ -24,6 +24,8 @@ class Compra extends Model
         'proveedor_numero_documento',
         'proveedor_nombre',
         'proveedor_direccion',
+        'proveedor_telefono',
+        'proveedor_email',
         'metodo_pago',
         'moneda',
         'fecha_emision',
@@ -31,6 +33,11 @@ class Compra extends Model
         'descuento_total',
         'impuesto_total',
         'total',
+        'monto_pagado',
+        'saldo_pendiente',
+        'estado_pago',
+        'fecha_vencimiento',
+        'fecha_pago_total',
         'estado_documento',
         'observacion',
         'motivo_anulacion',
@@ -39,10 +46,14 @@ class Compra extends Model
 
     protected $casts = [
         'fecha_emision' => 'datetime',
+        'fecha_vencimiento' => 'date',
+        'fecha_pago_total' => 'datetime',
         'subtotal' => 'decimal:2',
         'descuento_total' => 'decimal:2',
         'impuesto_total' => 'decimal:2',
         'total' => 'decimal:2',
+        'monto_pagado' => 'decimal:2',
+        'saldo_pendiente' => 'decimal:2',
         'anulado_at' => 'datetime',
     ];
 
@@ -66,12 +77,22 @@ class Compra extends Model
         return $this->hasMany(CompraProducto::class, 'compra_id');
     }
 
+    public function cuentaPorPagar()
+    {
+        return $this->hasOne(CuentaPorPagar::class, 'compra_id');
+    }
+
+    public function pagosCompra()
+    {
+        return $this->hasMany(PagoCompra::class, 'compra_id');
+    }
+
     public function movimientosTesoreria()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'compra_id');
     }
 
-    public function scopeNoAnuladas(Builder $query) : Builder
+    public function scopeNoAnuladas(Builder $query): Builder
     {
         return $query->where('estado_documento', '!=', 'ANULADA');
     }

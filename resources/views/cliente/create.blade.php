@@ -2,15 +2,6 @@
 
 @section('title', 'Nuevo Cliente')
 
-@push('css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
-<style>
-    #box-razon-social, #label-natural, #label-juridica {
-        display: none;
-    }
-</style>
-@endpush
-
 @section('content')
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
@@ -22,7 +13,7 @@
         </ol>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 800px;">
+    <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 900px;">
         <div class="card-header bg-white border-bottom border-light p-4">
             <h5 class="mb-0 fw-semibold text-dark">
                 <i class="fa-solid fa-address-card text-primary me-2"></i>Datos del Cliente
@@ -32,150 +23,16 @@
         <div class="card-body p-4 p-md-5">
             <form action="{{ route('clientes.store') }}" method="post">
                 @csrf
-
-                <div class="row g-4">
-                    <div class="col-md-6">
-                        <label for="tipo_persona" class="form-label fw-medium text-secondary">Tipo de persona <span class="text-danger">*</span></label>
-                        <select class="form-select @error('tipo_persona') is-invalid @enderror" name="tipo_persona" id="tipo_persona">
-                            <option value="" selected disabled>Seleccione una opción...</option>
-                            @foreach ($optionsTipoPersona as $value => $label)
-                                <option value="{{ $value }}" {{ old('tipo_persona') == $value ? 'selected' : '' }}>
-                                    {{ $label }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('tipo_persona')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="documento_id" class="form-label fw-medium text-secondary">Tipo de documento <span class="text-danger">*</span></label>
-                        <select class="form-select @error('documento_id') is-invalid @enderror" name="documento_id" id="documento_id">
-                            <option value="" selected disabled>Seleccione una opción...</option>
-                            @foreach($documentos as $item)
-                                <option value="{{ $item->id }}" {{ old('documento_id') == $item->id ? 'selected' : '' }}>
-                                    {{ $item->tipo_documento }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('documento_id')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="numero_documento" class="form-label fw-medium text-secondary">Número de documento <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-id-badge"></i></span>
-                            <input type="text" name="numero_documento" id="numero_documento"
-                                class="form-control border-start-0 @error('numero_documento') is-invalid @enderror"
-                                value="{{ old('numero_documento') }}"
-                                placeholder="Ej. 74839201">
-                        </div>
-                        @error('numero_documento')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="telefono" class="form-label fw-medium text-secondary">Teléfono</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-phone"></i></span>
-                            <input type="text" name="telefono" id="telefono"
-                                class="form-control border-start-0 @error('telefono') is-invalid @enderror"
-                                value="{{ old('telefono') }}"
-                                placeholder="Ej. 987654321">
-                        </div>
-                        @error('telefono')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-12">
-                        <label for="email" class="form-label fw-medium text-secondary">Correo electrónico</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-envelope"></i></span>
-                            <input type="email" name="email" id="email"
-                                class="form-control border-start-0 @error('email') is-invalid @enderror"
-                                value="{{ old('email') }}"
-                                placeholder="Ej. cliente@correo.com">
-                        </div>
-                        @error('email')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-12" id="box-razon-social">
-                        <label id="label-natural" for="razon_social" class="form-label fw-medium text-secondary">Nombres y apellidos <span class="text-danger">*</span></label>
-                        <label id="label-juridica" for="razon_social" class="form-label fw-medium text-secondary">Razón Social o Nombre de la empresa <span class="text-danger">*</span></label>
-
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-user-tie"></i></span>
-                            <input type="text" name="razon_social" id="razon_social"
-                                class="form-control border-start-0 @error('razon_social') is-invalid @enderror"
-                                value="{{ old('razon_social') }}"
-                                placeholder="Escriba el nombre completo...">
-                        </div>
-                        @error('razon_social')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-md-12">
-                        <label for="direccion" class="form-label fw-medium text-secondary">Dirección</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-map-marker-alt"></i></span>
-                            <input type="text" name="direccion" id="direccion"
-                                class="form-control border-start-0 @error('direccion') is-invalid @enderror"
-                                value="{{ old('direccion') }}"
-                                placeholder="Ej. Av. Principal 123, Ciudad">
-                        </div>
-                        @error('direccion')
-                            <div class="text-danger mt-1 small"><i class="fas fa-exclamation-triangle me-1"></i>{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="col-12 mt-5 d-flex justify-content-end gap-2 border-top pt-4">
-                        <a href="{{ route('clientes.index') }}" class="btn btn-light px-4">Cancelar</a>
-                        <button type="submit" class="btn btn-primary px-4 shadow-sm">
-                            <i class="fas fa-save me-2"></i>Guardar Registro
-                        </button>
-                    </div>
-                </div>
+                @include('persona.partials.form', [
+                    'persona' => null,
+                    'documentos' => $documentos,
+                    'showEstado' => false,
+                    'cancelRoute' => route('clientes.index'),
+                    'submitLabel' => 'Guardar Registro',
+                    'submitIcon' => 'fas fa-save',
+                ])
             </form>
         </div>
     </div>
 </div>
 @endsection
-
-@push('js')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
-<script>
-    $(document).ready(function() {
-        function toggleLabels() {
-            let selectValue = $('#tipo_persona').val();
-
-            if (selectValue) {
-                if (selectValue.toLowerCase() === 'natural') {
-                    $('#label-juridica').hide();
-                    $('#label-natural').show();
-                } else {
-                    $('#label-natural').hide();
-                    $('#label-juridica').show();
-                }
-                $('#box-razon-social').fadeIn();
-            } else {
-                $('#box-razon-social').hide();
-            }
-        }
-
-        toggleLabels();
-
-        $('#tipo_persona').on('change', function() {
-            toggleLabels();
-        });
-    });
-</script>
-@endpush

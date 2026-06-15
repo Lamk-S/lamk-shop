@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProveedorRequest;
 use App\Models\Documento;
 use App\Models\Persona;
 use App\Models\Proveedor;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -20,16 +21,49 @@ class ProveedorController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $proveedores = Proveedor::with('persona.documento')->withTrashed()->latest('id')->get();
+        $query = Proveedor::with([
+                'persona' => fn ($q) => $q->withTrashed(),
+                'persona.documento',
+            ])
+            ->withTrashed()
+            ->latest('id');
 
-        return view('proveedor.index', compact('proveedores'));
+        if ($request->filled('q')) {
+            $search = trim($request->input('q'));
+
+            $query->whereHas('persona', function ($q) use ($search) {
+                $q->withTrashed()
+                    ->where('numero_documento', 'like', "%{$search}%")
+                    ->orWhere('nombres', 'like', "%{$search}%")
+                    ->orWhere('apellidos', 'like', "%{$search}%")
+                    ->orWhere('razon_social', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tipo_persona')) {
+            $query->whereHas('persona', function ($q) use ($request) {
+                $q->withTrashed()->where('tipo_persona', $request->input('tipo_persona'));
+            });
+        }
+
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->input('estado'));
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+
+        $proveedores = $query->paginate($perPage)->withQueryString();
+
+        return view('proveedor.index', compact('proveedores', 'perPage'));
     }
 
     public function create()
     {
-        $documentos = Documento::where('estado', 1)->get();
+        $documentos = Documento::where('estado', 1)->orderBy('codigo')->get();
         $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('proveedor.create', compact('documentos', 'optionsTipoPersona'));
@@ -51,8 +85,12 @@ class ProveedorController extends Controller implements HasMiddleware
 
     public function edit(Proveedor $proveedor)
     {
-        $proveedor->load('persona.documento');
-        $documentos = Documento::where('estado', 1)->get();
+        $proveedor->load([
+            'persona' => fn ($q) => $q->withTrashed(),
+            'persona.documento',
+        ]);
+
+        $documentos = Documento::where('estado', 1)->orderBy('codigo')->get();
         $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
 
         return view('proveedor.edit', compact('proveedor', 'documentos', 'optionsTipoPersona'));
