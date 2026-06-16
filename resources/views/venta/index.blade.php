@@ -3,6 +3,7 @@
 @section('title', 'Historial de Ventas')
 
 @push('css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
     .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: .02em; white-space: nowrap; }
     .table-custom td { vertical-align: middle; color: #495057; }
@@ -52,7 +53,7 @@
             <form method="GET" action="{{ route('ventas.index') }}" class="row g-3 align-items-end">
                 <div class="col-lg-3 col-md-6">
                     <label class="form-label">Cliente</label>
-                    <select name="cliente_id" class="form-select">
+                    <select name="cliente_id" class="form-control selectpicker -tick" data-live-search="true" data-size="7">
                         <option value="">Todos</option>
                         @foreach ($clientes as $cliente)
                             <option value="{{ $cliente->id }}" @selected((string) $clienteActual === (string) $cliente->id)>
@@ -299,3 +300,8 @@
     @endforeach
 @endif
 @endsection
+
+@push('js')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+@endpush
