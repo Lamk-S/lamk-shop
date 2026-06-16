@@ -143,7 +143,7 @@ class VentaController extends Controller implements HasMiddleware
             })
             ->orderBy('id')
             ->get();
-        
+
         $comprobantes = Comprobante::where('estado', 1)
             ->where('uso_comprobante', 'VENTA')
             ->orderBy('serie')

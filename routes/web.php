@@ -58,12 +58,6 @@ Route::middleware('auth')->group(function () {
         ->except(['show'])
         ->parameters(['proveedores' => 'proveedor']);
 
-    Route::post('/clientes/quick', [ClienteController::class, 'quickStore'])
-        ->name('clientes.quick.store');
-
-    Route::post('/proveedores/quick', [ProveedorController::class, 'quickStore'])
-        ->name('proveedores.quick.store');
-
     Route::post('/clientes/quick-store', [ClienteQuickController::class, 'store'])
         ->name('clientes.quick-store');
 

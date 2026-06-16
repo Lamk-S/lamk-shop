@@ -18,12 +18,14 @@ class StoreQuickClienteRequest extends FormRequest
     {
         $this->merge([
             'numero_documento' => $this->filled('numero_documento')
-                ? preg_replace('/\s+/', '', strtoupper(trim($this->input('numero_documento'))))
+                ? preg_replace('/\s+/', '', strtoupper(trim((string) $this->input('numero_documento'))))
                 : null,
-            'nombres' => $this->filled('nombres') ? trim($this->input('nombres')) : null,
-            'apellidos' => $this->filled('apellidos') ? trim($this->input('apellidos')) : null,
-            'razon_social' => $this->filled('razon_social') ? trim($this->input('razon_social')) : null,
-            'email' => $this->filled('email') ? strtolower(trim($this->input('email'))) : null,
+            'nombres' => $this->filled('nombres') ? trim((string) $this->input('nombres')) : null,
+            'apellidos' => $this->filled('apellidos') ? trim((string) $this->input('apellidos')) : null,
+            'razon_social' => $this->filled('razon_social') ? trim((string) $this->input('razon_social')) : null,
+            'direccion' => $this->filled('direccion') ? trim((string) $this->input('direccion')) : null,
+            'telefono' => $this->filled('telefono') ? trim((string) $this->input('telefono')) : null,
+            'email' => $this->filled('email') ? strtolower(trim((string) $this->input('email'))) : null,
         ]);
     }
 
@@ -47,7 +49,6 @@ class StoreQuickClienteRequest extends FormRequest
             'direccion' => ['nullable', 'string', 'max:255'],
             'telefono' => ['nullable', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:100'],
-            'estado' => ['nullable', 'boolean'],
         ];
     }
 
@@ -57,22 +58,31 @@ class StoreQuickClienteRequest extends FormRequest
             $tipo = $this->input('tipo_persona');
             $documento = Documento::find($this->input('documento_id'));
 
+            if (! $documento) {
+                $validator->errors()->add('documento_id', 'El tipo de documento seleccionado no existe.');
+                return;
+            }
+
             if ($tipo === 'natural') {
-                if (!$this->filled('nombres') || !$this->filled('apellidos')) {
-                    $validator->errors()->add('nombres', 'Para una persona natural debes registrar nombres y apellidos.');
+                if (! $this->filled('nombres')) {
+                    $validator->errors()->add('nombres', 'Para una persona natural debes registrar los nombres.');
                 }
 
-                if ($documento && $documento->codigo === 'RUC') {
+                if (! $this->filled('apellidos')) {
+                    $validator->errors()->add('apellidos', 'Para una persona natural debes registrar los apellidos.');
+                }
+
+                if ($documento->codigo === 'RUC') {
                     $validator->errors()->add('documento_id', 'Una persona natural no debe usar RUC.');
                 }
             }
 
             if ($tipo === 'juridica') {
-                if (!$this->filled('razon_social')) {
+                if (! $this->filled('razon_social')) {
                     $validator->errors()->add('razon_social', 'Para una persona jurídica debes registrar la razón social.');
                 }
 
-                if ($documento && $documento->codigo !== 'RUC') {
+                if ($documento->codigo !== 'RUC') {
                     $validator->errors()->add('documento_id', 'Una persona jurídica debe usar RUC.');
                 }
             }
