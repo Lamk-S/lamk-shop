@@ -67,7 +67,6 @@ class VentaService
                 $datosComprobante = $this->comprobanteService->reservarCorrelativo($comprobante);
             } else {
                 $ticket = $this->comprobanteService->obtenerDisponibleParaVenta(null);
-
                 if ($ticket) {
                     $datosComprobante = $this->comprobanteService->reservarCorrelativo($ticket);
                     $comprobante = $ticket;
@@ -106,6 +105,8 @@ class VentaService
 
                 $this->inventarioService->validarStockDisponible($variante, $cantidad);
 
+                $costoUnitario = $this->inventarioService->obtenerCostoSalida($variante);
+
                 $base = round(($cantidad * $precioUnitario) - $descuento, 2);
                 $impuesto = $producto->afecto_igv ? round($base * $igv / 100, 2) : 0.00;
                 $totalLinea = round($base + $impuesto, 2);
@@ -119,6 +120,7 @@ class VentaService
                     'subtotal' => round($cantidad * $precioUnitario, 2),
                     'impuesto' => $impuesto,
                     'total' => $totalLinea,
+                    'costo_unitario' => $costoUnitario,
                     'producto_codigo' => $producto->codigo,
                     'producto_nombre' => $producto->nombre,
                     'talla_codigo' => $variante->talla->codigo,
@@ -131,18 +133,31 @@ class VentaService
                 $total += $totalLinea;
             }
 
-            $paymentRows = collect($data['pagos'] ?? []);
+            $paymentRows = collect($data['pagos'] ?? [])
+                ->map(function ($payment) {
+                    return [
+                        'metodo_pago' => strtoupper(trim((string) ($payment['metodo_pago'] ?? ''))),
+                        'monto' => (float) ($payment['monto'] ?? 0),
+                        'referencia_operacion' => $payment['referencia_operacion'] ?? null,
+                    ];
+                })
+                ->filter(fn ($payment) => $payment['metodo_pago'] !== '' && $payment['monto'] > 0)
+                ->values();
+
+            $metodoPagoPrincipal = strtoupper((string) ($data['metodo_pago'] ?? ''));
 
             if ($paymentRows->isEmpty()) {
-                $metodoPago = $data['metodo_pago'] ?? null;
+                if ($metodoPagoPrincipal === 'MIXTO') {
+                    throw new RuntimeException('Para una venta mixta debes enviar el detalle de pagos.');
+                }
 
-                if (!$metodoPago) {
+                if ($metodoPagoPrincipal === '') {
                     throw new RuntimeException('Debes registrar al menos un método de pago.');
                 }
 
                 $paymentRows = collect([
                     [
-                        'metodo_pago' => $metodoPago,
+                        'metodo_pago' => $metodoPagoPrincipal,
                         'monto' => (float) ($data['monto_recibido'] ?? $total),
                         'referencia_operacion' => $data['referencia_operacion'] ?? null,
                     ],
@@ -150,15 +165,24 @@ class VentaService
             }
 
             $pagosTotal = round((float) $paymentRows->sum('monto'), 2);
-
-            if ($pagosTotal < $total) {
-                throw new RuntimeException('El total de pagos no cubre el total de la venta.');
-            }
+            $totalVenta = round($total, 2);
 
             $soloUnPagoEfectivo = $paymentRows->count() === 1 && strtoupper($paymentRows->first()['metodo_pago']) === 'EFECTIVO';
 
+            // Validación inteligente de montos
+            if ($soloUnPagoEfectivo) {
+                if ($pagosTotal < $totalVenta) {
+                    throw new RuntimeException("El monto recibido en efectivo (S/ {$pagosTotal}) no puede ser menor al total de la venta (S/ {$totalVenta}).");
+                }
+            } else {
+                if ($pagosTotal !== $totalVenta) {
+                    throw new RuntimeException("El total de pagos (S/ {$pagosTotal}) debe coincidir exactamente con el total de la venta (S/ {$totalVenta}).");
+                }
+            }
+
+            // Cálculo del vuelto solo si es efectivo
             $vueltoEntregado = $soloUnPagoEfectivo
-                ? round(max(0, (float) $paymentRows->first()['monto'] - $total), 2)
+                ? round(max(0, $pagosTotal - $totalVenta), 2)
                 : 0.00;
 
             $venta = Venta::create([
@@ -203,7 +227,7 @@ class VentaService
                 $this->inventarioService->registrarSalida(
                     $linea['variante'],
                     $linea['cantidad'],
-                    (float) $linea['producto']->precio_compra,
+                    $linea['costo_unitario'],
                     'Venta #' . $venta->id,
                     $venta,
                     $user,
@@ -219,7 +243,7 @@ class VentaService
                     'subtotal' => $linea['subtotal'],
                     'impuesto' => $linea['impuesto'],
                     'total' => $linea['total'],
-                    'costo_unitario' => (float) $linea['producto']->precio_compra,
+                    'costo_unitario' => $linea['costo_unitario'],
                     'producto_codigo' => $linea['producto_codigo'],
                     'producto_nombre' => $linea['producto_nombre'],
                     'talla_codigo' => $linea['talla_codigo'],
@@ -286,7 +310,15 @@ class VentaService
                 $user
             );
 
-            return $venta->fresh(['comprobante', 'cliente.persona.documento', 'user', 'sesionCaja.caja', 'detalles.productoVariante.producto.marca', 'detalles.productoVariante.talla', 'pagos']);
+            return $venta->fresh([
+                'comprobante',
+                'cliente.persona.documento',
+                'user',
+                'sesionCaja.caja',
+                'detalles.productoVariante.producto.marca',
+                'detalles.productoVariante.talla',
+                'pagos',
+            ]);
         });
     }
 
@@ -294,11 +326,7 @@ class VentaService
     {
         return DB::transaction(function () use ($venta, $motivo, $user) {
             $venta = Venta::query()
-                ->with([
-                    'detalles.productoVariante.producto',
-                    'pagos',
-                    'sesionCaja.caja',
-                ])
+                ->with(['detalles.productoVariante.producto', 'pagos', 'sesionCaja'])
                 ->whereKey($venta->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -312,7 +340,7 @@ class VentaService
                     $detalle->productoVariante,
                     (int) $detalle->cantidad,
                     (float) $detalle->costo_unitario,
-                    'Anulación de venta #' . $venta->id . ' - reversa de salida de inventario',
+                    'Anulación de venta #' . $venta->id,
                     $venta,
                     $user
                 );
@@ -331,7 +359,7 @@ class VentaService
                             'sesion_caja_id' => $sesion->id,
                             'tipo' => 'EGRESO',
                             'origen' => 'ANULACION',
-                            'descripcion' => 'Anulación de venta #' . $venta->id . ' - devolución de efectivo',
+                            'descripcion' => 'Anulación de venta #' . $venta->id,
                             'monto' => $montoPago,
                             'referencia_type' => Venta::class,
                             'referencia_id' => $venta->id,
@@ -341,7 +369,7 @@ class VentaService
                             'EFECTIVO',
                             $montoPago,
                             'ANULACION',
-                            'Anulación de venta #' . $venta->id . ' - reversa de ingreso en efectivo',
+                            'Anulación de venta #' . $venta->id,
                             $user->id,
                             $sesion?->id,
                             $venta->id,
@@ -349,21 +377,19 @@ class VentaService
                             $pago->referencia_operacion
                         );
                     }
-
-                    continue;
+                } else {
+                    $this->tesoreriaService->registrarAnulacion(
+                        'BANCO',
+                        $montoPago,
+                        in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
+                        'Anulación de venta #' . $venta->id,
+                        $user->id,
+                        $sesion?->id,
+                        $venta->id,
+                        null,
+                        $pago->referencia_operacion
+                    );
                 }
-
-                $this->tesoreriaService->registrarAnulacion(
-                    'BANCO',
-                    $montoPago,
-                    in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
-                    'Anulación de venta #' . $venta->id . ' - reversa de ingreso bancario',
-                    $user->id,
-                    $sesion?->id,
-                    $venta->id,
-                    null,
-                    $pago->referencia_operacion
-                );
             }
 
             if ($sesionActiva) {
