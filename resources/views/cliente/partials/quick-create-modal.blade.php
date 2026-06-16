@@ -1,84 +1,205 @@
-<div class="modal fade" id="quickClienteModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow">
-            <form id="quickClienteForm" action="{{ route('clientes.quick.store') }}" method="post">
-                @csrf
+@php
+    $shouldOpenQuickClienteModal = session('quickClienteError') || $errors->hasAny([
+        'tipo_persona',
+        'documento_id',
+        'numero_documento',
+        'nombres',
+        'apellidos',
+        'razon_social',
+        'direccion',
+        'telefono',
+        'email',
+    ]);
+@endphp
 
-                <div class="modal-header border-0 pb-0">
+<div class="modal fade" id="quickClienteModal" tabindex="-1" aria-labelledby="quickClienteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow">
+            <form action="{{ route('clientes.quick-store') }}" method="POST" novalidate>
+                @csrf
+                <div class="modal-header">
                     <div>
-                        <h5 class="modal-title fw-semibold mb-1">Registrar cliente rápido</h5>
-                        <small class="text-muted">Alta express para venta mostrador o cliente recurrente.</small>
+                        <h5 class="modal-title fw-semibold" id="quickClienteModalLabel">Crear cliente rápido</h5>
+                        <small class="text-muted">Registro mínimo para ventas y facturación.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
 
-                <div class="modal-body pt-3">
-                    <div class="alert alert-info border-0">
-                        Para boleta rápida puedes seguir con “Consumidor final”. Para factura, el cliente debe ser una persona jurídica con RUC.
-                    </div>
+                <div class="modal-body">
+                    @if (session('quickClienteError'))
+                        <div class="alert alert-danger mb-3">
+                            {{ session('quickClienteError') }}
+                        </div>
+                    @endif
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="quick_cliente_tipo_persona" class="form-label fw-medium">Tipo de persona <span class="text-danger">*</span></label>
+                            <label for="quick_cliente_tipo_persona" class="form-label fw-medium text-secondary">
+                                Tipo de persona <span class="text-danger">*</span>
+                            </label>
                             <select name="tipo_persona" id="quick_cliente_tipo_persona" class="form-select" required>
-                                <option value="" selected disabled>Seleccione...</option>
-                                <option value="natural">Natural</option>
-                                <option value="juridica">Jurídica</option>
+                                <option value="">Seleccione...</option>
+                                <option value="natural" @selected(old('tipo_persona') === 'natural')>Natural</option>
+                                <option value="juridica" @selected(old('tipo_persona') === 'juridica')>Jurídica</option>
                             </select>
+                            @error('tipo_persona')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_documento_id" class="form-label fw-medium">Tipo de documento <span class="text-danger">*</span></label>
+                            <label for="quick_cliente_documento_id" class="form-label fw-medium text-secondary">
+                                Tipo de documento <span class="text-danger">*</span>
+                            </label>
                             <select name="documento_id" id="quick_cliente_documento_id" class="form-select" required>
-                                <option value="" selected disabled>Seleccione...</option>
-                                @foreach ($documentos as $documento)
-                                    <option value="{{ $documento->id }}" data-codigo="{{ $documento->codigo }}">
-                                        {{ $documento->codigo }} - {{ $documento->tipo_documento }}
-                                    </option>
-                                @endforeach
+                                <option value="">Seleccione...</option>
+                                @isset($documentos)
+                                    @foreach ($documentos as $documento)
+                                        <option
+                                            value="{{ $documento->id }}"
+                                            data-codigo="{{ strtoupper($documento->codigo) }}"
+                                            @selected((string) old('documento_id') === (string) $documento->id)
+                                        >
+                                            {{ $documento->tipo_documento }}
+                                        </option>
+                                    @endforeach
+                                @endisset
                             </select>
-                        </div>
-
-                        <div class="col-md-6 persona-natural-field">
-                            <label for="quick_cliente_nombres" class="form-label fw-medium">Nombres <span class="text-danger">*</span></label>
-                            <input type="text" name="nombres" id="quick_cliente_nombres" class="form-control" placeholder="Juan">
-                        </div>
-
-                        <div class="col-md-6 persona-natural-field">
-                            <label for="quick_cliente_apellidos" class="form-label fw-medium">Apellidos <span class="text-danger">*</span></label>
-                            <input type="text" name="apellidos" id="quick_cliente_apellidos" class="form-control" placeholder="Pérez">
-                        </div>
-
-                        <div class="col-12 persona-juridica-field">
-                            <label for="quick_cliente_razon_social" class="form-label fw-medium">Razón social <span class="text-danger">*</span></label>
-                            <input type="text" name="razon_social" id="quick_cliente_razon_social" class="form-control" placeholder="Lamk Sports S.A.C.">
+                            @error('documento_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_numero_documento" class="form-label fw-medium">Número de documento <span class="text-danger">*</span></label>
-                            <input type="text" name="numero_documento" id="quick_cliente_numero_documento" class="form-control" placeholder="74839201 / 20123456789" required>
+                            <label for="quick_cliente_numero_documento" class="form-label fw-medium text-secondary">
+                                Número de documento <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="numero_documento"
+                                id="quick_cliente_numero_documento"
+                                class="form-control"
+                                value="{{ old('numero_documento') }}"
+                                placeholder="Ej. 87689765"
+                                autocomplete="off"
+                                required
+                            >
+                            @error('numero_documento')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_telefono" class="form-label fw-medium">Teléfono</label>
-                            <input type="text" name="telefono" id="quick_cliente_telefono" class="form-control" placeholder="987654321">
+                            <label for="quick_cliente_telefono" class="form-label fw-medium text-secondary">
+                                Teléfono
+                            </label>
+                            <input
+                                type="text"
+                                name="telefono"
+                                id="quick_cliente_telefono"
+                                class="form-control"
+                                value="{{ old('telefono') }}"
+                                placeholder="Ej. 987654321"
+                                autocomplete="off"
+                            >
+                            @error('telefono')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_cliente_email" class="form-label fw-medium">Correo electrónico</label>
-                            <input type="email" name="email" id="quick_cliente_email" class="form-control" placeholder="cliente@correo.com">
+                            <label for="quick_cliente_email" class="form-label fw-medium text-secondary">
+                                Correo electrónico
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                id="quick_cliente_email"
+                                class="form-control"
+                                value="{{ old('email') }}"
+                                placeholder="Ej. cliente@correo.com"
+                                autocomplete="off"
+                            >
+                            @error('email')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 quick-cliente-natural-field d-none">
+                            <label for="quick_cliente_nombres" class="form-label fw-medium text-secondary">
+                                Nombres <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="nombres"
+                                id="quick_cliente_nombres"
+                                class="form-control"
+                                value="{{ old('nombres') }}"
+                                placeholder="Ej. Juan"
+                                autocomplete="off"
+                            >
+                            @error('nombres')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 quick-cliente-natural-field d-none">
+                            <label for="quick_cliente_apellidos" class="form-label fw-medium text-secondary">
+                                Apellidos <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="apellidos"
+                                id="quick_cliente_apellidos"
+                                class="form-control"
+                                value="{{ old('apellidos') }}"
+                                placeholder="Ej. Pérez"
+                                autocomplete="off"
+                            >
+                            @error('apellidos')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 quick-cliente-juridica-field d-none">
+                            <label for="quick_cliente_razon_social" class="form-label fw-medium text-secondary">
+                                Razón social <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="razon_social"
+                                id="quick_cliente_razon_social"
+                                class="form-control"
+                                value="{{ old('razon_social') }}"
+                                placeholder="Ej. Lamk Sports S.A.C."
+                                autocomplete="off"
+                            >
+                            @error('razon_social')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_cliente_direccion" class="form-label fw-medium">Dirección</label>
-                            <input type="text" name="direccion" id="quick_cliente_direccion" class="form-control" placeholder="Av. Principal 123">
+                            <label for="quick_cliente_direccion" class="form-label fw-medium text-secondary">
+                                Dirección
+                            </label>
+                            <input
+                                type="text"
+                                name="direccion"
+                                id="quick_cliente_direccion"
+                                class="form-control"
+                                value="{{ old('direccion') }}"
+                                placeholder="Ej. Av. Principal 123"
+                                autocomplete="off"
+                            >
+                            @error('direccion')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
-
-                        <input type="hidden" name="estado" value="1">
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 pt-0">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-2"></i>Guardar cliente
@@ -92,113 +213,83 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('quickClienteModal');
-        if (!modal) return;
+        const tipoPersona = document.getElementById('quick_cliente_tipo_persona');
+        const documentoSelect = document.getElementById('quick_cliente_documento_id');
+        const naturalFields = document.querySelectorAll('.quick-cliente-natural-field');
+        const juridicaFields = document.querySelectorAll('.quick-cliente-juridica-field');
+        const nombres = document.getElementById('quick_cliente_nombres');
+        const apellidos = document.getElementById('quick_cliente_apellidos');
+        const razonSocial = document.getElementById('quick_cliente_razon_social');
 
-        const form = modal.querySelector('#quickClienteForm');
-        const tipo = modal.querySelector('#quick_cliente_tipo_persona');
-        const documento = modal.querySelector('#quick_cliente_documento_id');
-        const naturalFields = modal.querySelectorAll('.persona-natural-field');
-        const juridicaFields = modal.querySelectorAll('.persona-juridica-field');
-        const nombres = modal.querySelector('#quick_cliente_nombres');
-        const apellidos = modal.querySelector('#quick_cliente_apellidos');
-        const razonSocial = modal.querySelector('#quick_cliente_razon_social');
+        function setRequired(elements, required) {
+            elements.forEach((el) => {
+                const input = el.querySelector('input, select, textarea');
+                if (input) {
+                    input.required = required;
+                }
+            });
+        }
 
-        function toggle() {
-            const value = tipo.value;
+        function selectDocumentoPorCodigo(codigoBuscado) {
+            if (!documentoSelect) return;
 
-            if (value === 'natural') {
-                naturalFields.forEach(el => el.style.display = 'block');
-                juridicaFields.forEach(el => el.style.display = 'none');
-                nombres.required = true;
-                apellidos.required = true;
-                razonSocial.required = false;
-                razonSocial.value = '';
-            } else if (value === 'juridica') {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'block');
-                nombres.required = false;
-                apellidos.required = false;
-                razonSocial.required = true;
+            const codigo = String(codigoBuscado || '').toUpperCase();
+            let found = false;
 
-                const rucOption = Array.from(documento.options).find(opt => (opt.dataset.codigo || '').toUpperCase() === 'RUC');
-                if (rucOption) documento.value = rucOption.value;
+            Array.from(documentoSelect.options).forEach((option) => {
+                const optionCodigo = String(option.dataset.codigo || '').toUpperCase();
+                if (optionCodigo === codigo) {
+                    option.selected = true;
+                    found = true;
+                }
+            });
+
+            if (!found && documentoSelect.options.length > 0 && !documentoSelect.value) {
+                documentoSelect.selectedIndex = 0;
+            }
+        }
+
+        function toggleFields() {
+            const tipo = String(tipoPersona?.value || '').toLowerCase();
+
+            if (tipo === 'natural') {
+                naturalFields.forEach((el) => el.classList.remove('d-none'));
+                juridicaFields.forEach((el) => el.classList.add('d-none'));
+                setRequired(naturalFields, true);
+                setRequired(juridicaFields, false);
+
+                if (razonSocial) razonSocial.value = '';
+                selectDocumentoPorCodigo('DNI');
+            } else if (tipo === 'juridica') {
+                naturalFields.forEach((el) => el.classList.add('d-none'));
+                juridicaFields.forEach((el) => el.classList.remove('d-none'));
+                setRequired(naturalFields, false);
+                setRequired(juridicaFields, true);
+
+                if (nombres) nombres.value = '';
+                if (apellidos) apellidos.value = '';
+                selectDocumentoPorCodigo('RUC');
             } else {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'none');
+                naturalFields.forEach((el) => el.classList.add('d-none'));
+                juridicaFields.forEach((el) => el.classList.add('d-none'));
+                setRequired(naturalFields, false);
+                setRequired(juridicaFields, false);
             }
         }
 
-        async function submitQuickCliente(event) {
-            event.preventDefault();
-
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    const message = data?.message || 'No se pudo registrar el cliente.';
-                    throw new Error(message);
-                }
-
-                const cliente = data.cliente;
-                const select = document.getElementById('cliente_id');
-
-                if (select && cliente) {
-                    const text = `${cliente.label} — ${cliente.documento} ${cliente.numero_documento}`;
-                    const option = new Option(text, cliente.id, true, true);
-                    select.add(option);
-
-                    if (window.jQuery && typeof jQuery.fn.selectpicker === 'function') {
-                        jQuery(select).selectpicker('refresh');
-                        jQuery(select).selectpicker('val', String(cliente.id));
-                    } else {
-                        select.value = cliente.id;
-                    }
-
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                form.reset();
-                toggle();
-
-                bootstrap.Modal.getOrCreateInstance(modal).hide();
-
-                if (window.Swal) {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1800,
-                        icon: 'success',
-                        title: data.message || 'Cliente registrado correctamente'
-                    });
-                }
-            } catch (error) {
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: error.message || 'No se pudo registrar el cliente.'
-                    });
-                } else {
-                    alert(error.message || 'No se pudo registrar el cliente.');
-                }
-            }
+        if (tipoPersona) {
+            tipoPersona.addEventListener('change', toggleFields);
         }
 
-        toggle();
-        tipo.addEventListener('change', toggle);
-        form.addEventListener('submit', submitQuickCliente);
+        toggleFields();
+
+        @if ($shouldOpenQuickClienteModal)
+            const modalEl = document.getElementById('quickClienteModal');
+            if (modalEl && window.bootstrap) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
+            }
+        @endif
     });
 </script>
 @endpush

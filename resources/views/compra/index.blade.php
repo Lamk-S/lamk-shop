@@ -3,14 +3,17 @@
 @section('title', 'Historial de Compras')
 
 @push('css')
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
     .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.82rem; letter-spacing: .02em; white-space: nowrap; }
     .table-custom td { vertical-align: middle; color: #495057; }
     .fs-7 { font-size: 0.875rem; }
     .fs-8 { font-size: 0.8rem; }
     .table-wrap { border-radius: 1rem; overflow: hidden; }
-    .table thead th { border-bottom: 0; }
     .pagination { margin-bottom: 0; }
+    .filter-card .form-label { font-size: .82rem; font-weight: 600; color: #6c757d; margin-bottom: .35rem; }
+    .badge-soft { border: 1px solid rgba(0,0,0,.06); padding: .45rem .8rem; border-radius: 999px; font-weight: 600; font-size: .78rem; }
+    .summary-chip { background: #f8f9fa; border: 1px solid #eef1f4; border-radius: 999px; padding: .35rem .75rem; font-size: .8rem; color: #6c757d; }
 </style>
 @endpush
 
@@ -25,6 +28,7 @@
     $proveedorActual = request('proveedor_id');
     $fechaDesdeActual = request('fecha_desde');
     $fechaHastaActual = request('fecha_hasta');
+    $perPageActual = (int) request('per_page', $perPage ?? 15);
 @endphp
 
 <div class="container-fluid px-4 py-4">
@@ -48,90 +52,101 @@
 
     @include('layouts.partials.alert')
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card border-0 shadow-sm rounded-4 mb-4 filter-card">
         <div class="card-body p-4">
-            <form method="GET" action="{{ route('compras.index') }}" class="row g-3 align-items-end">
-                <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Proveedor</label>
-                    <select name="proveedor_id" class="form-select">
-                        <option value="">Todos</option>
-                        @foreach ($proveedores as $proveedor)
-                            <option value="{{ $proveedor->id }}" @selected((string) $proveedorActual === (string) $proveedor->id)>
-                                {{ $proveedor->persona?->nombre_completo }} - {{ $proveedor->persona?->numero_documento }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
+            <form method="GET" action="{{ route('compras.index') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-lg-3 col-md-6">
+                        <label class="form-label">Proveedor</label>
+                        <select name="proveedor_id" class="form-control selectpicker -tick" data-live-search="true" data-size="7">
+                            <option value="">Todos</option>
+                            @foreach ($proveedores as $proveedor)
+                                <option value="{{ $proveedor->id }}" @selected((string) $proveedorActual === (string) $proveedor->id)>
+                                    {{ $proveedor->persona?->nombre_completo ?? $proveedor->persona?->razon_social ?? 'Proveedor' }}
+                                    — {{ $proveedor->persona?->numero_documento ?? '—' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label">Estado doc.</label>
-                    <select name="estado_documento" class="form-select">
-                        <option value="">Todos</option>
-                        @foreach ($optionsEstadoDocumento as $value => $label)
-                            <option value="{{ $value }}" @selected($estadoDocumentoActual === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label">Estado doc.</label>
+                        <select name="estado_documento" class="form-select">
+                            <option value="">Todos</option>
+                            @foreach ($optionsEstadoDocumento as $value => $label)
+                                <option value="{{ $value }}" @selected($estadoDocumentoActual === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label">Estado pago</label>
-                    <select name="estado_pago" class="form-select">
-                        <option value="">Todos</option>
-                        @foreach ($optionsEstadoPago as $value => $label)
-                            <option value="{{ $value }}" @selected($estadoPagoActual === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label">Estado pago</label>
+                        <select name="estado_pago" class="form-select">
+                            <option value="">Todos</option>
+                            @foreach ($optionsEstadoPago as $value => $label)
+                                <option value="{{ $value }}" @selected($estadoPagoActual === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <div class="col-lg-2 col-md-6">
-                    <label class="form-label">Método</label>
-                    <select name="metodo_pago" class="form-select">
-                        <option value="">Todos</option>
-                        @foreach ($optionsMetodoPago as $value => $label)
-                            <option value="{{ $value }}" @selected($metodoPagoActual === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    <div class="col-lg-2 col-md-6">
+                        <label class="form-label">Método</label>
+                        <select name="metodo_pago" class="form-select">
+                            <option value="">Todos</option>
+                            @foreach ($optionsMetodoPago as $value => $label)
+                                <option value="{{ $value }}" @selected($metodoPagoActual === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <div class="col-lg-1 col-md-6">
-                    <label class="form-label">Desde</label>
-                    <input type="date" name="fecha_desde" class="form-control" value="{{ $fechaDesdeActual }}">
-                </div>
+                    <div class="col-lg-1 col-md-6">
+                        <label class="form-label">Desde</label>
+                        <input type="date" name="fecha_desde" class="form-control" value="{{ $fechaDesdeActual }}">
+                    </div>
 
-                <div class="col-lg-1 col-md-6">
-                    <label class="form-label">Hasta</label>
-                    <input type="date" name="fecha_hasta" class="form-control" value="{{ $fechaHastaActual }}">
-                </div>
+                    <div class="col-lg-1 col-md-6">
+                        <label class="form-label">Hasta</label>
+                        <input type="date" name="fecha_hasta" class="form-control" value="{{ $fechaHastaActual }}">
+                    </div>
 
-                <div class="col-lg-1 col-md-6">
-                    <label class="form-label">Filas</label>
-                    <select name="per_page" class="form-select">
-                        @foreach ([10, 15, 25, 50] as $size)
-                            <option value="{{ $size }}" @selected((int) request('per_page', $perPage) === $size)>{{ $size }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                    <div class="col-lg-1 col-md-6">
+                        <label class="form-label">Filas</label>
+                        <select name="per_page" class="form-select">
+                            @foreach ([10, 15, 25, 50] as $size)
+                                <option value="{{ $size }}" @selected((int) $perPageActual === $size)>{{ $size }}</option>
+                            @endforeach
+                        </select>
+                    </div>
 
-                <div class="col-lg-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        Filtrar
-                    </button>
-                    <a href="{{ route('compras.index') }}" class="btn btn-outline-secondary">
-                        Limpiar
-                    </a>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-filter me-2"></i>Filtrar
+                        </button>
+                        <a href="{{ route('compras.index') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-eraser me-2"></i>Limpiar
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white border-bottom border-light p-4 d-flex align-items-center">
-            <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                <i class="fa-solid fa-store"></i>
+        <div class="card-header bg-white border-bottom border-light p-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
+            <div class="d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                    <i class="fa-solid fa-store"></i>
+                </div>
+                <div>
+                    <h5 class="mb-0 fw-semibold text-dark">Registros de Transacciones</h5>
+                    <small class="text-muted">Compras con ingreso de mercadería, trazabilidad e inventario</small>
+                </div>
             </div>
-            <div>
-                <h5 class="mb-0 fw-semibold text-dark">Registros de Transacciones</h5>
-                <small class="text-muted">Compras con ingreso de mercadería, trazabilidad e inventario</small>
+
+            <div class="d-flex flex-wrap gap-2">
+                <span class="summary-chip">Página {{ $compras->currentPage() }}</span>
+                <span class="summary-chip">Por página: {{ $compras->perPage() }}</span>
+                <span class="summary-chip">Total: {{ $compras->total() }}</span>
             </div>
         </div>
 
@@ -164,6 +179,7 @@
                                         <i class="fas fa-hashtag me-1"></i>{{ $item->correlativo ?? '—' }}
                                     </div>
                                 </td>
+
                                 <td>
                                     <div class="fw-bold text-dark fs-7 mb-1">
                                         {{ $item->proveedor_nombre ?? optional($item->proveedor?->persona)->nombre_completo ?? 'Sin proveedor' }}
@@ -177,6 +193,7 @@
                                         {{ $doc ?? 'N/A' }} {{ $item->proveedor_numero_documento ?? '' }}
                                     </div>
                                 </td>
+
                                 <td>
                                     <div class="fw-medium text-dark fs-7 mb-1">
                                         <i class="fas fa-calendar-alt text-secondary me-2"></i>{{ optional($item->fecha_emision)->format('d/m/Y') ?? '—' }}
@@ -185,6 +202,7 @@
                                         <i class="fas fa-clock text-secondary me-2"></i>{{ optional($item->fecha_emision)->format('H:i') ?? '—' }}
                                     </div>
                                 </td>
+
                                 <td class="text-center">
                                     <div class="d-flex align-items-center justify-content-center">
                                         <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-secondary me-2" style="width: 25px; height: 25px; font-size: 0.7rem;">
@@ -193,11 +211,13 @@
                                         <span class="fs-7">{{ $item->user?->name ?? 'N/A' }}</span>
                                     </div>
                                 </td>
+
                                 <td class="text-center">
                                     <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-3 py-1 rounded-pill">
                                         {{ $item->metodo_pago ?? 'N/A' }}
                                     </span>
                                 </td>
+
                                 <td class="text-center">
                                     @if($item->estado_documento === 'ANULADA')
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill">
@@ -217,6 +237,7 @@
                                         </span>
                                     @endif
                                 </td>
+
                                 <td class="text-center">
                                     @if($item->estado_pago === 'PAGADA')
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">
@@ -236,15 +257,18 @@
                                         </span>
                                     @endif
                                 </td>
+
                                 <td class="text-end fw-bold text-danger">
                                     S/ {{ number_format((float) $item->total, 2) }}
                                 </td>
+
                                 @if($canView)
                                     <td class="text-center">
                                         <div class="btn-group shadow-sm" role="group">
                                             <a href="{{ route('compras.show', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Ver detalles">
                                                 <i class="fas fa-eye"></i>
                                             </a>
+
                                             @if($canAnnul)
                                                 @if($item->estado_documento !== 'ANULADA')
                                                     <button type="button"
@@ -287,7 +311,7 @@
                 Mostrando {{ $compras->firstItem() ?? 0 }} a {{ $compras->lastItem() ?? 0 }} de {{ $compras->total() }} registros
             </div>
             <div>
-                {{ $compras->links() }}
+                {{ $compras->onEachSide(1)->links() }}
             </div>
         </div>
     </div>
@@ -324,3 +348,8 @@
     @endforeach
 @endif
 @endsection
+
+@push('js')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+@endpush
