@@ -3,14 +3,15 @@
         <i class="fa-solid fa-cart-plus text-primary fs-5 me-2"></i>
         <div>
             <h5 class="mb-0 fw-semibold text-dark">Detalle de Productos</h5>
-            <small class="text-muted">Selecciona una variante/talla para ingresar mercadería</small>
+            <small class="text-muted">Selecciona una variante/talla e ingresa el costo real por compra</small>
         </div>
     </div>
+
     <div class="card-body p-4">
         <div class="row g-3">
             <div class="col-md-12">
                 <label for="variante_id" class="form-label fw-medium text-secondary small">Buscar producto / talla</label>
-                <select name="variante_id" id="variante_id" class="form-control selectpicker show-tick" data-live-search="true" data-size="6" title="Seleccione o busque una variante...">
+                <select name="variante_id" id="variante_id" class="form-control selectpicker show-tick" data-live-search="true" data-size="7" title="Seleccione o busque una variante...">
                     @foreach ($variantes as $item)
                         <option
                             value="{{ $item->id }}"
@@ -27,7 +28,10 @@
                         </option>
                     @endforeach
                 </select>
-                <div class="help-text-soft mt-2" id="variante_resumen">Seleccione una variante para ver stock, costo y referencia</div>
+
+                <div class="help-text-soft mt-2" id="variante_resumen">
+                    Seleccione una variante para ver stock, costo y referencia
+                </div>
             </div>
 
             <div class="col-md-3">
@@ -39,18 +43,19 @@
             </div>
 
             <div class="col-md-3">
-                <label for="precio_compra" class="form-label fw-medium text-secondary small">Costo Unit.</label>
+                <label for="costo_unitario" class="form-label fw-medium text-secondary small">Costo Unit. Real</label>
                 <div class="input-group">
                     <span class="input-group-text bg-white text-muted">S/</span>
-                    <input disabled type="number" id="precio_compra" class="form-control bg-white text-end fw-bold" step="0.01">
+                    <input type="number" id="costo_unitario" class="form-control bg-white text-end fw-bold" step="0.01" min="0">
                 </div>
+                <div class="compact-note mt-1">Este valor sí puede variar. El proveedor no firma contratos con el universo.</div>
             </div>
 
             <div class="col-md-3">
-                <label for="precio_venta" class="form-label fw-medium text-secondary small">P. Venta Ref.</label>
+                <label for="precio_venta_ref" class="form-label fw-medium text-secondary small">P. Venta Ref.</label>
                 <div class="input-group">
                     <span class="input-group-text bg-white text-muted">S/</span>
-                    <input disabled type="number" id="precio_venta" class="form-control bg-white text-end fw-bold" step="0.01">
+                    <input disabled type="number" id="precio_venta_ref" class="form-control bg-white text-end fw-bold" step="0.01">
                 </div>
             </div>
 
@@ -69,7 +74,7 @@
 
             <div class="col-md-8 d-flex align-items-end">
                 <div class="small text-muted">
-                    <strong>Regla práctica:</strong> en compra real el costo unitario debe ser el dato principal; la referencia de venta ayuda a verificar margen.
+                    <strong>Regla práctica:</strong> el costo unitario es por línea y refleja el precio real de esa compra. Si el proveedor cambia el costo, eso debe quedar aquí.
                 </div>
             </div>
 
