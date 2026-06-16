@@ -86,6 +86,9 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                         'codigo_barra' => $data['codigo_barra'] ?? null,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
+                        'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
+                        'costo_promedio' => $data['costo_promedio'] ?? 0,
+                        'ultima_compra_at' => $data['ultima_compra_at'] ?? null,
                         'estado' => $data['estado'] ?? 1,
                     ]);
                 } else {
@@ -96,6 +99,9 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                         'codigo_barra' => $data['codigo_barra'] ?? null,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
+                        'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
+                        'costo_promedio' => $data['costo_promedio'] ?? 0,
+                        'ultima_compra_at' => $data['ultima_compra_at'] ?? null,
                         'estado' => $data['estado'] ?? 1,
                     ]);
                 }
@@ -168,6 +174,9 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                     'codigo_barra' => $data['codigo_barra'] ?? null,
                     'stock_actual' => $data['stock_actual'],
                     'stock_minimo' => $data['stock_minimo'],
+                    'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? $producto_variante->costo_ultimo_compra,
+                    'costo_promedio' => $data['costo_promedio'] ?? $producto_variante->costo_promedio,
+                    'ultima_compra_at' => $data['ultima_compra_at'] ?? $producto_variante->ultima_compra_at,
                     'estado' => $data['estado'],
                 ]);
             });

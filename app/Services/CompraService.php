@@ -164,13 +164,6 @@ class CompraService
                     'talla_codigo' => $linea['talla_codigo'],
                     'talla_nombre' => $linea['talla_nombre'],
                 ]);
-
-                $linea['producto']->update([
-                    'precio_compra' => $linea['costo_unitario'],
-                    'precio_venta' => !empty($data['actualizar_precio_venta']) && !empty($data['precio_venta'])
-                        ? $data['precio_venta']
-                        : $linea['producto']->precio_venta,
-                ]);
             }
 
             $pagos = $this->normalizarPagosCompra($data, (float) $compra->total);

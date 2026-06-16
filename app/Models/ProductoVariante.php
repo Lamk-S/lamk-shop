@@ -20,12 +20,16 @@ class ProductoVariante extends Model
         'codigo_barra',
         'stock_actual',
         'stock_minimo',
+        'costo_promedio',
+        'ultimo_costo_compra',
         'estado',
     ];
 
     protected $casts = [
         'stock_actual' => 'integer',
         'stock_minimo' => 'integer',
+        'costo_promedio' => 'decimal:2',
+        'ultimo_costo_compra' => 'decimal:2',
         'estado' => 'boolean',
     ];
 
@@ -54,7 +58,7 @@ class ProductoVariante extends Model
         return $this->hasMany(ProductoVenta::class, 'producto_variante_id');
     }
 
-    public function scopeActivas(Builder $query) : Builder
+    public function scopeActivas(Builder $query): Builder
     {
         return $query->where('estado', true);
     }

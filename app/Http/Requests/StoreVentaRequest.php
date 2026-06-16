@@ -4,7 +4,6 @@ namespace App\Http\Requests;
 
 use App\Models\Cliente;
 use App\Models\Comprobante;
-use App\Models\Documento;
 use App\Models\ProductoVariante;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -15,6 +14,30 @@ class StoreVentaRequest extends FormRequest
     public function authorize(): bool
     {
         return $this->user()?->can('registrar_ventas') ?? false;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'metodo_pago' => $this->filled('metodo_pago')
+                ? strtoupper(trim((string) $this->input('metodo_pago')))
+                : null,
+            'moneda' => $this->filled('moneda')
+                ? strtoupper(trim((string) $this->input('moneda')))
+                : 'PEN',
+            'observacion' => $this->filled('observacion')
+                ? trim((string) $this->input('observacion'))
+                : null,
+            'referencia_operacion' => $this->filled('referencia_operacion')
+                ? trim((string) $this->input('referencia_operacion'))
+                : null,
+            'monto_recibido' => $this->filled('monto_recibido')
+                ? $this->input('monto_recibido')
+                : null,
+            'pagos' => is_array($this->input('pagos'))
+                ? array_values(array_filter($this->input('pagos'), fn ($row) => is_array($row)))
+                : null,
+        ]);
     }
 
     public function rules(): array
@@ -38,14 +61,20 @@ class StoreVentaRequest extends FormRequest
             'detalles.*.precio_unitario' => ['required', 'numeric', 'min:0'],
             'detalles.*.descuento' => ['nullable', 'numeric', 'min:0'],
 
-            'pagos' => ['nullable', 'array', 'min:1'],
-            'pagos.*.metodo_pago' => ['required_with:pagos', Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])],
-            'pagos.*.monto' => ['required_with:pagos', 'numeric', 'min:0.01'],
-            'pagos.*.referencia_operacion' => ['nullable', 'string', 'max:100'],
-
-            'metodo_pago' => ['nullable', Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])],
+            'metodo_pago' => [
+                'required',
+                Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO', 'MIXTO']),
+            ],
             'monto_recibido' => ['nullable', 'numeric', 'min:0'],
             'referencia_operacion' => ['nullable', 'string', 'max:100'],
+
+            'pagos' => ['nullable', 'array'],
+            'pagos.*.metodo_pago' => [
+                'required_with:pagos',
+                Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO']),
+            ],
+            'pagos.*.monto' => ['required_with:pagos', 'numeric', 'min:0.01'],
+            'pagos.*.referencia_operacion' => ['nullable', 'string', 'max:100'],
         ];
     }
 
@@ -62,8 +91,12 @@ class StoreVentaRequest extends FormRequest
             }
 
             $ids = $detalles->pluck('producto_variante_id')->map(fn ($id) => (int) $id);
+
             if ($ids->count() !== $ids->unique()->count()) {
-                $validator->errors()->add('detalles', 'No repitas la misma variante en líneas separadas. El sistema necesita una sola línea por variante.');
+                $validator->errors()->add(
+                    'detalles',
+                    'No repitas la misma variante en líneas separadas. Usa una sola línea por variante.'
+                );
             }
 
             $variantes = ProductoVariante::with(['producto', 'talla'])
@@ -90,7 +123,7 @@ class StoreVentaRequest extends FormRequest
 
                 $variante = $variantes->get($variantId);
 
-                if (!$variante) {
+                if (! $variante) {
                     $validator->errors()->add("detalles.$index.producto_variante_id", 'La variante seleccionada no existe o está inactiva.');
                     continue;
                 }
@@ -101,13 +134,10 @@ class StoreVentaRequest extends FormRequest
             foreach ($cantidadPorVariante as $variantId => $totalCantidad) {
                 $variante = $variantes->get($variantId);
 
-                if (!$variante) {
-                    continue;
-                }
-
-                if ($totalCantidad > (int) $variante->stock_actual) {
+                if ($variante && $totalCantidad > (int) $variante->stock_actual) {
                     $producto = $variante->producto?->nombre ?? 'Producto';
                     $talla = $variante->talla?->nombre ?? 'Sin talla';
+
                     $validator->errors()->add(
                         'detalles',
                         "Stock insuficiente para {$producto} / {$talla}. Disponible: {$variante->stock_actual}, solicitado: {$totalCantidad}."
@@ -117,28 +147,37 @@ class StoreVentaRequest extends FormRequest
 
             $comprobanteId = $this->input('comprobante_id');
             $clienteId = $this->input('cliente_id');
+            $metodoPago = strtoupper((string) $this->input('metodo_pago'));
+            $pagos = collect($this->input('pagos', []))->filter(function ($row) {
+                return !empty($row['metodo_pago']) && isset($row['monto']) && (float) $row['monto'] > 0;
+            });
 
             if ($comprobanteId) {
                 $comprobante = Comprobante::find($comprobanteId);
 
-                if ($comprobante?->tipo_comprobante === 'FACTURA' && !$clienteId) {
+                if ($comprobante?->tipo_comprobante === 'FACTURA' && ! $clienteId) {
                     $validator->errors()->add('cliente_id', 'La factura requiere un cliente identificado.');
                 }
 
                 if ($comprobante?->tipo_comprobante === 'FACTURA' && $clienteId) {
                     $cliente = Cliente::with('persona.documento')->find($clienteId);
 
-                    if (!$cliente || !$cliente->persona?->documento || $cliente->persona->documento->codigo !== 'RUC') {
+                    if (! $cliente || ! $cliente->persona?->documento || $cliente->persona->documento->codigo !== 'RUC') {
                         $validator->errors()->add('cliente_id', 'La factura solo puede emitirse a un cliente con RUC.');
                     }
                 }
             }
 
-            $pagos = collect($this->input('pagos', []));
-            $metodoPago = $this->input('metodo_pago');
+            if ($metodoPago === 'MIXTO' && $pagos->isEmpty()) {
+                $validator->errors()->add('pagos', 'Para pago mixto debes registrar al menos un pago.');
+            }
 
-            if ($pagos->isEmpty() && empty($metodoPago)) {
-                $validator->errors()->add('metodo_pago', 'Debes registrar al menos un método de pago.');
+            if (in_array($metodoPago, ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'], true) && $pagos->isNotEmpty()) {
+                $validator->errors()->add('pagos', 'Si eliges un método simple no debes enviar pagos múltiples.');
+            }
+
+            if ($metodoPago === 'MIXTO' && $this->filled('monto_recibido')) {
+                $validator->errors()->add('monto_recibido', 'En pago mixto no uses monto recibido; usa la sección de pagos múltiples.');
             }
         });
     }

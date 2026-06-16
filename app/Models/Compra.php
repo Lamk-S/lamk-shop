@@ -87,6 +87,11 @@ class Compra extends Model
         return $this->hasMany(PagoCompra::class, 'compra_id');
     }
 
+    public function pagos()
+    {
+        return $this->hasMany(PagoCompra::class, 'compra_id');
+    }
+
     public function movimientosTesoreria()
     {
         return $this->hasMany(MovimientoTesoreria::class, 'compra_id');

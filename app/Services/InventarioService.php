@@ -2,12 +2,10 @@
 
 namespace App\Services;
 
-use App\Models\Compra;
 use App\Models\Kardex;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\User;
-use App\Models\Venta;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
@@ -30,6 +28,26 @@ class InventarioService
         }
     }
 
+    public function obtenerCostoSalida(ProductoVariante $variante): float
+    {
+        $costo = (float) ($variante->costo_promedio
+            ?: $variante->costo_ultimo_compra
+            ?: $variante->producto?->precio_compra
+            ?: 0);
+
+        return round($costo, 2);
+    }
+
+    protected function obtenerCostoBaseEntrada(ProductoVariante $variante): float
+    {
+        $costo = (float) ($variante->costo_promedio
+            ?: $variante->costo_ultimo_compra
+            ?: $variante->producto?->precio_compra
+            ?: 0);
+
+        return round($costo, 2);
+    }
+
     public function registrarEntrada(
         ProductoVariante $variante,
         int $cantidad,
@@ -40,6 +58,7 @@ class InventarioService
     ): Kardex {
         return DB::transaction(function () use ($variante, $cantidad, $costoUnitario, $descripcion, $origen, $user) {
             $locked = ProductoVariante::query()
+                ->with('producto')
                 ->whereKey($variante->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -47,9 +66,25 @@ class InventarioService
             $saldoAnterior = (int) $locked->stock_actual;
             $saldoPosterior = $saldoAnterior + $cantidad;
 
+            $costoAnteriorPromedio = $this->obtenerCostoBaseEntrada($locked);
+
+            $nuevoCostoPromedio = $saldoPosterior > 0
+                ? round((($saldoAnterior * $costoAnteriorPromedio) + ($cantidad * $costoUnitario)) / $saldoPosterior, 2)
+                : round($costoUnitario, 2);
+
             $locked->update([
                 'stock_actual' => $saldoPosterior,
+                'costo_ultimo_compra' => round($costoUnitario, 2),
+                'costo_promedio' => $nuevoCostoPromedio,
+                'ultima_compra_at' => now(),
             ]);
+
+            Producto::query()
+                ->whereKey($locked->producto_id)
+                ->update([
+                    'precio_compra' => round($costoUnitario, 2),
+                    'updated_at' => now(),
+                ]);
 
             $this->recalcularStockProducto($locked->producto_id);
 
@@ -63,7 +98,7 @@ class InventarioService
                 'salida' => 0,
                 'saldo_anterior' => $saldoAnterior,
                 'saldo_posterior' => $saldoPosterior,
-                'costo_unitario' => $costoUnitario,
+                'costo_unitario' => round($costoUnitario, 2),
                 'costo_total' => round($cantidad * $costoUnitario, 2),
                 'user_id' => $user?->id,
             ]);
@@ -73,7 +108,7 @@ class InventarioService
     public function registrarSalida(
         ProductoVariante $variante,
         int $cantidad,
-        float $costoUnitario,
+        ?float $costoUnitario,
         string $descripcion,
         Model $origen,
         ?User $user = null,
@@ -81,6 +116,7 @@ class InventarioService
     ): Kardex {
         return DB::transaction(function () use ($variante, $cantidad, $costoUnitario, $descripcion, $origen, $user, $tipoTransaccion) {
             $locked = ProductoVariante::query()
+                ->with('producto')
                 ->whereKey($variante->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -89,6 +125,10 @@ class InventarioService
 
             $saldoAnterior = (int) $locked->stock_actual;
             $saldoPosterior = $saldoAnterior - $cantidad;
+
+            $costoSalida = $costoUnitario !== null && $costoUnitario > 0
+                ? round($costoUnitario, 2)
+                : $this->obtenerCostoSalida($locked);
 
             $locked->update([
                 'stock_actual' => $saldoPosterior,
@@ -106,8 +146,8 @@ class InventarioService
                 'salida' => $cantidad,
                 'saldo_anterior' => $saldoAnterior,
                 'saldo_posterior' => $saldoPosterior,
-                'costo_unitario' => $costoUnitario,
-                'costo_total' => round($cantidad * $costoUnitario, 2),
+                'costo_unitario' => $costoSalida,
+                'costo_total' => round($cantidad * $costoSalida, 2),
                 'user_id' => $user?->id,
             ]);
         });
@@ -123,19 +163,24 @@ class InventarioService
     ): Kardex {
         return DB::transaction(function () use ($variante, $cantidad, $costoUnitario, $descripcion, $origen, $user) {
             $locked = ProductoVariante::query()
+                ->with('producto')
                 ->whereKey($variante->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($locked->stock_actual < $cantidad) {
+            $saldoAnterior = (int) $locked->stock_actual;
+
+            if ($saldoAnterior < $cantidad) {
                 throw new RuntimeException("No se puede revertir la compra porque la variante {$locked->codigo_variante} no tiene stock suficiente.");
             }
 
-            $saldoAnterior = (int) $locked->stock_actual;
             $saldoPosterior = $saldoAnterior - $cantidad;
 
             $locked->update([
                 'stock_actual' => $saldoPosterior,
+                'costo_promedio' => $saldoPosterior > 0 ? $locked->costo_promedio : 0,
+                'costo_ultimo_compra' => $saldoPosterior > 0 ? $locked->costo_ultimo_compra : 0,
+                'ultima_compra_at' => $saldoPosterior > 0 ? $locked->ultima_compra_at : null,
             ]);
 
             $this->recalcularStockProducto($locked->producto_id);
@@ -150,7 +195,7 @@ class InventarioService
                 'salida' => $cantidad,
                 'saldo_anterior' => $saldoAnterior,
                 'saldo_posterior' => $saldoPosterior,
-                'costo_unitario' => $costoUnitario,
+                'costo_unitario' => round($costoUnitario, 2),
                 'costo_total' => round($cantidad * $costoUnitario, 2),
                 'user_id' => $user?->id,
             ]);
@@ -167,6 +212,7 @@ class InventarioService
     ): Kardex {
         return DB::transaction(function () use ($variante, $cantidad, $costoUnitario, $descripcion, $origen, $user) {
             $locked = ProductoVariante::query()
+                ->with('producto')
                 ->whereKey($variante->id)
                 ->lockForUpdate()
                 ->firstOrFail();
@@ -190,7 +236,7 @@ class InventarioService
                 'salida' => 0,
                 'saldo_anterior' => $saldoAnterior,
                 'saldo_posterior' => $saldoPosterior,
-                'costo_unitario' => $costoUnitario,
+                'costo_unitario' => round($costoUnitario, 2),
                 'costo_total' => round($cantidad * $costoUnitario, 2),
                 'user_id' => $user?->id,
             ]);
@@ -205,17 +251,22 @@ class InventarioService
     ): Kardex {
         return DB::transaction(function () use ($variante, $nuevoStock, $descripcion, $user) {
             $locked = ProductoVariante::query()
+                ->with('producto')
                 ->whereKey($variante->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $saldoAnterior = (int) $locked->stock_actual;
             $saldoPosterior = $nuevoStock;
+
             $entrada = max(0, $saldoPosterior - $saldoAnterior);
             $salida = max(0, $saldoAnterior - $saldoPosterior);
 
             $locked->update([
                 'stock_actual' => $saldoPosterior,
+                'costo_promedio' => $saldoPosterior > 0 ? $locked->costo_promedio : 0,
+                'costo_ultimo_compra' => $saldoPosterior > 0 ? $locked->costo_ultimo_compra : 0,
+                'ultima_compra_at' => $saldoPosterior > 0 ? $locked->ultima_compra_at : null,
             ]);
 
             $this->recalcularStockProducto($locked->producto_id);
