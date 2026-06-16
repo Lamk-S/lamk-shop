@@ -23,7 +23,7 @@ class PagoVenta extends Model
 
     protected $casts = [
         'monto' => 'decimal:2',
-        'estado' => 'boolean',
+        'estado' => 'integer',
     ];
 
     public function venta()
@@ -33,6 +33,6 @@ class PagoVenta extends Model
 
     public function scopeActivos(Builder $query) : Builder
     {
-        return $query->where('estado', true);
+        return $query->where('estado', 1);
     }
 }

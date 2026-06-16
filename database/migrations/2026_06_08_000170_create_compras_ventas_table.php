@@ -50,15 +50,15 @@ return new class extends Migration
             $table->decimal('monto_pagado', 12, 2)->default(0);
             $table->decimal('saldo_pendiente', 12, 2)->default(0);
 
-            $table->enum('estado_pago', ['PENDIENTE', 'PARCIAL', 'PAGADA'])
-                ->default('PAGADA')
+            $table->enum('estado_pago', ['PENDIENTE', 'PARCIAL', 'PAGADA', 'ANULADA'])
+                ->default('PENDIENTE')
                 ->index();
 
             $table->date('fecha_vencimiento')->nullable()->index();
             $table->dateTime('fecha_pago_total')->nullable();
 
             $table->enum('estado_documento', ['REGISTRADA', 'RECEPCIONADA', 'ANULADA', 'PENDIENTE'])
-                ->default('REGISTRADA')
+                ->default('RECEPCIONADA')
                 ->index();
 
             $table->text('observacion')->nullable();
@@ -133,6 +133,10 @@ return new class extends Migration
             $table->string('cliente_direccion', 255)->nullable();
             $table->string('cliente_email', 100)->nullable();
 
+            $table->enum('metodo_pago', ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO', 'MIXTO'])
+                ->default('EFECTIVO')
+                ->index();
+
             $table->string('moneda', 10)->default('PEN');
             $table->dateTime('fecha_emision')->index();
 
@@ -145,7 +149,7 @@ return new class extends Migration
             $table->decimal('vuelto_entregado', 12, 2)->default(0);
 
             $table->enum('estado_documento', ['REGISTRADA', 'EMITIDA', 'ANULADA', 'PENDIENTE'])
-                ->default('REGISTRADA')
+                ->default('EMITIDA')
                 ->index();
 
             $table->text('observacion')->nullable();

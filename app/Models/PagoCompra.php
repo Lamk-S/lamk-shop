@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -45,7 +46,7 @@ class PagoCompra extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function scopeActivos($query)
+    public function scopeActivos(Builder $query) : Builder
     {
         return $query->where('estado', true);
     }
