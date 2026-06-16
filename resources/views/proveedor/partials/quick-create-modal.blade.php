@@ -1,86 +1,188 @@
-<div class="modal fade" id="quickProveedorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
+<div class="modal fade" id="quickProveedorModal" tabindex="-1" aria-labelledby="quickProveedorModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
-            <form id="quickProveedorForm" action="{{ route('proveedores.quick.store') }}" method="post">
+            <form action="{{ route('proveedores.quick-store') }}" method="POST" novalidate>
                 @csrf
 
-                <div class="modal-header border-0 pb-0">
+                <div class="modal-header">
                     <div>
-                        <h5 class="modal-title fw-semibold mb-1">Registrar proveedor rápido</h5>
-                        <small class="text-muted">Alta express para compras e ingreso de mercadería.</small>
+                        <h5 class="modal-title fw-semibold" id="quickProveedorModalLabel">Crear proveedor rápido</h5>
+                        <small class="text-muted">Registro mínimo para compras y cuentas por pagar.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
 
-                <div class="modal-body pt-3">
-                    <div class="alert alert-warning border-0">
-                        Toda compra debe quedar vinculada a un proveedor real. Nada de proveedores fantasma.
-                    </div>
-
+                <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="quick_proveedor_tipo_persona" class="form-label fw-medium">Tipo de persona <span class="text-danger">*</span></label>
+                            <label for="quick_proveedor_tipo_persona" class="form-label fw-medium text-secondary">
+                                Tipo de persona <span class="text-danger">*</span>
+                            </label>
                             <select name="tipo_persona" id="quick_proveedor_tipo_persona" class="form-select" required>
-                                <option value="" selected disabled>Seleccione...</option>
-                                <option value="natural">Natural</option>
-                                <option value="juridica">Jurídica</option>
+                                <option value="">Seleccione...</option>
+                                <option value="natural" @selected(old('tipo_persona') === 'natural')>Natural</option>
+                                <option value="juridica" @selected(old('tipo_persona') === 'juridica')>Jurídica</option>
                             </select>
+                            @error('tipo_persona')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_proveedor_documento_id" class="form-label fw-medium">Tipo de documento <span class="text-danger">*</span></label>
+                            <label for="quick_proveedor_documento_id" class="form-label fw-medium text-secondary">
+                                Tipo de documento <span class="text-danger">*</span>
+                            </label>
                             <select name="documento_id" id="quick_proveedor_documento_id" class="form-select" required>
-                                <option value="" selected disabled>Seleccione...</option>
-                                @foreach ($documentos as $documento)
-                                    <option value="{{ $documento->id }}" data-codigo="{{ $documento->codigo }}">
-                                        {{ $documento->codigo }} - {{ $documento->tipo_documento }}
-                                    </option>
-                                @endforeach
+                                <option value="">Seleccione...</option>
+                                @isset($documentos)
+                                    @foreach ($documentos as $documento)
+                                        <option
+                                            value="{{ $documento->id }}"
+                                            data-codigo="{{ strtoupper($documento->codigo) }}"
+                                            @selected((string) old('documento_id') === (string) $documento->id)
+                                        >
+                                            {{ $documento->tipo_documento }}
+                                        </option>
+                                    @endforeach
+                                @endisset
                             </select>
-                        </div>
-
-                        <div class="col-md-6 persona-natural-field">
-                            <label for="quick_proveedor_nombres" class="form-label fw-medium">Nombres <span class="text-danger">*</span></label>
-                            <input type="text" name="nombres" id="quick_proveedor_nombres" class="form-control" placeholder="Juan">
-                        </div>
-
-                        <div class="col-md-6 persona-natural-field">
-                            <label for="quick_proveedor_apellidos" class="form-label fw-medium">Apellidos <span class="text-danger">*</span></label>
-                            <input type="text" name="apellidos" id="quick_proveedor_apellidos" class="form-control" placeholder="Pérez">
-                        </div>
-
-                        <div class="col-12 persona-juridica-field">
-                            <label for="quick_proveedor_razon_social" class="form-label fw-medium">Razón social <span class="text-danger">*</span></label>
-                            <input type="text" name="razon_social" id="quick_proveedor_razon_social" class="form-control" placeholder="Distribuidora Deportiva Perú S.A.C.">
+                            @error('documento_id')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_proveedor_numero_documento" class="form-label fw-medium">Número de documento <span class="text-danger">*</span></label>
-                            <input type="text" name="numero_documento" id="quick_proveedor_numero_documento" class="form-control" placeholder="20123456789" required>
+                            <label for="quick_proveedor_numero_documento" class="form-label fw-medium text-secondary">
+                                Número de documento <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="numero_documento"
+                                id="quick_proveedor_numero_documento"
+                                class="form-control"
+                                value="{{ old('numero_documento') }}"
+                                placeholder="Ej. 20123456789"
+                                autocomplete="off"
+                                required
+                            >
+                            @error('numero_documento')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_proveedor_telefono" class="form-label fw-medium">Teléfono</label>
-                            <input type="text" name="telefono" id="quick_proveedor_telefono" class="form-control" placeholder="987654321">
+                            <label for="quick_proveedor_telefono" class="form-label fw-medium text-secondary">
+                                Teléfono
+                            </label>
+                            <input
+                                type="text"
+                                name="telefono"
+                                id="quick_proveedor_telefono"
+                                class="form-control"
+                                value="{{ old('telefono') }}"
+                                placeholder="Ej. 987654321"
+                                autocomplete="off"
+                            >
+                            @error('telefono')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_proveedor_email" class="form-label fw-medium">Correo electrónico</label>
-                            <input type="email" name="email" id="quick_proveedor_email" class="form-control" placeholder="compras@empresa.com">
+                            <label for="quick_proveedor_email" class="form-label fw-medium text-secondary">
+                                Correo electrónico
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                id="quick_proveedor_email"
+                                class="form-control"
+                                value="{{ old('email') }}"
+                                placeholder="Ej. compras@empresa.com"
+                                autocomplete="off"
+                            >
+                            @error('email')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 quick-proveedor-natural-field d-none">
+                            <label for="quick_proveedor_nombres" class="form-label fw-medium text-secondary">
+                                Nombres <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="nombres"
+                                id="quick_proveedor_nombres"
+                                class="form-control"
+                                value="{{ old('nombres') }}"
+                                placeholder="Ej. Juan"
+                                autocomplete="off"
+                            >
+                            @error('nombres')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6 quick-proveedor-natural-field d-none">
+                            <label for="quick_proveedor_apellidos" class="form-label fw-medium text-secondary">
+                                Apellidos <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="apellidos"
+                                id="quick_proveedor_apellidos"
+                                class="form-control"
+                                value="{{ old('apellidos') }}"
+                                placeholder="Ej. Pérez"
+                                autocomplete="off"
+                            >
+                            @error('apellidos')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-12 quick-proveedor-juridica-field d-none">
+                            <label for="quick_proveedor_razon_social" class="form-label fw-medium text-secondary">
+                                Razón social <span class="text-danger">*</span>
+                            </label>
+                            <input
+                                type="text"
+                                name="razon_social"
+                                id="quick_proveedor_razon_social"
+                                class="form-control"
+                                value="{{ old('razon_social') }}"
+                                placeholder="Ej. Lamk Sports S.A.C."
+                                autocomplete="off"
+                            >
+                            @error('razon_social')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_proveedor_direccion" class="form-label fw-medium">Dirección</label>
-                            <input type="text" name="direccion" id="quick_proveedor_direccion" class="form-control" placeholder="Av. Industrial 456">
+                            <label for="quick_proveedor_direccion" class="form-label fw-medium text-secondary">
+                                Dirección
+                            </label>
+                            <input
+                                type="text"
+                                name="direccion"
+                                id="quick_proveedor_direccion"
+                                class="form-control"
+                                value="{{ old('direccion') }}"
+                                placeholder="Ej. Av. Principal 123"
+                                autocomplete="off"
+                            >
+                            @error('direccion')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
                         </div>
-
-                        <input type="hidden" name="estado" value="1">
                     </div>
                 </div>
 
-                <div class="modal-footer border-0 pt-0">
+                <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-2"></i>Guardar proveedor
                     </button>
                 </div>
@@ -92,113 +194,75 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modal = document.getElementById('quickProveedorModal');
-        if (!modal) return;
+        const tipoPersona = document.getElementById('quick_proveedor_tipo_persona');
+        const documentoSelect = document.getElementById('quick_proveedor_documento_id');
 
-        const form = modal.querySelector('#quickProveedorForm');
-        const tipo = modal.querySelector('#quick_proveedor_tipo_persona');
-        const documento = modal.querySelector('#quick_proveedor_documento_id');
-        const naturalFields = modal.querySelectorAll('.persona-natural-field');
-        const juridicaFields = modal.querySelectorAll('.persona-juridica-field');
-        const nombres = modal.querySelector('#quick_proveedor_nombres');
-        const apellidos = modal.querySelector('#quick_proveedor_apellidos');
-        const razonSocial = modal.querySelector('#quick_proveedor_razon_social');
+        const naturalFields = document.querySelectorAll('.quick-proveedor-natural-field');
+        const juridicaFields = document.querySelectorAll('.quick-proveedor-juridica-field');
 
-        function toggle() {
-            const value = tipo.value;
+        const nombres = document.getElementById('quick_proveedor_nombres');
+        const apellidos = document.getElementById('quick_proveedor_apellidos');
+        const razonSocial = document.getElementById('quick_proveedor_razon_social');
 
-            if (value === 'natural') {
-                naturalFields.forEach(el => el.style.display = 'block');
-                juridicaFields.forEach(el => el.style.display = 'none');
-                nombres.required = true;
-                apellidos.required = true;
-                razonSocial.required = false;
-                razonSocial.value = '';
-            } else if (value === 'juridica') {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'block');
-                nombres.required = false;
-                apellidos.required = false;
-                razonSocial.required = true;
+        function setRequired(elements, required) {
+            elements.forEach((el) => {
+                const input = el.querySelector('input, select, textarea');
+                if (input) {
+                    input.required = required;
+                }
+            });
+        }
 
-                const rucOption = Array.from(documento.options).find(opt => (opt.dataset.codigo || '').toUpperCase() === 'RUC');
-                if (rucOption) documento.value = rucOption.value;
+        function selectDocumentoPorCodigo(codigoBuscado) {
+            if (!documentoSelect) return;
+
+            const codigo = String(codigoBuscado || '').toUpperCase();
+            let found = false;
+
+            Array.from(documentoSelect.options).forEach((option) => {
+                const optionCodigo = String(option.dataset.codigo || '').toUpperCase();
+                if (optionCodigo === codigo) {
+                    option.selected = true;
+                    found = true;
+                }
+            });
+
+            if (!found && documentoSelect.options.length > 0 && !documentoSelect.value) {
+                documentoSelect.selectedIndex = 0;
+            }
+        }
+
+        function toggleFields() {
+            const tipo = String(tipoPersona?.value || '').toLowerCase();
+
+            if (tipo === 'natural') {
+                naturalFields.forEach((el) => el.classList.remove('d-none'));
+                juridicaFields.forEach((el) => el.classList.add('d-none'));
+                setRequired(naturalFields, true);
+                setRequired(juridicaFields, false);
+                if (razonSocial) razonSocial.value = '';
+                selectDocumentoPorCodigo('DNI');
+            } else if (tipo === 'juridica') {
+                naturalFields.forEach((el) => el.classList.add('d-none'));
+                juridicaFields.forEach((el) => el.classList.remove('d-none'));
+                setRequired(naturalFields, false);
+                setRequired(juridicaFields, true);
+                if (nombres) nombres.value = '';
+                if (apellidos) apellidos.value = '';
+                selectDocumentoPorCodigo('RUC');
             } else {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'none');
+                naturalFields.forEach((el) => el.classList.add('d-none'));
+                juridicaFields.forEach((el) => el.classList.add('d-none'));
+                setRequired(naturalFields, false);
+                setRequired(juridicaFields, false);
             }
         }
 
-        async function submitQuickProveedor(event) {
-            event.preventDefault();
-
-            try {
-                const formData = new FormData(form);
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    const message = data?.message || 'No se pudo registrar el proveedor.';
-                    throw new Error(message);
-                }
-
-                const proveedor = data.proveedor;
-                const select = document.getElementById('proveedor_id');
-
-                if (select && proveedor) {
-                    const text = `${proveedor.label} — ${proveedor.documento} ${proveedor.numero_documento}`;
-                    const option = new Option(text, proveedor.id, true, true);
-                    select.add(option);
-
-                    if (window.jQuery && typeof jQuery.fn.selectpicker === 'function') {
-                        jQuery(select).selectpicker('refresh');
-                        jQuery(select).selectpicker('val', String(proveedor.id));
-                    } else {
-                        select.value = proveedor.id;
-                    }
-
-                    select.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-
-                form.reset();
-                toggle();
-
-                bootstrap.Modal.getOrCreateInstance(modal).hide();
-
-                if (window.Swal) {
-                    Swal.fire({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 1800,
-                        icon: 'success',
-                        title: data.message || 'Proveedor registrado correctamente'
-                    });
-                }
-            } catch (error) {
-                if (window.Swal) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: error.message || 'No se pudo registrar el proveedor.'
-                    });
-                } else {
-                    alert(error.message || 'No se pudo registrar el proveedor.');
-                }
-            }
+        if (tipoPersona) {
+            tipoPersona.addEventListener('change', toggleFields);
         }
 
-        toggle();
-        tipo.addEventListener('change', toggle);
-        form.addEventListener('submit', submitQuickProveedor);
+        toggleFields();
     });
 </script>
 @endpush
