@@ -135,10 +135,23 @@ class TesoreriaService
         ]));
     }
 
+    public function registrarCierreCaja(SesionCaja $sesion, float $monto, ?User $user = null): MovimientoTesoreria
+    {
+        return $this->registrarIngresoEfectivo([
+            'user_id' => $user?->id,
+            'sesion_caja_id' => $sesion->id,
+            'origen' => 'CIERRE_CAJA',
+            'descripcion' => 'Traslado de efectivo desde cierre de caja #' . $sesion->id,
+            'monto' => $monto,
+            'referencia' => 'CIERRE_CAJA',
+        ]);
+    }
+
     public function origenDesdeMetodoPago(string $metodoPago): array
     {
         return match (strtoupper($metodoPago)) {
             'EFECTIVO' => ['codigo' => 'TES-EFECTIVO', 'nombre' => 'Caja General', 'tipo' => 'EFECTIVO'],
+            'TARJETA', 'YAPE', 'PLIN', 'TRANSFERENCIA' => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => 'BANCO'],
             default => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => 'BANCO'],
         };
     }
@@ -179,7 +192,9 @@ class TesoreriaService
             'venta_id' => $venta->id,
             'tipo' => 'INGRESO',
             'medio' => $origen['tipo'],
-            'origen' => $metodoPago === 'EFECTIVO' ? 'VENTA_EFECTIVO' : ($metodoPago === 'TARJETA' ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA'),
+            'origen' => $origen['tipo'] === 'EFECTIVO'
+                ? 'VENTA_EFECTIVO'
+                : ($metodoPago === 'TARJETA' ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA'),
             'descripcion' => 'Cobro de venta #' . $venta->id,
             'monto' => $monto,
             'numero_operacion' => $referencia,

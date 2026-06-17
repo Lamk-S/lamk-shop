@@ -29,8 +29,18 @@ class Tesoreria extends Model
         return $this->hasMany(MovimientoTesoreria::class, 'tesoreria_id');
     }
 
-    public function scopeActivas(Builder $query) : Builder
+    public function scopeActivas(Builder $query): Builder
     {
         return $query->where('estado', true);
+    }
+
+    public function scopeEfectivo(Builder $query): Builder
+    {
+        return $query->where('tipo_cuenta', 'EFECTIVO');
+    }
+
+    public function scopeBanco(Builder $query): Builder
+    {
+        return $query->where('tipo_cuenta', 'BANCO');
     }
 }
