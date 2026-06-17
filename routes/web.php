@@ -105,7 +105,8 @@ Route::middleware('auth')->group(function () {
         ->parameters(['empresa-configuracion' => 'empresa_configuracion']);
 
     Route::resource('auditoria-operaciones', AuditoriaOperacionController::class)
-        ->only(['index', 'show']);
+        ->only(['index', 'show'])
+        ->parameters(['auditoria-operaciones' => 'auditoriaOperacion']);
 
     Route::resource('users', UserController::class)->except(['show']);
     Route::resource('roles', RoleController::class)->except(['show']);

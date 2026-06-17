@@ -12,7 +12,9 @@ use Illuminate\Routing\Controllers\Middleware;
 
 class SesionCajaController extends Controller implements HasMiddleware
 {
-    public function __construct(protected CajaService $cajaService) { }
+    public function __construct(protected CajaService $cajaService)
+    {
+    }
 
     public static function middleware(): array
     {
@@ -23,11 +25,21 @@ class SesionCajaController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $sesiones = SesionCaja::with(['caja', 'user', 'userCierre'])->latest('id')->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $perPage = in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : 10;
 
-        return view('sesion_caja.index', compact('sesiones'));
+        $sesiones = SesionCaja::with([
+                'caja',
+                'user',
+                'userCierre',
+            ])
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('sesion_caja.index', compact('sesiones', 'perPage'));
     }
 
     public function create()
@@ -42,7 +54,7 @@ class SesionCajaController extends Controller implements HasMiddleware
         $data = $request->validated();
 
         try {
-            $sesion = $this->cajaService->abrirCaja(
+            $this->cajaService->abrirCaja(
                 $request->user(),
                 (int) $data['caja_id'],
                 isset($data['saldo_inicial']) ? (float) $data['saldo_inicial'] : null,
@@ -53,7 +65,9 @@ class SesionCajaController extends Controller implements HasMiddleware
                 ->route('sesiones-caja.index')
                 ->with('success', 'Sesión de caja abierta correctamente');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()])->withInput();
+            return back()
+                ->withErrors(['error' => $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -64,8 +78,10 @@ class SesionCajaController extends Controller implements HasMiddleware
             'user',
             'userCierre',
             'movimientosCaja',
-            'ventas.detalles',
-            'movimientosTesoreria',
+            'ventas.comprobante',
+            'ventas.cliente.persona.documento',
+            'ventas.user',
+            'ventas.pagos',
         ]);
 
         return view('sesion_caja.show', compact('sesionCaja'));
@@ -90,7 +106,9 @@ class SesionCajaController extends Controller implements HasMiddleware
                 ->route('sesiones-caja.index')
                 ->with('success', 'Sesión de caja cerrada correctamente');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Error al cerrar la sesión: ' . $e->getMessage()]);
+            return back()
+                ->withErrors(['error' => 'Error al cerrar la sesión: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 }
