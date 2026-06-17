@@ -10,6 +10,7 @@ use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\Proveedor;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -24,9 +25,9 @@ class CompraService
     ) {
     }
 
-    public function registrar(array $data, User $user): Compra
+    public function registrar(array $data, User $user, ?Request $request = null): Compra
     {
-        return DB::transaction(function () use ($data, $user) {
+        return DB::transaction(function () use ($data, $user, $request) {
             $empresa = EmpresaConfiguracion::query()->first();
             $igv = (float) ($empresa?->igv_porcentaje ?? 18.00);
 
@@ -189,7 +190,8 @@ class CompraService
                 'CREAR',
                 [],
                 $compra->fresh()->toArray(),
-                $user
+                $user,
+                $request
             );
 
             return $compra->fresh([
@@ -201,9 +203,9 @@ class CompraService
         });
     }
 
-    public function anular(Compra $compra, string $motivo, User $user): Compra
+    public function anular(Compra $compra, string $motivo, User $user, ?Request $request = null): Compra
     {
-        return DB::transaction(function () use ($compra, $motivo, $user) {
+        return DB::transaction(function () use ($compra, $motivo, $user, $request) {
             $compra = Compra::query()
                 ->with([
                     'detalles.productoVariante.producto',
@@ -244,7 +246,8 @@ class CompraService
                 'ANULAR',
                 [],
                 $compra->fresh()->toArray(),
-                $user
+                $user,
+                $request
             );
 
             return $compra->fresh([

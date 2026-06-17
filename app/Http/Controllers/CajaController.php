@@ -17,11 +17,17 @@ class CajaController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $cajas = Caja::withTrashed()->latest('id')->get();
+        $perPage = (int) $request->input('per_page', 10);
+        $perPage = in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : 10;
 
-        return view('caja.index', compact('cajas'));
+        $cajas = Caja::withTrashed()
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('caja.index', compact('cajas', 'perPage'));
     }
 
     public function create()

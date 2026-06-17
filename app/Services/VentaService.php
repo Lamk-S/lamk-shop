@@ -13,6 +13,7 @@ use App\Models\ProductoVenta;
 use App\Models\SesionCaja;
 use App\Models\User;
 use App\Models\Venta;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -24,12 +25,11 @@ class VentaService
         protected CajaService $cajaService,
         protected ComprobanteService $comprobanteService,
         protected AuditoriaService $auditoriaService
-    ) {
-    }
+    ) {}
 
-    public function registrar(array $data, User $user): Venta
+    public function registrar(array $data, User $user, ?Request $request = null): Venta
     {
-        return DB::transaction(function () use ($data, $user) {
+        return DB::transaction(function () use ($data, $user, $request) {
             $sesionAbierta = SesionCaja::query()
                 ->where('user_id', $user->id)
                 ->where('estado_sesion', 'ABIERTA')
@@ -141,7 +141,7 @@ class VentaService
                         'referencia_operacion' => $payment['referencia_operacion'] ?? null,
                     ];
                 })
-                ->filter(fn ($payment) => $payment['metodo_pago'] !== '' && $payment['monto'] > 0)
+                ->filter(fn($payment) => $payment['metodo_pago'] !== '' && $payment['monto'] > 0)
                 ->values();
 
             $metodoPagoPrincipal = strtoupper((string) ($data['metodo_pago'] ?? ''));
@@ -169,7 +169,7 @@ class VentaService
 
             $soloUnPagoEfectivo = $paymentRows->count() === 1 && strtoupper($paymentRows->first()['metodo_pago']) === 'EFECTIVO';
 
-            // Validación inteligente de montos
+            // Validación de montos
             if ($soloUnPagoEfectivo) {
                 if ($pagosTotal < $totalVenta) {
                     throw new RuntimeException("El monto recibido en efectivo (S/ {$pagosTotal}) no puede ser menor al total de la venta (S/ {$totalVenta}).");
@@ -307,7 +307,8 @@ class VentaService
                 'CREAR',
                 [],
                 $venta->fresh()->toArray(),
-                $user
+                $user,
+                $request
             );
 
             return $venta->fresh([
@@ -322,9 +323,9 @@ class VentaService
         });
     }
 
-    public function anular(Venta $venta, string $motivo, User $user): Venta
+    public function anular(Venta $venta, string $motivo, User $user , ?Request $request = null): Venta
     {
-        return DB::transaction(function () use ($venta, $motivo, $user) {
+        return DB::transaction(function () use ($venta, $motivo, $user, $request) {
             $venta = Venta::query()
                 ->with(['detalles.productoVariante.producto', 'pagos', 'sesionCaja'])
                 ->whereKey($venta->id)
@@ -410,7 +411,8 @@ class VentaService
                 'ANULAR',
                 [],
                 $venta->fresh()->toArray(),
-                $user
+                $user,
+                $request
             );
 
             return $venta->fresh([

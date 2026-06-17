@@ -177,7 +177,7 @@ class VentaController extends Controller implements HasMiddleware
     public function store(StoreVentaRequest $request)
     {
         try {
-            $this->ventaService->registrar($request->validated(), $request->user());
+            $this->ventaService->registrar($request->validated(), $request->user(), $request);
 
             return redirect()
                 ->route('ventas.index')
@@ -212,7 +212,8 @@ class VentaController extends Controller implements HasMiddleware
             $this->ventaService->anular(
                 $venta,
                 $request->validated()['motivo_anulacion'],
-                $request->user()
+                $request->user(),
+                $request
             );
 
             return redirect()

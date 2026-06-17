@@ -61,13 +61,15 @@ class CajaService
                 throw new RuntimeException('El usuario ya tiene una sesión de caja abierta.');
             }
 
+            $saldoInicialReal = $saldoInicial ?? (float) $caja->fondo_fijo;
+
             $sesion = SesionCaja::create([
                 'caja_id' => $caja->id,
                 'user_id' => $user->id,
                 'fecha_hora_apertura' => now(),
-                'saldo_inicial' => $saldoInicial ?? $caja->fondo_fijo,
+                'saldo_inicial' => $saldoInicialReal,
                 'saldo_final_declarado' => null,
-                'saldo_final_esperado' => null,
+                'saldo_final_esperado' => $saldoInicialReal,
                 'diferencia' => null,
                 'estado_sesion' => 'ABIERTA',
                 'observacion_apertura' => $observacion,
@@ -79,7 +81,7 @@ class CajaService
                 'tipo' => 'INGRESO',
                 'origen' => 'APERTURA',
                 'descripcion' => 'Apertura de caja ' . $caja->nombre,
-                'monto' => $sesion->saldo_inicial,
+                'monto' => $saldoInicialReal,
                 'referencia_type' => null,
                 'referencia_id' => null,
             ]);
@@ -100,9 +102,16 @@ class CajaService
                 throw new RuntimeException('La sesión ya está cerrada o anulada.');
             }
 
-            $ingresos = (float) $sesion->movimientosCaja()->where('tipo', 'INGRESO')->sum('monto');
-            $egresos = (float) $sesion->movimientosCaja()->where('tipo', 'EGRESO')->sum('monto');
-            $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresos - $egresos, 2);
+            $ingresosOperativos = (float) $sesion->movimientosCaja()
+                ->where('tipo', 'INGRESO')
+                ->where('origen', '!=', 'APERTURA')
+                ->sum('monto');
+
+            $egresosOperativos = (float) $sesion->movimientosCaja()
+                ->where('tipo', 'EGRESO')
+                ->sum('monto');
+
+            $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresosOperativos - $egresosOperativos, 2);
             $diferencia = round($saldoDeclarado - $saldoEsperado, 2);
 
             $fondoFijo = (float) ($sesion->caja?->fondo_fijo ?? 0);
@@ -148,10 +157,16 @@ class CajaService
 
     public function recalcularSaldoEsperado(SesionCaja $sesion): float
     {
-        $ingresos = (float) $sesion->movimientosCaja()->where('tipo', 'INGRESO')->sum('monto');
-        $egresos = (float) $sesion->movimientosCaja()->where('tipo', 'EGRESO')->sum('monto');
+        $ingresosOperativos = (float) $sesion->movimientosCaja()
+            ->where('tipo', 'INGRESO')
+            ->where('origen', '!=', 'APERTURA')
+            ->sum('monto');
 
-        $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresos - $egresos, 2);
+        $egresosOperativos = (float) $sesion->movimientosCaja()
+            ->where('tipo', 'EGRESO')
+            ->sum('monto');
+
+        $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresosOperativos - $egresosOperativos, 2);
 
         $sesion->update([
             'saldo_final_esperado' => $saldoEsperado,

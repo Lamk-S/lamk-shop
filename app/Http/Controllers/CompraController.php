@@ -16,9 +16,7 @@ use Illuminate\Routing\Controllers\Middleware;
 
 class CompraController extends Controller implements HasMiddleware
 {
-    public function __construct(protected CompraService $compraService)
-    {
-    }
+    public function __construct(protected CompraService $compraService) {}
 
     public static function middleware(): array
     {
@@ -32,13 +30,13 @@ class CompraController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = Compra::with([
-                'comprobante',
-                'proveedor.persona.documento',
-                'detalles.productoVariante.producto.marca',
-                'detalles.productoVariante.talla',
-                'cuentaPorPagar.pagos.user',
-                'user',
-            ])
+            'comprobante',
+            'proveedor.persona.documento',
+            'detalles.productoVariante.producto.marca',
+            'detalles.productoVariante.talla',
+            'cuentaPorPagar.pagos.user',
+            'user',
+        ])
             ->withTrashed()
             ->latest('id');
 
@@ -72,7 +70,7 @@ class CompraController extends Controller implements HasMiddleware
         $compras = $query->paginate($perPage)->withQueryString();
 
         $proveedores = Proveedor::with('persona.documento')
-            ->whereHas('persona', fn ($q) => $q->where('estado', 1))
+            ->whereHas('persona', fn($q) => $q->where('estado', 1))
             ->orderBy('id')
             ->get();
 
@@ -111,7 +109,7 @@ class CompraController extends Controller implements HasMiddleware
     public function create()
     {
         $proveedores = Proveedor::with('persona.documento')
-            ->whereHas('persona', fn ($q) => $q->where('estado', 1))
+            ->whereHas('persona', fn($q) => $q->where('estado', 1))
             ->orderBy('id')
             ->get();
 
@@ -151,7 +149,7 @@ class CompraController extends Controller implements HasMiddleware
     public function store(StoreCompraRequest $request)
     {
         try {
-            $this->compraService->registrar($request->validated(), $request->user());
+            $this->compraService->registrar($request->validated(), $request->user(), $request);
 
             return redirect()
                 ->route('compras.index')
@@ -186,7 +184,8 @@ class CompraController extends Controller implements HasMiddleware
             $this->compraService->anular(
                 $compra,
                 $request->validated()['motivo_anulacion'],
-                $request->user()
+                $request->user(),
+                $request
             );
 
             return redirect()

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreMovimientoCajaRequest;
 use App\Models\MovimientoCaja;
 use App\Models\SesionCaja;
 use App\Services\CajaService;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 
@@ -20,11 +21,17 @@ class MovimientoCajaController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $movimientos = MovimientoCaja::with(['sesionCaja.caja', 'sesionCaja.user'])->latest('id')->get();
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
 
-        return view('movimiento_caja.index', compact('movimientos'));
+        $movimientos = MovimientoCaja::with(['sesionCaja.caja', 'sesionCaja.user'])
+            ->latest('id')
+            ->paginate($perPage)
+            ->withQueryString();
+
+        return view('movimiento_caja.index', compact('movimientos', 'perPage'));
     }
 
     public function create()

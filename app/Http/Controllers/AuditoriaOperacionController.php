@@ -24,21 +24,20 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
         if ($request->filled('usuario_id')) {
             $query->where('user_id', $request->usuario_id);
         }
-
         if ($request->filled('modulo')) {
             $query->where('entidad', $request->modulo);
         }
-
         if ($request->filled('accion')) {
             $query->where('accion', $request->accion);
         }
-
         if ($request->filled('fecha')) {
             $query->whereDate('created_at', $request->fecha);
         }
 
-        $auditorias = $query->paginate(50)->withQueryString();
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
 
+        $auditorias = $query->paginate($perPage)->withQueryString();
         $usuarios = User::orderBy('name')->get();
         $modulos = AuditoriaOperacion::query()
             ->whereNotNull('entidad')
@@ -46,7 +45,6 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
             ->distinct()
             ->orderBy('entidad')
             ->pluck('entidad');
-
         $acciones = AuditoriaOperacion::query()
             ->whereNotNull('accion')
             ->select('accion')
@@ -58,14 +56,14 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
             'auditorias',
             'usuarios',
             'modulos',
-            'acciones'
+            'acciones',
+            'perPage'
         ));
     }
 
     public function show(AuditoriaOperacion $auditoriaOperacion)
     {
         $auditoria = $auditoriaOperacion->load('user');
-
         return view('auditoria_operacion.show', compact('auditoria'));
     }
 }
