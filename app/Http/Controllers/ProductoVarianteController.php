@@ -7,6 +7,7 @@ use App\Http\Requests\UpdateProductoVarianteRequest;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\Talla;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -17,32 +18,86 @@ class ProductoVarianteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:gestionar_productos', only: ['index', 'create', 'store', 'edit', 'update', 'destroy']),
+            new Middleware('permission:gestionar_productos', only: ['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']),
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $variantes = ProductoVariante::with(['producto.marca', 'talla'])
+        $query = ProductoVariante::with(['producto.marca', 'talla'])
             ->withTrashed()
-            ->latest('id')
-            ->get();
+            ->latest('id');
 
-        return view('producto_variante.index', compact('variantes'));
+        if ($request->filled('q')) {
+            $search = trim((string) $request->input('q'));
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo_variante', 'like', "%{$search}%")
+                    ->orWhere('codigo_barra', 'like', "%{$search}%")
+                    ->orWhereHas('producto', function ($qp) use ($search) {
+                        $qp->where('codigo', 'like', "%{$search}%")
+                            ->orWhere('nombre', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('talla', function ($qt) use ($search) {
+                        $qt->where('codigo', 'like', "%{$search}%")
+                            ->orWhere('nombre', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if ($request->filled('producto_id')) {
+            $query->where('producto_id', $request->input('producto_id'));
+        }
+
+        if ($request->filled('talla_id')) {
+            $query->where('talla_id', $request->input('talla_id'));
+        }
+
+        if ($request->filled('estado')) {
+            if ($request->input('estado') === 'activo') {
+                $query->where('estado', 1)->whereNull('deleted_at');
+            } elseif ($request->input('estado') === 'inactivo') {
+                $query->where(function ($q) {
+                    $q->where('estado', 0)->orWhereNotNull('deleted_at');
+                });
+            }
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+
+        $variantes = $query->paginate($perPage)->withQueryString();
+
+        $productos = Producto::where('estado', 1)
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo_producto']);
+
+        $tallas = Talla::where('estado', 1)
+            ->orderBy('tipo_talla')
+            ->orderBy('orden')
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
+            ->unique('id')
+            ->values();
+
+        return view('producto_variante.index', compact('variantes', 'productos', 'tallas', 'perPage'));
     }
 
     public function create()
     {
-        $productos = Producto::where('estado', 1)->orderBy('nombre')->get();
-        $tallas = Talla::where('estado', 1)->orderBy('tipo_talla')->orderBy('orden')->get();
+        $productos = Producto::where('estado', 1)
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo_producto'])
+            ->values();
 
-        $optionsTipoProducto = [
-            'ZAPATILLA' => 'Zapatilla',
-            'ROPA' => 'Ropa',
-            'ACCESORIO' => 'Accesorio',
-        ];
+        $tallas = Talla::where('estado', 1)
+            ->orderBy('tipo_talla')
+            ->orderBy('orden')
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
+            ->unique('id')
+            ->values();
 
-        return view('producto_variante.create', compact('productos', 'tallas', 'optionsTipoProducto'));
+        return view('producto_variante.create', compact('productos', 'tallas'));
     }
 
     public function store(StoreProductoVarianteRequest $request)
@@ -54,17 +109,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 $producto = Producto::findOrFail($data['producto_id']);
                 $talla = Talla::findOrFail($data['talla_id']);
 
-                if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->codigo === 'UNICA') {
-                    throw ValidationException::withMessages([
-                        'talla_id' => 'Las zapatillas y la ropa deportiva no pueden usar talla única.',
-                    ]);
-                }
-
-                if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
-                    throw ValidationException::withMessages([
-                        'talla_id' => 'Los accesorios deben manejar talla única.',
-                    ]);
-                }
+                $this->validarCompatibilidadProductoTalla($producto, $talla);
 
                 $existing = ProductoVariante::withTrashed()
                     ->where('producto_id', $producto->id)
@@ -107,27 +152,41 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 }
             });
 
-            return redirect()->route('productos.index')->with('success', 'Variante registrada correctamente');
-        } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al registrar la variante: ' . $e->getMessage(),
-            ])->withInput();
+            return redirect()->route('producto-variantes.index')->with('success', 'Variante registrada correctamente');
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            return back()
+                ->withErrors(['error' => 'Error al registrar la variante.'])
+                ->withInput();
         }
+    }
+
+    public function show(ProductoVariante $producto_variante)
+    {
+        $productoVariante = $producto_variante->load(['producto.marca', 'talla']);
+        return view('producto_variante.show', compact('productoVariante'));
     }
 
     public function edit(ProductoVariante $producto_variante)
     {
-        $productoVariante = $producto_variante->load(['producto', 'talla']);
-        $productos = Producto::where('estado', 1)->orderBy('nombre')->get();
-        $tallas = Talla::where('estado', 1)->orderBy('tipo_talla')->orderBy('orden')->get();
+        $productoVariante = $producto_variante->load(['producto.marca', 'talla']);
 
-        $optionsTipoProducto = [
-            'ZAPATILLA' => 'Zapatilla',
-            'ROPA' => 'Ropa',
-            'ACCESORIO' => 'Accesorio',
-        ];
+        $productos = Producto::where('estado', 1)
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre', 'tipo_producto'])
+            ->values();
 
-        return view('producto_variante.edit', compact('productoVariante', 'productos', 'tallas', 'optionsTipoProducto'));
+        $tallas = Talla::where('estado', 1)
+            ->orderBy('tipo_talla')
+            ->orderBy('orden')
+            ->orderBy('codigo')
+            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
+            ->unique('id')
+            ->values();
+
+        return view('producto_variante.edit', compact('productoVariante', 'productos', 'tallas'));
     }
 
     public function update(UpdateProductoVarianteRequest $request, ProductoVariante $producto_variante)
@@ -139,17 +198,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 $producto = Producto::findOrFail($data['producto_id']);
                 $talla = Talla::findOrFail($data['talla_id']);
 
-                if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->codigo === 'UNICA') {
-                    throw ValidationException::withMessages([
-                        'talla_id' => 'Las zapatillas y la ropa deportiva no pueden usar talla única.',
-                    ]);
-                }
-
-                if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
-                    throw ValidationException::withMessages([
-                        'talla_id' => 'Los accesorios deben manejar talla única.',
-                    ]);
-                }
+                $this->validarCompatibilidadProductoTalla($producto, $talla);
 
                 $duplicate = ProductoVariante::withTrashed()
                     ->where('producto_id', $producto->id)
@@ -181,11 +230,14 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 ]);
             });
 
-            return redirect()->route('productos.index')->with('success', 'Variante actualizada correctamente');
-        } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al actualizar la variante: ' . $e->getMessage(),
-            ])->withInput();
+            return redirect()->route('producto-variantes.index')->with('success', 'Variante actualizada correctamente');
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            report($e);
+            return back()
+                ->withErrors(['error' => 'Error al actualizar la variante.'])
+                ->withInput();
         }
     }
 
@@ -201,10 +253,24 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 $message = 'Variante eliminada correctamente';
             }
 
-            return redirect()->route('productos.index')->with('success', $message);
-        } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al modificar la variante: ' . $e->getMessage(),
+            return redirect()->route('producto-variantes.index')->with('success', $message);
+        } catch (\Throwable $e) {
+            report($e);
+            return back()->withErrors(['error' => 'Error al modificar la variante.']);
+        }
+    }
+
+    private function validarCompatibilidadProductoTalla(Producto $producto, Talla $talla): void
+    {
+        if ($producto->tipo_producto === 'ACCESORIO' && $talla->tipo_talla !== 'UNICA') {
+            throw ValidationException::withMessages([
+                'talla_id' => 'Los accesorios deben usar talla única.',
+            ]);
+        }
+
+        if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->tipo_talla === 'UNICA') {
+            throw ValidationException::withMessages([
+                'talla_id' => 'Las zapatillas y la ropa no pueden usar talla única.',
             ]);
         }
     }
