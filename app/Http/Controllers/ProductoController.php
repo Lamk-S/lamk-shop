@@ -26,18 +26,52 @@ class ProductoController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $productos = Producto::with([
-                'categorias',
-                'marca',
-                'variantes.talla',
+        $query = Producto::with([
+                'categorias:id,nombre',
+                'marca:id,nombre',
+                'variantes.talla:id,codigo,nombre',
             ])
             ->withTrashed()
-            ->latest('id')
-            ->get();
+            ->latest('id');
 
-        return view('producto.index', compact('productos'));
+        if ($request->filled('q')) {
+            $search = trim((string) $request->input('q'));
+
+            $query->where(function ($q) use ($search) {
+                $q->where('codigo', 'like', "%{$search}%")
+                ->orWhere('codigo_barra', 'like', "%{$search}%")
+                ->orWhere('nombre', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tipo_producto')) {
+            $query->where('tipo_producto', $request->input('tipo_producto'));
+        }
+
+        if ($request->filled('marca_id')) {
+            $query->where('marca_id', $request->input('marca_id'));
+        }
+
+        if ($request->filled('estado')) {
+            if ($request->input('estado') === 'activo') {
+                $query->where('estado', 1)->whereNull('deleted_at');
+            } elseif ($request->input('estado') === 'inactivo') {
+                $query->where(function ($q) {
+                    $q->where('estado', 0)->orWhereNotNull('deleted_at');
+                });
+            }
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+
+        $productos = $query->paginate($perPage)->withQueryString();
+
+        $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
+
+        return view('producto.index', compact('productos', 'perPage', 'marcas'));
     }
 
     public function create()
@@ -71,8 +105,8 @@ class ProductoController extends Controller implements HasMiddleware
         try {
             DB::transaction(function () use ($request, $data) {
                 $producto = new Producto();
-
                 $imgPath = null;
+
                 if ($request->hasFile('img_path')) {
                     $imgPath = $producto->handleUploadImage($request->file('img_path'));
                 }
@@ -92,8 +126,8 @@ class ProductoController extends Controller implements HasMiddleware
                     'marca_id' => $data['marca_id'] ?? null,
                     'estado' => 1,
                 ]);
-                $producto->save();
 
+                $producto->save();
                 $producto->categorias()->sync($data['categoria_id']);
                 $this->syncVariantes($producto, $request);
             });
@@ -111,6 +145,7 @@ class ProductoController extends Controller implements HasMiddleware
     public function edit(Producto $producto)
     {
         $producto->load(['categorias', 'marca', 'variantes.talla']);
+
         $categorias = Categoria::where('estado', 1)->orderBy('nombre')->get();
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
         $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();

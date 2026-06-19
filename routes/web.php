@@ -50,7 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('productos', ProductoController::class)->except(['show']);
 
     Route::resource('producto-variantes', ProductoVarianteController::class)
-        ->except(['show']);
+        ->only(['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']);
 
     Route::resource('clientes', ClienteController::class)->except(['show']);
 
