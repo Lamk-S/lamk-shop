@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Kardex;
 use App\Models\Producto;
-use App\Models\ProductoVariante;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
@@ -20,37 +19,62 @@ class KardexController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = Kardex::with([
+        $query = Kardex::query()
+            ->with([
                 'productoVariante.producto.marca',
                 'productoVariante.talla',
-                'user',
+                'user:id,name',
             ])
             ->latest('id');
 
-        if ($request->filled('producto_variante_id')) {
-            $query->where('producto_variante_id', $request->producto_variante_id);
-        }
-
-        if ($request->filled('tipo_transaccion')) {
-            $query->where('tipo_transaccion', $request->tipo_transaccion);
-        }
-
-        if ($request->filled('producto_id')) {
-            $query->whereHas('productoVariante', function ($q) use ($request) {
-                $q->where('producto_id', $request->producto_id);
+        $query->when($request->filled('q'), function ($q) use ($request) {
+            $search = trim((string) $request->input('q'));
+            $q->where(function ($subQ) use ($search) {
+                $subQ->where('descripcion', 'like', "%{$search}%")
+                    ->orWhereHas('productoVariante', function ($qv) use ($search) {
+                        $qv->where('codigo_variante', 'like', "%{$search}%")
+                            ->orWhere('codigo_barra', 'like', "%{$search}%")
+                            ->orWhereHas('producto', function ($qp) use ($search) {
+                                $qp->where('codigo', 'like', "%{$search}%")
+                                    ->orWhere('nombre', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('talla', function ($qt) use ($search) {
+                                $qt->where('codigo', 'like', "%{$search}%")
+                                    ->orWhere('nombre', 'like', "%{$search}%");
+                            });
+                    });
             });
-        }
+        });
 
-        $kardex = $query->paginate(50)->withQueryString();
+        $query->when($request->filled('producto_id'), function ($q) use ($request) {
+            $q->whereHas('productoVariante', function ($qv) use ($request) {
+                $qv->where('producto_id', $request->input('producto_id'));
+            });
+        });
 
-        $productos = Producto::where('estado', 1)->orderBy('nombre')->get();
-        $productoVariantes = ProductoVariante::with(['producto', 'talla'])
+        $query->when($request->filled('producto_variante_id'), function ($q) use ($request) {
+            $q->where('producto_variante_id', $request->input('producto_variante_id'));
+        });
+
+        $query->when($request->filled('tipo_transaccion'), function ($q) use ($request) {
+            $q->where('tipo_transaccion', $request->input('tipo_transaccion'));
+        });
+
+        $query->when($request->filled('fecha'), function ($q) use ($request) {
+            $q->whereDate('created_at', $request->input('fecha'));
+        });
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100], true) ? $perPage : 15;
+
+        $kardex = $query->paginate($perPage)->withQueryString();
+
+        $productos = Producto::query()
             ->where('estado', 1)
-            ->whereNull('deleted_at')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre']);
 
-        return view('kardex.index', compact('kardex', 'productos', 'productoVariantes'));
+        return view('kardex.index', compact('kardex', 'productos', 'perPage'));
     }
 
     public function show(Kardex $kardex)
