@@ -6,8 +6,10 @@ use App\Http\Requests\StoreMarcaRequest;
 use App\Http\Requests\UpdateMarcaRequest;
 use App\Models\Marca;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Support\Facades\DB;
 
 class MarcaController extends Controller implements HasMiddleware
 {
@@ -18,11 +20,36 @@ class MarcaController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $marcas = Marca::withTrashed()->latest('id')->get();
+        $query = Marca::query()
+            ->withTrashed()
+            ->latest('id');
 
-        return view('marca.index', compact('marcas'));
+        if ($request->filled('q')) {
+            $search = trim((string) $request->input('q'));
+
+            $query->where(function ($q) use ($search) {
+                $q->where('nombre', 'like', "%{$search}%")
+                    ->orWhere('descripcion', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('estado')) {
+            match ($request->input('estado')) {
+                'activa' => $query->where('estado', 1)->whereNull('deleted_at'),
+                'inactiva' => $query->where('estado', 0)->whereNull('deleted_at'),
+                'eliminada' => $query->onlyTrashed(),
+                default => null,
+            };
+        }
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+
+        $marcas = $query->paginate($perPage)->withQueryString();
+
+        return view('marca.index', compact('marcas', 'perPage'));
     }
 
     public function create()
@@ -33,11 +60,17 @@ class MarcaController extends Controller implements HasMiddleware
     public function store(StoreMarcaRequest $request)
     {
         try {
-            Marca::create($request->validated());
+            DB::transaction(function () use ($request) {
+                Marca::create($request->validated());
+            });
 
-            return redirect()->route('marcas.index')->with('success', 'Marca registrada correctamente');
+            return redirect()
+                ->route('marcas.index')
+                ->with('success', 'Marca registrada correctamente');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar la marca: ' . $e->getMessage()]);
+            return back()
+                ->withErrors(['error' => 'Error al registrar la marca: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -49,11 +82,17 @@ class MarcaController extends Controller implements HasMiddleware
     public function update(UpdateMarcaRequest $request, Marca $marca)
     {
         try {
-            $marca->update($request->validated());
+            DB::transaction(function () use ($request, $marca) {
+                $marca->update($request->validated());
+            });
 
-            return redirect()->route('marcas.index')->with('success', 'Marca editada correctamente');
+            return redirect()
+                ->route('marcas.index')
+                ->with('success', 'Marca editada correctamente');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al editar la marca: ' . $e->getMessage()]);
+            return back()
+                ->withErrors(['error' => 'Error al editar la marca: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -70,7 +109,9 @@ class MarcaController extends Controller implements HasMiddleware
                 $message = 'Marca eliminada correctamente';
             }
 
-            return redirect()->route('marcas.index')->with('success', $message);
+            return redirect()
+                ->route('marcas.index')
+                ->with('success', $message);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar la marca: ' . $e->getMessage()]);
         }
