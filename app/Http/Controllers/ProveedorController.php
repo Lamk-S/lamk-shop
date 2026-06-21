@@ -30,28 +30,19 @@ class ProveedorController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
-            $search = trim($request->input('q'));
-
-            $query->whereHas('persona', function ($q) use ($search) {
-                $q->withTrashed()
+        $query->when($request->filled('q'), function ($q) use ($request) {
+            $search = trim((string) $request->input('q'));
+            $q->whereHas('persona', function ($sub) use ($search) {
+                $sub->withTrashed()
                     ->where('numero_documento', 'like', "%{$search}%")
                     ->orWhere('nombres', 'like', "%{$search}%")
                     ->orWhere('apellidos', 'like', "%{$search}%")
                     ->orWhere('razon_social', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%");
             });
-        }
-
-        if ($request->filled('tipo_persona')) {
-            $query->whereHas('persona', function ($q) use ($request) {
-                $q->withTrashed()->where('tipo_persona', $request->input('tipo_persona'));
-            });
-        }
-
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->input('estado'));
-        }
+        })
+        ->when($request->filled('tipo_persona'), fn($q) => $q->whereHas('persona', fn($sub) => $sub->withTrashed()->where('tipo_persona', $request->tipo_persona)))
+        ->when($request->filled('estado'), fn($q) => $q->where('estado', $request->estado));
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;

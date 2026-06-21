@@ -1,34 +1,46 @@
 @extends('layouts.app')
-@section('title', 'Detalle de Sesión de Caja')
+@section('title', 'Ticket de Arqueo de Caja')
 
 @push('css')
 <style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; }
-    .glass-card { border: 0; border-radius: 1.25rem; box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
+    .glass-card { border: 0; border-radius: 1.25rem; box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; background: #fff; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .18); }
-    .summary-box { background: #f8fafc; border: 1px solid rgba(148, 163, 184, .16); border-radius: 1rem; padding: 1rem; height: 100%; transition: transform .15s ease, box-shadow .15s ease; }
-    .summary-box:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem rgba(15, 23, 42, .06); }
-    .section-title { font-size: .9rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .06em; }
+    .summary-box { background: #f8fafc; border: 1px solid rgba(148, 163, 184, .16); border-radius: 1rem; padding: 1.25rem; height: 100%; transition: transform .15s ease; }
+    .summary-title { font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #64748b; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .summary-value { font-size: 1.25rem; font-weight: 800; font-family: monospace; letter-spacing: -0.02em; }
+    .section-title { font-size: .9rem; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: .06em; }
+    .table-soft thead th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
+    @media print {
+        body { background: #fff !important; font-size: 11pt; color: #000; }
+        .no-print, .navbar, .sidebar, footer, .btn { display: none !important; }
+        .glass-card { box-shadow: none !important; border: 1px solid #ddd !important; border-radius: 0 !important; margin-bottom: 20px !important; }
+        .summary-box { background: #fff !important; border: 1px solid #ccc !important; border-radius: 0 !important; }
+        .badge { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
+        .container-fluid { padding: 0 !important; }
+        .page-title { font-size: 18pt; text-align: center; margin-bottom: 20px; }
+    }
 </style>
 @endpush
 
 @section('content')
 <div class="container-fluid px-4 py-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 no-print">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3 no-print">
         <div>
-            <h2 class="page-title text-dark mb-0">Detalle de Sesión de Caja</h2>
+            <h2 class="page-title mb-0">Documento de Arqueo</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('sesiones-caja.index') }}" class="text-decoration-none">Sesiones de Caja</a></li>
-                <li class="breadcrumb-item active">Ver detalle</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('sesiones-caja.index') }}" class="text-decoration-none text-muted">Auditoría de Turnos</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Detalle y Cuadre</li>
             </ol>
         </div>
-        <div class="mt-3 mt-md-0 d-flex gap-2">
-            <a href="{{ route('sesiones-caja.index') }}" class="btn btn-light shadow-sm">
-                <i class="fas fa-arrow-left me-2"></i>Volver
+        <div class="d-flex gap-2">
+            <a href="{{ route('sesiones-caja.index') }}" class="btn btn-light fw-bold shadow-sm rounded-pill border px-4">
+                <i class="fas fa-arrow-left me-2"></i>Regresar
             </a>
-            <button onclick="window.print()" class="btn btn-secondary shadow-sm">
-                <i class="fas fa-print me-2"></i>Imprimir
+            <button onclick="window.print()" class="btn btn-dark fw-bold shadow-sm rounded-pill px-4">
+                <i class="fas fa-print me-2"></i>Emitir Ticket
             </button>
         </div>
     </div>
@@ -38,427 +50,277 @@
         $saldoEsperado = (float) ($sesionCaja->saldo_final_esperado ?? 0);
         $saldoDeclarado = (float) ($sesionCaja->saldo_final_declarado ?? 0);
         $diferencia = (float) ($sesionCaja->diferencia ?? 0);
+        
         $totalIngresos = (float) $sesionCaja->movimientosCaja->where('tipo', 'INGRESO')->where('origen', '!=', 'APERTURA')->sum('monto');
         $totalEgresos = (float) $sesionCaja->movimientosCaja->where('tipo', 'EGRESO')->sum('monto');
-        $totalVentas = (float) $sesionCaja->ventas->where('estado_documento', '!=', 'ANULADA')->sum('total');
+        
+        // Ventas consolidadas válidas
+        $ventasValidas = $sesionCaja->ventas->where('estado_documento', '!=', 'ANULADA');
+        $totalVentas = (float) $ventasValidas->sum('total');
         $totalMovimientos = $sesionCaja->movimientosCaja->count();
     @endphp
 
     <div class="row g-4 mb-4">
-        <div class="col-lg-8">
-            <div class="card glass-card h-100 border-0">
-                <div class="card-header soft-header p-0">
-                    <div class="p-4 p-md-5 bg-white">
-                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center shadow-sm"
-                                    style="width: 58px; height: 58px;">
-                                    <i class="fa-solid fa-lock-open fs-4"></i>
+        <div class="col-xl-8">
+            <div class="card glass-card h-100">
+                <div class="card-header soft-header p-4">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-4 d-flex align-items-center justify-content-center border border-primary border-opacity-25" style="width: 56px; height: 56px;">
+                                <i class="fa-solid fa-cash-register fs-4"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 fw-bold text-dark">Turno #{{ str_pad($sesionCaja->id, 5, '0', STR_PAD_LEFT) }}</h4>
+                                <div class="text-muted small fw-medium mt-1">
+                                    <i class="fa-solid fa-store me-1"></i> {{ $sesionCaja->caja?->nombre ?? 'N/A' }} 
+                                    <span class="mx-2">|</span> 
+                                    <i class="fa-solid fa-user-tie me-1"></i> {{ $sesionCaja->user?->name ?? 'N/A' }}
                                 </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            @if($sesionCaja->estado_sesion === 'ABIERTA')
+                                <span class="badge bg-success px-4 py-2 rounded-pill fs-7 shadow-sm">TURNO ACTIVO</span>
+                            @elseif($sesionCaja->estado_sesion === 'CERRADA')
+                                <span class="badge bg-secondary px-4 py-2 rounded-pill fs-7 shadow-sm">TURNO CERRADO</span>
+                            @else
+                                <span class="badge bg-danger px-4 py-2 rounded-pill fs-7 shadow-sm">TURNO ANULADO</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
 
+                <div class="card-body p-4 bg-light bg-opacity-50">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 border bg-white h-100 shadow-sm border-start border-4 border-primary">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Apertura (Base + Anterior)</div>
+                                <div class="fs-3 fw-bold text-dark font-monospace">S/ {{ number_format($saldoInicial, 2) }}</div>
+                                <div class="text-muted small mt-1">Fecha: {{ $sesionCaja->fecha_hora_apertura ? \Carbon\Carbon::parse($sesionCaja->fecha_hora_apertura)->format('d/m/Y H:i') : '—' }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 border bg-white h-100 shadow-sm border-start border-4 border-info">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Cálculo del Sistema</div>
+                                <div class="fs-3 fw-bold text-primary font-monospace">S/ {{ number_format($saldoEsperado, 2) }}</div>
+                                <div class="text-muted small mt-1">Lo que debería haber en gaveta</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded-4 border bg-white h-100 shadow-sm border-start border-4 {{ $diferencia === 0.0 ? 'border-success' : 'border-danger' }}">
+                                <div class="text-muted small text-uppercase fw-bold mb-1">Declaración del Cajero</div>
+                                <div class="fs-3 fw-bold text-dark font-monospace">S/ {{ number_format($saldoDeclarado, 2) }}</div>
+                                <div class="text-muted small mt-1">Fecha: {{ $sesionCaja->fecha_hora_cierre ? \Carbon\Carbon::parse($sesionCaja->fecha_hora_cierre)->format('d/m/Y H:i') : 'En curso...' }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-4 rounded-4 border bg-white shadow-sm d-flex justify-content-between align-items-center h-100">
                                 <div>
-                                    <div class="d-flex align-items-center gap-2 mb-1">
-                                        <h4 class="mb-0 fw-bold text-dark">Sesión de Caja #{{ $sesionCaja->id }}</h4>
-                                        @if($sesionCaja->estado_sesion === 'ABIERTA')
-                                            <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">
-                                                Abierta
-                                            </span>
-                                        @elseif($sesionCaja->estado_sesion === 'CERRADA')
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill">
-                                                Cerrada
-                                            </span>
-                                        @else
-                                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">
-                                                Anulada
-                                            </span>
-                                        @endif
-                                    </div>
+                                    <div class="text-muted small text-uppercase fw-bold mb-1">Estado de Cuadre</div>
+                                    @if($sesionCaja->estado_sesion === 'ABIERTA')
+                                        <div class="fs-4 fw-bold text-muted">Aún no se rinde caja</div>
+                                    @else
+                                        <div class="fs-4 fw-bold {{ $diferencia === 0.0 ? 'text-success' : 'text-danger' }}">
+                                            S/ {{ number_format($diferencia, 2) }}
+                                        </div>
+                                        <div class="fw-medium small {{ $diferencia === 0.0 ? 'text-success' : 'text-danger' }}">
+                                            @if($diferencia === 0.0) <i class="fas fa-check-circle me-1"></i> Exacto, sin diferencias.
+                                            @elseif($diferencia > 0) <i class="fas fa-exclamation-triangle me-1"></i> Cajero entregó sobrante.
+                                            @else <i class="fas fa-times-circle me-1"></i> Faltante en gaveta (deuda).
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="opacity-25"><i class="fa-solid fa-scale-balanced fa-3x {{ $diferencia === 0.0 ? 'text-success' : 'text-danger' }}"></i></div>
+                            </div>
+                        </div>
 
-                                    <div class="text-muted small">
-                                        <i class="fa-solid fa-cash-register me-1"></i>
-                                        {{ $sesionCaja->caja?->nombre ?? 'Caja no disponible' }}
-                                        <span class="mx-1">·</span>
-                                        <i class="fa-solid fa-user me-1"></i>
-                                        {{ $sesionCaja->user?->name ?? 'Usuario no disponible' }}
+                        <div class="col-md-6">
+                            <div class="row g-2 h-100">
+                                <div class="col-6">
+                                    <div class="summary-box shadow-sm d-flex flex-column justify-content-center">
+                                        <div class="summary-title text-success"><i class="fas fa-arrow-up me-1"></i>Ingresos Extra</div>
+                                        <div class="summary-value text-success font-monospace">+S/{{ number_format($totalIngresos, 2) }}</div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="d-flex flex-wrap gap-2">
-                                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                                    Apertura: {{ $sesionCaja->fecha_hora_apertura ? \Carbon\Carbon::parse($sesionCaja->fecha_hora_apertura)->format('d/m/Y H:i') : '—' }}
-                                </span>
-                                <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                                    Cierre: {{ $sesionCaja->fecha_hora_cierre ? \Carbon\Carbon::parse($sesionCaja->fecha_hora_cierre)->format('d/m/Y H:i') : 'Abierta' }}
-                                </span>
+                                <div class="col-6">
+                                    <div class="summary-box shadow-sm d-flex flex-column justify-content-center">
+                                        <div class="summary-title text-danger"><i class="fas fa-arrow-down me-1"></i>Egresos Extra</div>
+                                        <div class="summary-value text-danger font-monospace">-S/{{ number_format($totalEgresos, 2) }}</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="px-4 px-md-5 pb-4 pb-md-5">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="p-4 rounded-4 border h-100 bg-light">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <div class="text-muted small text-uppercase fw-semibold">Fondo fijo</div>
-                                        <i class="fa-solid fa-vault text-primary"></i>
-                                    </div>
-                                    <div class="fs-4 fw-bold text-dark">
-                                        S/ {{ number_format((float) ($sesionCaja->caja?->fondo_fijo ?? 0), 2) }}
-                                    </div>
-                                    <div class="text-muted small mt-1">Capital inicial de la caja</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="p-4 rounded-4 border h-100 bg-light">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <div class="text-muted small text-uppercase fw-semibold">Saldo inicial</div>
-                                        <i class="fa-solid fa-hand-holding-dollar text-primary"></i>
-                                    </div>
-                                    <div class="fs-4 fw-bold text-primary">
-                                        S/ {{ number_format($saldoInicial, 2) }}
-                                    </div>
-                                    <div class="text-muted small mt-1">Monto con el que inicia la sesión</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="p-4 rounded-4 border h-100 bg-light">
-                                    <div class="d-flex align-items-center justify-content-between mb-2">
-                                        <div class="text-muted small text-uppercase fw-semibold">Diferencia</div>
-                                        <i class="fa-solid fa-scale-balanced {{ $diferencia === 0.0 ? 'text-success' : 'text-danger' }}"></i>
-                                    </div>
-                                    <div class="fs-4 fw-bold {{ $diferencia === 0.0 ? 'text-success' : 'text-danger' }}">
-                                        S/ {{ number_format($diferencia, 2) }}
-                                    </div>
-                                    <div class="text-muted small mt-1">
-                                        {{ $diferencia === 0.0 ? 'Cuadre exacto' : 'Revisar descuadre' }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                    @if($sesionCaja->observacion_apertura || $sesionCaja->observacion_cierre)
                         <div class="row g-3 mt-1">
-                            <div class="col-md-3 col-6">
-                                <div class="summary-box shadow-sm">
-                                    <div class="summary-title">Saldo esperado</div>
-                                    <div class="summary-value">S/ {{ number_format($saldoEsperado, 2) }}</div>
+                            @if($sesionCaja->observacion_apertura)
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 border bg-white h-100">
+                                        <div class="fw-bold text-primary small text-uppercase mb-1"><i class="fas fa-comment-dots me-1"></i>Nota de Apertura</div>
+                                        <p class="mb-0 text-muted small fst-italic">{{ $sesionCaja->observacion_apertura }}</p>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div class="col-md-3 col-6">
-                                <div class="summary-box shadow-sm">
-                                    <div class="summary-title">Saldo declarado</div>
-                                    <div class="summary-value">S/ {{ number_format($saldoDeclarado, 2) }}</div>
+                            @endif
+                            @if($sesionCaja->observacion_cierre)
+                                <div class="col-md-6">
+                                    <div class="p-3 rounded-4 border bg-white h-100">
+                                        <div class="fw-bold text-danger small text-uppercase mb-1"><i class="fas fa-comment-dots me-1"></i>Nota de Cierre</div>
+                                        <p class="mb-0 text-muted small fst-italic">{{ $sesionCaja->observacion_cierre }}</p>
+                                    </div>
                                 </div>
-                            </div>
-
-                            <div class="col-md-3 col-6">
-                                <div class="summary-box shadow-sm">
-                                    <div class="summary-title">Ingresos operativos</div>
-                                    <div class="summary-value text-success">S/ {{ number_format($totalIngresos, 2) }}</div>
-                                    <div class="text-muted small mt-1">Sin contar apertura</div>
-                                </div>
-                            </div>
-
-                            <div class="col-md-3 col-6">
-                                <div class="summary-box shadow-sm">
-                                    <div class="summary-title">Egresos operativos</div>
-                                    <div class="summary-value text-danger">S/ {{ number_format($totalEgresos, 2) }}</div>
-                                </div>
-                            </div>
+                            @endif
                         </div>
-
-                        <div class="row g-3 mt-1">
-                            <div class="col-12">
-                                <div class="p-4 rounded-4 border bg-white">
-                                    <div class="d-flex align-items-center justify-content-between mb-3">
-                                        <div class="section-title mb-0">Resumen operativo</div>
-                                        <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                                            {{ $totalMovimientos }} movimientos
-                                        </span>
-                                    </div>
-
-                                    <div class="row g-3">
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
-                                                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="width: 44px; height: 44px;">
-                                                    <i class="fa-solid fa-receipt"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="text-muted small fw-semibold text-uppercase">Ventas de la sesión</div>
-                                                    <div class="fw-bold text-dark">S/ {{ number_format($totalVentas, 2) }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
-                                                <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="width: 44px; height: 44px;">
-                                                    <i class="fa-solid fa-circle-check"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="text-muted small fw-semibold text-uppercase">Estado operativo</div>
-                                                    <div class="fw-bold text-dark">
-                                                        {{ $sesionCaja->estado_sesion === 'ABIERTA' ? 'Activa' : ($sesionCaja->estado_sesion === 'CERRADA' ? 'Cerrada' : 'Anulada') }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-4">
-                                            <div class="d-flex align-items-center gap-3 p-3 rounded-4 bg-light">
-                                                <div class="bg-warning bg-opacity-10 text-warning rounded-circle d-flex align-items-center justify-content-center"
-                                                    style="width: 44px; height: 44px;">
-                                                    <i class="fa-solid fa-coins"></i>
-                                                </div>
-                                                <div>
-                                                    <div class="text-muted small fw-semibold text-uppercase">Movimientos</div>
-                                                    <div class="fw-bold text-dark">{{ $totalMovimientos }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        @if($sesionCaja->observacion_apertura || $sesionCaja->observacion_cierre)
-                            <div class="row g-3 mt-1">
-                                @if($sesionCaja->observacion_apertura)
-                                    <div class="col-lg-6">
-                                        <div class="p-4 rounded-4 border bg-light h-100">
-                                            <div class="section-title mb-2">
-                                                <i class="fa-solid fa-pen-to-square me-2 text-primary"></i>Observación de apertura
-                                            </div>
-                                            <div class="text-muted">{{ $sesionCaja->observacion_apertura }}</div>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                @if($sesionCaja->observacion_cierre)
-                                    <div class="col-lg-6">
-                                        <div class="p-4 rounded-4 border bg-light h-100">
-                                            <div class="section-title mb-2">
-                                                <i class="fa-solid fa-pen-to-square me-2 text-danger"></i>Observación de cierre
-                                            </div>
-                                            <div class="text-muted">{{ $sesionCaja->observacion_cierre }}</div>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>
 
-        <div class="col-lg-4">
-            <div class="card glass-card mb-4">
-                <div class="card-body p-4">
-                    <h6 class="section-title mb-3">Resumen rápido</h6>
-                    <div class="d-grid gap-3">
-                        <div class="summary-box">
-                            <div class="summary-title">Movimientos</div>
-                            <div class="summary-value">{{ $totalMovimientos }}</div>
-                        </div>
-                        <div class="summary-box">
-                            <div class="summary-title">Ventas registradas</div>
-                            <div class="summary-value">{{ $sesionCaja->ventas->count() }}</div>
-                        </div>
-                        <div class="summary-box">
-                            <div class="summary-title">Estado operativo</div>
-                            <div class="summary-value">
-                                @if($sesionCaja->estado_sesion === 'ABIERTA')
-                                    Activa
-                                @elseif($sesionCaja->estado_sesion === 'CERRADA')
-                                    Cerrada
-                                @else
-                                    Anulada
-                                @endif
-                            </div>
+        <div class="col-xl-4">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-dark text-white p-4">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-chart-pie me-2"></i>Rendimiento Comercial</h5>
+                </div>
+                <div class="card-body p-4 bg-light bg-opacity-50 d-flex flex-column gap-3">
+                    <div class="summary-box shadow-sm text-center border-primary border-opacity-25">
+                        <div class="summary-title text-primary mb-2">Total Facturado (Ventas)</div>
+                        <div class="fs-1 fw-bold text-dark font-monospace">S/ {{ number_format($totalVentas, 2) }}</div>
+                        <div class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 mt-2 rounded-pill px-3">
+                            Incluye todos los medios de pago
                         </div>
                     </div>
-                </div>
-            </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-white rounded-3 border shadow-sm mt-auto">
+                        <span class="text-muted fw-bold text-uppercase small">Tickets Emitidos</span>
+                        <span class="fs-4 fw-bold text-dark font-monospace">{{ $ventasValidas->count() }}</span>
+                    </div>
 
-            <div class="card glass-card">
-                <div class="card-body p-4">
-                    <h6 class="section-title mb-3">Nota operativa</h6>
-                    <p class="mb-0 text-muted">
-                        La apertura de caja solo representa el fondo inicial. Los ingresos reales de venta deben reflejarse aparte,
-                        y los pagos electrónicos no deben inflar el efectivo de caja.
-                    </p>
+                    <div class="d-flex justify-content-between align-items-center p-3 bg-white rounded-3 border shadow-sm">
+                        <span class="text-muted fw-bold text-uppercase small">Transacciones Caja</span>
+                        <span class="fs-4 fw-bold text-dark font-monospace">{{ $totalMovimientos }}</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="card glass-card mb-4">
-        <div class="card-header soft-header p-4 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 44px; height: 44px;">
-                    <i class="fas fa-money-bill-wave"></i>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-money-bill-transfer text-primary me-2"></i>Historial de Gaveta</h6>
+                    <span class="badge bg-light text-dark border">{{ $totalMovimientos }} Regs.</span>
                 </div>
-                <div>
-                    <h5 class="mb-0 fw-bold text-dark">Movimientos de caja</h5>
-                    <div class="text-muted small">Detalle de ingresos, egresos y apertura de sesión</div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-soft mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Operación</th>
+                                    <th class="text-center">Nat.</th>
+                                    <th class="text-end">Importe</th>
+                                    <th class="text-end pe-4">Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($sesionCaja->movimientosCaja as $item)
+                                    <tr>
+                                        <td class="ps-4 py-3">
+                                            <div class="fw-bold text-dark fs-7">{{ $item->origen }}</div>
+                                            <div class="small text-muted text-truncate" style="max-width: 180px;" title="{{ $item->descripcion }}">{{ $item->descripcion }}</div>
+                                        </td>
+                                        <td class="text-center py-3">
+                                            @if($item->tipo === 'INGRESO')
+                                                <i class="fas fa-arrow-up text-success"></i>
+                                            @else
+                                                <i class="fas fa-arrow-down text-danger"></i>
+                                            @endif
+                                        </td>
+                                        <td class="text-end py-3 fw-bold font-monospace fs-7 {{ $item->tipo === 'INGRESO' ? 'text-success' : 'text-danger' }}">
+                                            {{ $item->tipo === 'INGRESO' ? '+' : '-' }}{{ number_format((float) $item->monto, 2) }}
+                                        </td>
+                                        <td class="text-end pe-4 py-3 text-muted font-monospace fs-7">
+                                            {{ optional($item->created_at)->format('H:i') }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted small">Sin movimientos registrados</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
-            <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                {{ $totalMovimientos }} registros
-            </span>
         </div>
 
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-soft mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Movimiento</th>
-                            <th class="text-center">Tipo</th>
-                            <th class="text-center">Origen</th>
-                            <th class="text-end">Monto</th>
-                            <th class="text-end pe-4">Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($sesionCaja->movimientosCaja as $item)
-                            <tr>
-                                <td class="ps-4 py-3">
-                                    <div class="fw-semibold text-dark">{{ $item->descripcion }}</div>
-                                    <div class="small text-muted">
-                                        @if($item->origen === 'APERTURA')
-                                            Movimiento inicial de la sesión
-                                        @else
-                                            ID movimiento #{{ $item->id }}
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="text-center py-3">
-                                    @if($item->origen === 'APERTURA')
-                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill">Apertura</span>
-                                    @elseif($item->tipo === 'INGRESO')
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Ingreso</span>
-                                    @else
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Egreso</span>
-                                    @endif
-                                </td>
-                                <td class="text-center py-3">
-                                    <span class="badge bg-light text-secondary border">{{ $item->origen }}</span>
-                                </td>
-                                <td class="text-end py-3 fw-bold text-dark">
-                                    S/ {{ number_format((float) $item->monto, 2) }}
-                                </td>
-                                <td class="text-end pe-4 py-3 text-muted">
-                                    {{ optional($item->created_at)->format('d/m/Y H:i') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center text-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 90px; height: 90px;">
-                                            <i class="fas fa-money-bill-wave text-warning fs-1"></i>
-                                        </div>
-                                        <h5 class="fw-semibold text-dark mb-1">Sin movimientos de caja en esta sesión</h5>
-                                        <p class="text-muted mb-0">No hay registros de movimientos de caja asociados a la sesión actual.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <div class="col-lg-6">
+            <div class="card glass-card h-100">
+                <div class="card-header bg-white border-bottom p-4 d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-shopping-bag text-primary me-2"></i>Ventas Despachadas</h6>
+                    <span class="badge bg-light text-dark border">{{ $ventasValidas->count() }} Tickets</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-soft mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Documento</th>
+                                    <th>Cliente</th>
+                                    <th class="text-end">Total</th>
+                                    <th class="text-end pe-4">Hora</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($ventasValidas as $venta)
+                                    <tr>
+                                        <td class="ps-4 py-3">
+                                            <div class="fw-bold text-dark font-monospace fs-7">
+                                                {{ trim(($venta->serie ?? '') . '-' . ($venta->correlativo ?? '')) ?: 'TICKET' }}
+                                            </div>
+                                            <div class="small text-muted">{{ $venta->pagos->pluck('metodo_pago')->unique()->implode(', ') ?: 'N/A' }}</div>
+                                        </td>
+                                        <td class="py-3">
+                                            <div class="fw-medium text-dark text-truncate fs-7" style="max-width: 150px;">
+                                                {{ $venta->cliente?->persona?->razon_social ?? trim(($venta->cliente?->persona?->nombres ?? '') . ' ' . ($venta->cliente?->persona?->apellidos ?? '')) ?: 'Público General' }}
+                                            </div>
+                                        </td>
+                                        <td class="text-end py-3 fw-bold text-dark font-monospace fs-7">
+                                            S/ {{ number_format((float) $venta->total, 2) }}
+                                        </td>
+                                        <td class="text-end pe-4 py-3 text-muted font-monospace fs-7">
+                                            {{ optional($venta->fecha_emision)->format('H:i') }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted small">No se registraron ventas en esta sesión</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-
-    <div class="card glass-card">
-        <div class="card-header soft-header p-4 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 44px; height: 44px;">
-                    <i class="fas fa-receipt"></i>
-                </div>
-                <div>
-                    <h5 class="mb-0 fw-bold text-dark">Ventas asociadas</h5>
-                    <div class="text-muted small">Documentos emitidos durante esta sesión</div>
-                </div>
+    
+    <div class="row mt-5 pt-5 d-none d-print-flex">
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
+                <strong>Firma del Cajero</strong><br>
+                {{ $sesionCaja->user?->name ?? '_____________________' }}
             </div>
-            <span class="badge bg-light text-secondary border px-3 py-2 rounded-pill">
-                {{ $sesionCaja->ventas->count() }} ventas
-            </span>
         </div>
-
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-soft mb-0">
-                    <thead>
-                        <tr>
-                            <th class="ps-4">Comprobante</th>
-                            <th>Cliente</th>
-                            <th class="text-center">Métodos de pago</th>
-                            <th class="text-end">Total</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-end pe-4">Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($sesionCaja->ventas as $venta)
-                            <tr>
-                                <td class="ps-4 py-3">
-                                    <div class="fw-bold text-dark">
-                                        {{ trim(($venta->serie ?? '') . '-' . ($venta->correlativo ?? '')) ?: '—' }}
-                                    </div>
-                                    <div class="small text-muted">{{ $venta->comprobante?->tipo_comprobante ?? 'Sin comprobante' }}</div>
-                                </td>
-                                <td class="py-3">
-                                    <div class="fw-medium text-dark">
-                                        {{ $venta->cliente?->persona?->razon_social
-                                            ?? trim(($venta->cliente?->persona?->nombres ?? '') . ' ' . ($venta->cliente?->persona?->apellidos ?? ''))
-                                            ?: 'Consumidor final' }}
-                                    </div>
-                                    <div class="small text-muted">
-                                        {{ $venta->cliente_tipo_documento ?? '—' }} {{ $venta->cliente_numero_documento ?? '' }}
-                                    </div>
-                                </td>
-                                <td class="text-center py-3">
-                                    @php
-                                        $metodos = $venta->pagos->pluck('metodo_pago')->unique()->implode(', ');
-                                    @endphp
-                                    <span class="badge bg-light text-secondary border">{{ $metodos ?: 'N/A' }}</span>
-                                </td>
-                                <td class="text-end py-3 fw-bold text-primary">
-                                    S/ {{ number_format((float) $venta->total, 2) }}
-                                </td>
-                                <td class="text-center py-3">
-                                    @if($venta->estado_documento === 'ANULADA')
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Anulada</span>
-                                    @else
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Emitida</span>
-                                    @endif
-                                </td>
-                                <td class="text-end pe-4 py-3 text-muted">
-                                    {{ optional($venta->fecha_emision)->format('d/m/Y H:i') }}
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="6" class="py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center text-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 90px; height: 90px;">
-                                            <i class="fas fa-shopping-cart text-secondary fs-1"></i>
-                                        </div>
-                                        <h5 class="fw-semibold text-dark mb-1">Sin ventas en esta sesión</h5>
-                                        <p class="text-muted mb-0">No hay ventas asociadas a la sesión actual.</p>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+        <div class="col-6 text-center">
+            <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
+                <strong>Firma del Administrador / Tesorería</strong><br>
+                {{ $sesionCaja->userCierre?->name ?? '_____________________' }}
             </div>
         </div>
     </div>

@@ -26,23 +26,18 @@ class MarcaController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
+        $query->when($request->filled('q'), function ($q) use ($request) {
             $search = trim((string) $request->input('q'));
-
-            $query->where(function ($q) use ($search) {
-                $q->where('nombre', 'like', "%{$search}%")
-                    ->orWhere('descripcion', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('estado')) {
+            $q->where(fn($sub) => $sub->where('nombre', 'like', "%{$search}%")->orWhere('descripcion', 'like', "%{$search}%"));
+        })
+        ->when($request->filled('estado'), function ($q) use ($request) {
             match ($request->input('estado')) {
-                'activa' => $query->where('estado', 1)->whereNull('deleted_at'),
-                'inactiva' => $query->where('estado', 0)->whereNull('deleted_at'),
-                'eliminada' => $query->onlyTrashed(),
-                default => null,
+                'activa' => $q->where('estado', 1)->whereNull('deleted_at'),
+                'inactiva' => $q->where('estado', 0)->whereNull('deleted_at'),
+                'eliminada' => $q->onlyTrashed(),
+                default => $q,
             };
-        }
+        });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;

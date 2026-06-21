@@ -3,7 +3,8 @@
 
 @push('css')
 <style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; }
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .soft-card { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .18); }
     .form-label-custom { font-size: .82rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .06em; }
@@ -16,9 +17,9 @@
         <div>
             <h2 class="page-title text-dark mb-0">Editar Comprobante</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('comprobantes.index') }}" class="text-decoration-none">Comprobantes</a></li>
-                <li class="breadcrumb-item active">Registro #{{ $comprobante->id }}</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('comprobantes.index') }}" class="text-decoration-none text-muted">Comprobantes</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Registro #{{ $comprobante->id }}</li>
             </ol>
         </div>
         <span class="badge bg-light text-secondary border px-3 py-2">ID: {{ $comprobante->id }}</span>

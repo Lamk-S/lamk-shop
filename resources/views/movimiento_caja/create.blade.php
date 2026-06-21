@@ -3,6 +3,8 @@
 
 @push('css')
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .card-soft { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .14); }
 </style>
@@ -11,11 +13,11 @@
 @section('content')
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
-        <h2 class="fw-bold text-dark mb-0">Nuevo Movimiento de Caja</h2>
+        <h2 class="page-title mb-0">Nuevo Movimiento de Caja</h2>
         <ol class="breadcrumb mb-0 mt-1 fs-7">
-            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('movimientos-caja.index') }}" class="text-decoration-none">Movimientos de Caja</a></li>
-            <li class="breadcrumb-item active">Crear registro</li>
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('movimientos-caja.index') }}" class="text-decoration-none text-muted">Movimientos de Caja</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark">Crear registro</li>
         </ol>
     </div>
 

@@ -6,6 +6,7 @@ use App\Http\Requests\StoreCategoriaRequest;
 use App\Http\Requests\UpdateCategoriaRequest;
 use App\Models\Categoria;
 use Exception;
+use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
@@ -19,11 +20,31 @@ class CategoriaController extends Controller implements HasMiddleware
         ];
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $categorias = Categoria::withTrashed()->latest('id')->get();
+        $query = Categoria::query()
+            ->withTrashed()
+            ->latest('id');
 
-        return view('categoria.index', compact('categorias'));
+        $query->when($request->filled('q'), function ($q) use ($request) {
+            $search = trim((string) $request->input('q'));
+            $q->where(fn($sub) => $sub->where('nombre', 'like', "%{$search}%")->orWhere('descripcion', 'like', "%{$search}%"));
+        })
+        ->when($request->filled('estado'), function ($q) use ($request) {
+            match ($request->input('estado')) {
+                'activa' => $q->where('estado', 1)->whereNull('deleted_at'),
+                'inactiva' => $q->where('estado', 0)->whereNull('deleted_at'),
+                'eliminada' => $q->onlyTrashed(),
+                default => $q,
+            };
+        });
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+
+        $categorias = $query->paginate($perPage)->withQueryString();
+
+        return view('categoria.index', compact('categorias', 'perPage'));
     }
 
     public function create()
@@ -38,9 +59,13 @@ class CategoriaController extends Controller implements HasMiddleware
                 Categoria::create($request->validated());
             });
 
-            return redirect()->route('categorias.index')->with('success', 'Categoría registrada correctamente');
+            return redirect()
+                ->route('categorias.index')
+                ->with('success', 'Categoría registrada correctamente');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al registrar la categoría: ' . $e->getMessage()]);
+            return back()
+                ->withErrors(['error' => 'Error al registrar la categoría: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -56,9 +81,13 @@ class CategoriaController extends Controller implements HasMiddleware
                 $categoria->update($request->validated());
             });
 
-            return redirect()->route('categorias.index')->with('success', 'Categoría editada correctamente');
+            return redirect()
+                ->route('categorias.index')
+                ->with('success', 'Categoría editada correctamente');
         } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al editar la categoría: ' . $e->getMessage()]);
+            return back()
+                ->withErrors(['error' => 'Error al editar la categoría: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -75,7 +104,9 @@ class CategoriaController extends Controller implements HasMiddleware
                 $message = 'Categoría eliminada correctamente';
             }
 
-            return redirect()->route('categorias.index')->with('success', $message);
+            return redirect()
+                ->route('categorias.index')
+                ->with('success', $message);
         } catch (Exception $e) {
             return back()->withErrors(['error' => 'Error al modificar la categoría: ' . $e->getMessage()]);
         }

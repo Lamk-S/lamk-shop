@@ -13,7 +13,9 @@ class LoginController extends Controller
             return redirect()->route('panel');
         }
 
-        return view('auth.login');
+        return view('auth.login', [
+            'lastEmail' => request()->cookie('pos_last_email'),
+        ]);
     }
 
     public function login(LoginRequest $request)
@@ -25,13 +27,17 @@ class LoginController extends Controller
             'password' => $credentials['password'],
             'estado' => 1,
         ], $request->boolean('remember'))) {
+
             return back()->withErrors([
-                'email' => 'Credenciales incorrectas o usuario inactivo.',
-            ])->withInput();
+                'email' => 'Las credenciales no coinciden o la cuenta se encuentra suspendida.',
+            ])->withInput($request->only('email', 'remember'));
         }
 
         $request->session()->regenerate();
 
-        return redirect()->route('panel')->with('success', 'Bienvenido ' . Auth::user()->name);
+        $firstName = explode(' ', Auth::user()->name)[0];
+
+        return redirect()->intended(route('panel'))
+            ->with('success', 'Bienvenido de nuevo, ' . $firstName . '.');
     }
 }

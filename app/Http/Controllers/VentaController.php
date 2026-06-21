@@ -34,49 +34,28 @@ class VentaController extends Controller implements HasMiddleware
         $query = Venta::with([
                 'comprobante',
                 'cliente.persona.documento',
-                'user',
-                'sesionCaja.caja',
-                'detalles.productoVariante.producto.marca',
-                'detalles.productoVariante.talla',
-                'pagos',
+                'user:id,name',
             ])
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('cliente_id')) {
-            $query->where('cliente_id', $request->cliente_id);
-        }
-
-        if ($request->filled('estado_documento')) {
-            $query->where('estado_documento', $request->estado_documento);
-        }
-
-        if ($request->filled('comprobante_id')) {
-            $query->where('comprobante_id', $request->comprobante_id);
-        }
-
-        if ($request->filled('metodo_pago')) {
-            $query->whereHas('pagos', function ($q) use ($request) {
-                $q->where('metodo_pago', $request->metodo_pago);
-            });
-        }
-
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_emision', '>=', $request->fecha_desde);
-        }
-
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_emision', '<=', $request->fecha_hasta);
-        }
+        $query->when($request->filled('cliente_id'), fn($q) => $q->where('cliente_id', $request->cliente_id))
+              ->when($request->filled('estado_documento'), fn($q) => $q->where('estado_documento', $request->estado_documento))
+              ->when($request->filled('comprobante_id'), fn($q) => $q->where('comprobante_id', $request->comprobante_id))
+              ->when($request->filled('metodo_pago'), function ($q) use ($request) {
+                  $q->whereHas('pagos', fn($p) => $p->where('metodo_pago', $request->metodo_pago));
+              })
+              ->when($request->filled('fecha_desde'), fn($q) => $q->whereDate('fecha_emision', '>=', $request->fecha_desde))
+              ->when($request->filled('fecha_hasta'), fn($q) => $q->whereDate('fecha_emision', '<=', $request->fecha_hasta));
 
         $perPage = (int) $request->input('per_page', 15);
-        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+        $perPage = in_array($perPage, [10, 15, 25, 50, 100], true) ? $perPage : 15;
 
         $ventas = $query->paginate($perPage)->withQueryString();
 
         $clientes = Cliente::with('persona.documento')
             ->whereHas('persona', fn ($q) => $q->where('estado', 1))
-            ->orderBy('id')
+            ->orderBy('id', 'desc')
             ->get();
 
         $comprobantes = Comprobante::where('estado', 1)
@@ -93,20 +72,16 @@ class VentaController extends Controller implements HasMiddleware
 
         $optionsMetodosPago = [
             'EFECTIVO' => 'Efectivo',
-            'TARJETA' => 'Tarjeta',
-            'TRANSFERENCIA' => 'Transferencia',
+            'TARJETA' => 'Tarjeta (POS)',
+            'TRANSFERENCIA' => 'Transferencia Bancaria',
             'YAPE' => 'Yape',
             'PLIN' => 'Plin',
             'OTRO' => 'Otro',
         ];
 
         return view('venta.index', compact(
-            'ventas',
-            'clientes',
-            'comprobantes',
-            'optionsEstadoDocumento',
-            'optionsMetodosPago',
-            'perPage'
+            'ventas', 'clientes', 'comprobantes', 
+            'optionsEstadoDocumento', 'optionsMetodosPago', 'perPage'
         ));
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreSesionCajaRequest;
 use App\Models\Caja;
 use App\Models\SesionCaja;
+use App\Models\User;
 use App\Services\CajaService;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
@@ -27,19 +28,24 @@ class SesionCajaController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $query = SesionCaja::with(['caja:id,nombre', 'user:id,name'])->latest('id');
+
+        $query->when($request->filled('estado_sesion'), fn($q) => $q->where('estado_sesion', $request->estado_sesion))
+              ->when($request->filled('user_id'), fn($q) => $q->where('user_id', $request->user_id))
+              ->when($request->filled('fecha_desde'), fn($q) => $q->whereDate('fecha_hora_apertura', '>=', $request->fecha_desde))
+              ->when($request->filled('fecha_hasta'), fn($q) => $q->whereDate('fecha_hora_apertura', '<=', $request->fecha_hasta));
+
         $perPage = (int) $request->input('per_page', 10);
         $perPage = in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : 10;
 
-        $sesiones = SesionCaja::with([
-                'caja',
-                'user',
-                'userCierre',
-            ])
-            ->latest('id')
-            ->paginate($perPage)
-            ->withQueryString();
+        $sesiones = $query->paginate($perPage)->withQueryString();
 
-        return view('sesion_caja.index', compact('sesiones', 'perPage'));
+        $cajeros = User::whereHas('sesionesCaja')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return view('sesion_caja.index', compact('sesiones', 'perPage', 'cajeros'));
     }
 
     public function create()

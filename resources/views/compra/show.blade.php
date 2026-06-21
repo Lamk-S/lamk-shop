@@ -4,6 +4,8 @@
 
 @push('css')
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; border-bottom: 2px solid #e9ecef; white-space: nowrap; }
     .table-custom td { vertical-align: middle; color: #495057; } 
     .summary-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600; margin-bottom: 0.2rem; }
@@ -28,11 +30,11 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 no-print">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Detalles de la Compra</h2>
+            <h2 class="page-title mb-0">Detalles de la Compra</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('compras.index') }}" class="text-decoration-none">Compras</a></li>
-                <li class="breadcrumb-item active">Ver compra</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('compras.index') }}" class="text-decoration-none text-muted">Compras</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Ver compra</li>
             </ol>
         </div>
 

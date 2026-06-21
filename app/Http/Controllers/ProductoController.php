@@ -36,33 +36,23 @@ class ProductoController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
+        $query->when($request->filled('q'), function ($q) use ($request) {
             $search = trim((string) $request->input('q'));
-
-            $query->where(function ($q) use ($search) {
-                $q->where('codigo', 'like', "%{$search}%")
-                ->orWhere('codigo_barra', 'like', "%{$search}%")
-                ->orWhere('nombre', 'like', "%{$search}%");
+            $q->where(function ($subQ) use ($search) {
+                $subQ->where('codigo', 'like', "%{$search}%")
+                     ->orWhere('codigo_barra', 'like', "%{$search}%")
+                     ->orWhere('nombre', 'like', "%{$search}%");
             });
-        }
-
-        if ($request->filled('tipo_producto')) {
-            $query->where('tipo_producto', $request->input('tipo_producto'));
-        }
-
-        if ($request->filled('marca_id')) {
-            $query->where('marca_id', $request->input('marca_id'));
-        }
-
-        if ($request->filled('estado')) {
+        })
+        ->when($request->filled('tipo_producto'), fn($q) => $q->where('tipo_producto', $request->input('tipo_producto')))
+        ->when($request->filled('marca_id'), fn($q) => $q->where('marca_id', $request->input('marca_id')))
+        ->when($request->filled('estado'), function ($q) use ($request) {
             if ($request->input('estado') === 'activo') {
-                $query->where('estado', 1)->whereNull('deleted_at');
+                $q->where('estado', 1)->whereNull('deleted_at');
             } elseif ($request->input('estado') === 'inactivo') {
-                $query->where(function ($q) {
-                    $q->where('estado', 0)->orWhereNotNull('deleted_at');
-                });
+                $q->where(fn($sub) => $sub->where('estado', 0)->orWhereNotNull('deleted_at'));
             }
-        }
+        });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;

@@ -19,32 +19,27 @@ class AuditoriaOperacionController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
-        $query = AuditoriaOperacion::with('user')->latest('id');
+        $query = AuditoriaOperacion::with('user:id,name')->latest('id');
 
-        if ($request->filled('usuario_id')) {
-            $query->where('user_id', $request->usuario_id);
-        }
-        if ($request->filled('modulo')) {
-            $query->where('entidad', $request->modulo);
-        }
-        if ($request->filled('accion')) {
-            $query->where('accion', $request->accion);
-        }
-        if ($request->filled('fecha')) {
-            $query->whereDate('created_at', $request->fecha);
-        }
+        $query->when($request->filled('usuario_id'), fn($q) => $q->where('user_id', $request->usuario_id))
+              ->when($request->filled('modulo'), fn($q) => $q->where('entidad', $request->modulo))
+              ->when($request->filled('accion'), fn($q) => $q->where('accion', $request->accion))
+              ->when($request->filled('fecha'), fn($q) => $q->whereDate('created_at', $request->fecha));
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
 
         $auditorias = $query->paginate($perPage)->withQueryString();
-        $usuarios = User::orderBy('name')->get();
+        
+        $usuarios = User::orderBy('name')->get(['id', 'name']);
+        
         $modulos = AuditoriaOperacion::query()
             ->whereNotNull('entidad')
             ->select('entidad')
             ->distinct()
             ->orderBy('entidad')
             ->pluck('entidad');
+            
         $acciones = AuditoriaOperacion::query()
             ->whereNotNull('accion')
             ->select('accion')

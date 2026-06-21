@@ -32,37 +32,17 @@ class CompraController extends Controller implements HasMiddleware
         $query = Compra::with([
             'comprobante',
             'proveedor.persona.documento',
-            'detalles.productoVariante.producto.marca',
-            'detalles.productoVariante.talla',
-            'cuentaPorPagar.pagos.user',
-            'user',
+            'user:id,name',
         ])
-            ->withTrashed()
-            ->latest('id');
+        ->withTrashed()
+        ->latest('id');
 
-        if ($request->filled('proveedor_id')) {
-            $query->where('proveedor_id', $request->proveedor_id);
-        }
-
-        if ($request->filled('estado_documento')) {
-            $query->where('estado_documento', $request->estado_documento);
-        }
-
-        if ($request->filled('estado_pago')) {
-            $query->where('estado_pago', $request->estado_pago);
-        }
-
-        if ($request->filled('metodo_pago')) {
-            $query->where('metodo_pago', $request->metodo_pago);
-        }
-
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_emision', '>=', $request->fecha_desde);
-        }
-
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_emision', '<=', $request->fecha_hasta);
-        }
+        $query->when($request->filled('proveedor_id'), fn($q) => $q->where('proveedor_id', $request->proveedor_id))
+              ->when($request->filled('estado_documento'), fn($q) => $q->where('estado_documento', $request->estado_documento))
+              ->when($request->filled('estado_pago'), fn($q) => $q->where('estado_pago', $request->estado_pago))
+              ->when($request->filled('metodo_pago'), fn($q) => $q->where('metodo_pago', $request->metodo_pago))
+              ->when($request->filled('fecha_desde'), fn($q) => $q->whereDate('fecha_emision', '>=', $request->fecha_desde))
+              ->when($request->filled('fecha_hasta'), fn($q) => $q->whereDate('fecha_emision', '<=', $request->fecha_hasta));
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
@@ -71,7 +51,7 @@ class CompraController extends Controller implements HasMiddleware
 
         $proveedores = Proveedor::with('persona.documento')
             ->whereHas('persona', fn($q) => $q->where('estado', 1))
-            ->orderBy('id')
+            ->orderBy('id', 'desc')
             ->get();
 
         $optionsEstadoDocumento = [
@@ -97,12 +77,8 @@ class CompraController extends Controller implements HasMiddleware
         ];
 
         return view('compra.index', compact(
-            'compras',
-            'proveedores',
-            'optionsEstadoDocumento',
-            'optionsEstadoPago',
-            'optionsMetodoPago',
-            'perPage'
+            'compras', 'proveedores', 'optionsEstadoDocumento',
+            'optionsEstadoPago', 'optionsMetodoPago', 'perPage'
         ));
     }
 

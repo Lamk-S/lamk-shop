@@ -1,15 +1,22 @@
 @extends('layouts.app')
 
-@section('title', 'Editar Proveedor')
+@section('title', 'Editar Proveedor')}
+
+@push('css')
+<style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
+</style>
+@endpush
 
 @section('content')
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
-        <h2 class="fw-bold text-dark mb-0">Modificar Proveedor</h2>
+        <h2 class="page-title mb-0">Modificar Proveedor</h2>
         <ol class="breadcrumb mb-0 mt-1 fs-7">
-            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('proveedores.index') }}" class="text-decoration-none">Proveedores</a></li>
-            <li class="breadcrumb-item active">Editar registro</li>
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('proveedores.index') }}" class="text-decoration-none text-muted">Proveedores</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark">Editar registro</li>
         </ol>
     </div>
 
