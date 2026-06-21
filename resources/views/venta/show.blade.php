@@ -3,6 +3,8 @@
 
 @push('css')
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .invoice-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 600; margin-bottom: 0.2rem; }
     .invoice-value { font-size: 1.05rem; color: #212529; font-weight: 500; }
     .table-invoice th { background-color: #f8f9fa; color: #49595f; font-weight: 600; white-space: nowrap; }
@@ -20,11 +22,11 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 no-print">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Detalle de Venta</h2>
+            <h2 class="page-title mb-0">Detalle de Venta</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}" class="text-decoration-none">Ventas</a></li>
-                <li class="breadcrumb-item active">Ver recibo</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}" class="text-decoration-none text-muted">Ventas</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Ver recibo</li>
             </ol>
         </div>
         <div class="mt-3 mt-md-0 d-flex gap-2">

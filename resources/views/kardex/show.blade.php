@@ -4,6 +4,7 @@
 @push('css')
 <style>
     .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .kardex-card { border: 0; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02); overflow: hidden; background: #ffffff; }
     .invoice-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: #64748b; font-weight: 700; margin-bottom: 0.35rem; display: flex; align-items: center; gap: 0.35rem; }
     .kpi-box { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; padding: 1.25rem; height: 100%; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }

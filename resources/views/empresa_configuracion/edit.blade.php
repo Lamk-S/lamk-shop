@@ -3,6 +3,8 @@
 
 @push('css')
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     #descripcion, #mensaje_ticket { resize: none; }
 </style>
 @endpush
@@ -10,10 +12,10 @@
 @section('content')
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
-        <h2 class="fw-bold text-dark mb-0">Configuración de Empresa</h2>
+        <h2 class="page-title mb-0">Configuración de Empresa</h2>
         <ol class="breadcrumb mb-0 mt-1 fs-7">
-            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-            <li class="breadcrumb-item active">Configuración</li>
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark">Configuración</li>
         </ol>
     </div>
 

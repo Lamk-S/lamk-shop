@@ -3,6 +3,8 @@
 
 @push('css')
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .card-soft { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .14); }
     .json-box { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 0.75rem; padding: 1rem; font-size: 0.875rem; max-height: 400px; overflow-y: auto; }
@@ -13,11 +15,11 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-0">Detalle de Operación</h2>
+            <h2 class="page-title mb-0">Detalle de Operación</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('auditoria-operaciones.index') }}" class="text-decoration-none">Auditoría</a></li>
-                <li class="breadcrumb-item active">Detalle</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('auditoria-operaciones.index') }}" class="text-decoration-none text-muted">Auditoría</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Detalle</li>
             </ol>
         </div>
         <div class="mt-3 mt-md-0">

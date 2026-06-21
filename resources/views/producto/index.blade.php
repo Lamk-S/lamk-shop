@@ -4,7 +4,8 @@
 @push('css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; }
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .soft-card { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .18); }
     .table-soft th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: .8rem; white-space: nowrap; border-bottom: 1px solid rgba(148, 163, 184, .18); }
@@ -31,7 +32,7 @@
             <h2 class="page-title text-dark mb-0">Catálogo de Productos</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
                 <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item active">Productos</li>
+                <li class="breadcrumb-item active fw-medium text-dark">Productos</li>
             </ol>
         </div>
 
@@ -62,16 +63,19 @@
             </div>
         </div>
 
-        <div class="card-body p-4">
-            <form method="GET" action="{{ route('productos.index') }}" class="row g-3 filters-row mb-4">
+        <div class="card-body p-4 bg-light bg-opacity-50">
+            <form method="GET" action="{{ route('productos.index') }}" id="filtro-productos-form" class="row g-3 filters-row mb-4">
                 <div class="col-lg-4 col-md-6">
                     <label for="q" class="form-label">Buscar producto</label>
-                    <input type="text" name="q" id="q" class="form-control" value="{{ request('q') }}" placeholder="Código, barra o nombre...">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" name="q" id="q" class="form-control border-start-0 ps-0" value="{{ request('q') }}" placeholder="Código, barra o nombre...">
+                    </div>
                 </div>
 
                 <div class="col-lg-2 col-md-6">
                     <label for="tipo_producto" class="form-label">Clasificación</label>
-                    <select name="tipo_producto" id="tipo_producto" class="form-select">
+                    <select name="tipo_producto" id="tipo_producto" class="form-select shadow-sm">
                         <option value="">Todas</option>
                         <option value="ZAPATILLA" @selected(request('tipo_producto') === 'ZAPATILLA')>Zapatilla</option>
                         <option value="ROPA" @selected(request('tipo_producto') === 'ROPA')>Ropa</option>
@@ -81,7 +85,7 @@
 
                 <div class="col-lg-2 col-md-6">
                     <label for="marca_id" class="form-label">Marca</label>
-                    <select name="marca_id" id="marca_id" class="form-control selectpicker show-tick border shadow-sm" data-live-search="true" data-size="6">
+                    <select name="marca_id" id="marca_id" class="form-control selectpicker show-tick shadow-sm border" data-live-search="true" data-size="6">
                         <option value="">Todas</option>
                         @foreach($marcas as $marca)
                             <option value="{{ $marca->id }}" @selected((string) request('marca_id') === (string) $marca->id)>{{ $marca->nombre }}</option>
@@ -91,30 +95,22 @@
 
                 <div class="col-lg-2 col-md-6">
                     <label for="estado" class="form-label">Disponibilidad</label>
-                    <select name="estado" id="estado" class="form-select">
+                    <select name="estado" id="estado" class="form-select shadow-sm">
                         <option value="">Todos</option>
                         <option value="activo" @selected(request('estado') === 'activo')>Activos</option>
                         <option value="inactivo" @selected(request('estado') === 'inactivo')>Inactivos</option>
                     </select>
                 </div>
 
-                <div class="col-lg-1 col-md-6">
-                    <label for="per_page" class="form-label">Ver</label>
-                    <select name="per_page" id="per_page" class="form-select">
-                        @foreach([10, 15, 25, 50] as $size)
-                            <option value="{{ $size }}" @selected((int) request('per_page', $perPage ?? 15) === $size)>{{ $size }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="col-12 d-flex justify-content-end gap-2 align-items-end">
-                    <a href="{{ route('productos.index') }}" class="btn btn-light fw-medium border">Limpiar</a>
-                    <button type="submit" class="btn btn-primary fw-medium"><i class="fas fa-filter me-2"></i>Aplicar filtros</button>
+                <div class="col-lg-2 col-md-12 d-flex justify-content-end align-items-end">
+                    <a href="{{ route('productos.index') }}" class="btn btn-outline-secondary w-100 fw-medium" title="Limpiar todos los filtros">
+                        <i class="fas fa-eraser me-2"></i>Limpiar
+                    </a>
                 </div>
             </form>
 
             <div class="table-responsive">
-                <table class="table table-hover table-soft mb-0">
+                <table class="table table-hover table-soft mb-0 border">
                     <thead>
                         <tr>
                             <th style="min-width: 280px;">Identificación de Producto</th>
@@ -150,15 +146,10 @@
                                         </div>
                                     </div>
                                 </td>
-
                                 <td>
                                     <div class="small mb-1">
-                                        <span class="chip chip-muted">
-                                            <i class="fas fa-tag"></i> {{ optional($item->marca)->nombre ?? 'Genérico' }}
-                                        </span>
-                                        <span class="chip chip-muted">
-                                            <i class="fas fa-layer-group"></i> {{ ucfirst(strtolower($item->tipo_producto)) }}
-                                        </span>
+                                        <span class="chip chip-muted"><i class="fas fa-tag"></i> {{ optional($item->marca)->nombre ?? 'Genérico' }}</span>
+                                        <span class="chip chip-muted"><i class="fas fa-layer-group"></i> {{ ucfirst(strtolower($item->tipo_producto)) }}</span>
                                     </div>
                                     <div>
                                         @if($item->maneja_tallas)
@@ -168,16 +159,13 @@
                                         @endif
                                     </div>
                                 </td>
-
                                 <td class="text-center">
                                     <span class="badge rounded-pill px-3 py-2 {{ ($item->stock_total ?? 0) <= ($item->stock_minimo ?? 5) ? 'bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25' : 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' }}">
                                         {{ number_format((float) ($item->stock_total ?? 0), 0) }} unid.
                                     </span>
                                 </td>
-
                                 <td class="text-end fw-semibold text-secondary">S/ {{ number_format((float) $item->precio_compra, 2) }}</td>
                                 <td class="text-end fw-bold text-success">S/ {{ number_format((float) $item->precio_venta, 2) }}</td>
-
                                 <td class="text-center">
                                     @if(!$item->trashed() && (int) $item->estado === 1)
                                         <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill">Activo</span>
@@ -185,7 +173,6 @@
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Inactivo</span>
                                     @endif
                                 </td>
-
                                 @can('gestionar_productos')
                                     <td class="text-center">
                                         <div class="btn-group shadow-sm table-actions bg-white" role="group">
@@ -195,11 +182,7 @@
                                             <a href="{{ route('productos.edit', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button"
-                                                class="btn btn-sm btn-outline-secondary {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }} border-light"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#confirmModal-{{ $item->id }}"
-                                                title="{{ !$item->trashed() && (int) $item->estado === 1 ? 'Desactivar' : 'Restaurar' }}">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }} border-light" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">
                                                 <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-trash-alt' : 'fa-trash-restore-alt' }}"></i>
                                             </button>
                                         </div>
@@ -224,9 +207,20 @@
             </div>
 
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mt-4 pt-3 border-top">
-                <div class="text-muted small fw-medium">
-                    Mostrando del <span class="fw-bold text-dark">{{ $productos->firstItem() ?? 0 }}</span> al <span class="fw-bold text-dark">{{ $productos->lastItem() ?? 0 }}</span> de <span class="fw-bold text-dark">{{ $productos->total() }}</span> registros totales
-                </div>
+                <form method="GET" action="{{ route('productos.index') }}" id="pagination-form" class="d-flex align-items-center gap-2">
+                    @foreach(request()->except('per_page', 'page') as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                    @endforeach
+                    <label for="per_page" class="form-label mb-0 small fw-bold text-muted text-uppercase">Mostrar:</label>
+                    <select name="per_page" id="per_page" class="form-select form-select-sm shadow-sm" style="width: 80px;">
+                        @foreach([10, 15, 25, 50] as $size)
+                            <option value="{{ $size }}" @selected((int) request('per_page', $perPage ?? 15) === $size)>{{ $size }}</option>
+                        @endforeach
+                    </select>
+                    <span class="text-muted small fw-medium ms-2">
+                        del <span class="fw-bold text-dark">{{ $productos->firstItem() ?? 0 }}</span> al <span class="fw-bold text-dark">{{ $productos->lastItem() ?? 0 }}</span> de <span class="fw-bold text-dark">{{ $productos->total() }}</span> registros
+                    </span>
+                </form>
                 <div class="pagination-custom">
                     {{ $productos->links('pagination::bootstrap-5') }}
                 </div>
@@ -238,69 +232,13 @@
 
 @foreach($productos as $item)
     @can('gestionar_productos')
-        {{-- Modales mantenidos igual, la lógica es la misma pero el estilo general ya limpia el entorno --}}
         <div class="modal fade" id="verModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-header soft-header border-0">
-                        <h5 class="modal-title fw-bold text-dark"><i class="fas fa-box-open text-primary me-2"></i>{{ $item->nombre }}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body p-4">
-                        <div class="row g-4">
-                            <div class="col-md-5 text-center">
-                                @if($item->img_path)
-                                    <img src="{{ asset('storage/' . $item->img_path) }}" alt="{{ $item->nombre }}" class="img-fluid rounded-4 shadow-sm border" style="max-height: 250px; object-fit: contain;">
-                                @else
-                                    <div class="bg-light rounded-4 d-flex align-items-center justify-content-center border h-100 min-vh-25">
-                                        <div class="text-muted"><i class="fas fa-image fa-3x mb-2 opacity-25"></i><p class="small mb-0">Sin imagen</p></div>
-                                    </div>
-                                @endif
-                            </div>
-                            <div class="col-md-7">
-                                <div class="row g-3">
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Código SKU</span><div class="fw-medium">{{ $item->codigo }}</div></div>
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Cod. Barras</span><div class="fw-medium">{{ $item->codigo_barra ?: 'N/A' }}</div></div>
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Marca</span><div class="fw-medium">{{ optional($item->marca)->nombre ?? 'Sin marca' }}</div></div>
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Categorías</span>
-                                        <div>
-                                            @forelse($item->categorias as $cat) <span class="badge bg-secondary">{{ $cat->nombre }}</span> @empty <span class="text-muted">Ninguna</span> @endforelse
-                                        </div>
-                                    </div>
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Precio Compra</span><div class="fw-bold text-danger">S/ {{ number_format((float) $item->precio_compra, 2) }}</div></div>
-                                    <div class="col-6"><span class="d-block text-muted small text-uppercase fw-bold">Precio Venta</span><div class="fw-bold text-success">S/ {{ number_format((float) $item->precio_venta, 2) }}</div></div>
-                                    <div class="col-12"><span class="d-block text-muted small text-uppercase fw-bold">Descripción</span><div class="small">{{ $item->descripcion ?: 'No se proporcionó información detallada.' }}</div></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
-            </div>
         </div>
-
         <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow">
-                    <div class="modal-body text-center p-5">
-                        @if(!$item->trashed() && (int) $item->estado === 1)
-                            <div class="text-danger mb-4"><i class="fas fa-power-off fa-4x opacity-75"></i></div>
-                            <h4 class="fw-bold text-dark">¿Desactivar producto?</h4>
-                            <p class="text-muted mb-4">El producto <strong>{{ $item->nombre }}</strong> se ocultará de los puntos de venta.</p>
-                        @else
-                            <div class="text-success mb-4"><i class="fas fa-check-circle fa-4x opacity-75"></i></div>
-                            <h4 class="fw-bold text-dark">¿Restaurar producto?</h4>
-                            <p class="text-muted mb-4">El producto <strong>{{ $item->nombre }}</strong> volverá a estar disponible.</p>
-                        @endif
-                        <div class="d-flex justify-content-center gap-2">
-                            <button type="button" class="btn btn-light px-4 border" data-bs-dismiss="modal">Cancelar</button>
-                            <form action="{{ route('productos.destroy', $item) }}" method="post">
-                                @method('DELETE') @csrf
-                                <button type="submit" class="btn {{ !$item->trashed() && (int) $item->estado === 1 ? 'btn-danger' : 'btn-success' }} px-4 shadow-sm">Confirmar acción</button>
-                            </form>
-                        </div>
-                    </div>
+             <div class="modal-dialog modal-dialog-centered">
                 </div>
-            </div>
         </div>
     @endcan
 @endforeach
@@ -309,4 +247,32 @@
 @push('js')
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const filterForm = document.getElementById('filtro-productos-form');
+        const paginationForm = document.getElementById('pagination-form');
+        const searchInput = document.getElementById('q');
+        
+        const nativeSelects = filterForm.querySelectorAll('select:not(.selectpicker)');
+        nativeSelects.forEach(select => {
+            select.addEventListener('change', () => filterForm.submit());
+        });
+
+        $('#marca_id').on('changed.bs.select', function () {
+            filterForm.submit();
+        });
+
+        let typingTimer;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(function() {
+                filterForm.submit();
+            }, 600);
+        });
+
+        document.getElementById('per_page').addEventListener('change', () => {
+            paginationForm.submit();
+        });
+    });
+</script>
 @endpush

@@ -3,66 +3,16 @@
 
 @push('css')
 <style>
-    .page-title {
-        font-weight: 800;
-        letter-spacing: -.02em;
-    }
-
-    .glass-card {
-        border: 0;
-        border-radius: 1.25rem;
-        box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, .08);
-        overflow: hidden;
-    }
-
-    .soft-header {
-        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
-        border-bottom: 1px solid rgba(148, 163, 184, .18);
-    }
-
-    .summary-box {
-        background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%);
-        border: 1px solid rgba(59, 130, 246, .15);
-        border-radius: 1rem;
-        padding: 1rem;
-    }
-
-    .summary-label {
-        font-size: .78rem;
-        text-transform: uppercase;
-        letter-spacing: .08em;
-        color: #64748b;
-        font-weight: 700;
-        margin-bottom: .25rem;
-    }
-
-    .summary-value {
-        font-size: 1rem;
-        font-weight: 700;
-        color: #0f172a;
-        word-break: break-word;
-    }
-
-    .section-title {
-        font-size: .9rem;
-        font-weight: 700;
-        color: #334155;
-        text-transform: uppercase;
-        letter-spacing: .06em;
-    }
-
-    .help-text {
-        font-size: .85rem;
-        color: #64748b;
-    }
-
-    .sticky-actions {
-        position: sticky;
-        bottom: 0;
-        background: linear-gradient(180deg, rgba(255,255,255,0.7), #fff 40%);
-        backdrop-filter: blur(8px);
-        z-index: 2;
-    }
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
+    .glass-card { border: 0; border-radius: 1.25rem; box-shadow: 0 0.5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
+    .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .18); }
+    .summary-box { background: linear-gradient(135deg, #eff6ff 0%, #f8fbff 100%); border: 1px solid rgba(59, 130, 246, .15); border-radius: 1rem; padding: 1rem; }
+    .summary-label { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: #64748b; font-weight: 700; margin-bottom: .25rem; }
+    .summary-value { font-size: 1rem; font-weight: 700; color: #0f172a; word-break: break-word; }
+    .section-title { font-size: .9rem; font-weight: 700; color: #334155; text-transform: uppercase; letter-spacing: .06em; }
+    .help-text { font-size: .85rem; color: #64748b; }
+    .sticky-actions { position: sticky; bottom: 0; background: linear-gradient(180deg, rgba(255,255,255,0.7), #fff 40%); backdrop-filter: blur(8px); z-index: 2; }
 </style>
 @endpush
 
@@ -70,15 +20,11 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
         <div>
-            <h2 class="page-title text-dark mb-0">Abrir Sesión de Caja</h2>
+            <h2 class="page-title mb-0">Abrir Sesión de Caja</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ route('sesiones-caja.index') }}" class="text-decoration-none">Sesiones de Caja</a>
-                </li>
-                <li class="breadcrumb-item active">Abrir sesión</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('sesiones-caja.index') }}" class="text-decoration-none text-muted">Sesiones de Caja</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Abrir sesión</li>
             </ol>
         </div>
         <div class="mt-3 mt-md-0">

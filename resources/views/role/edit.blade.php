@@ -4,6 +4,7 @@
 @push('css')
 <style>
     .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .soft-card { border: 0; border-radius: 1.25rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid #edf2f7; }
     .module-card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 1rem; height: 100%; transition: all 0.2s ease; overflow: hidden; }

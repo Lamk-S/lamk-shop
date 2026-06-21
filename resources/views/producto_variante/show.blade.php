@@ -3,7 +3,8 @@
 
 @push('css')
 <style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; }
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .soft-card { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .18); }
     .section-title { font-size: .82rem; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: #64748b; }
@@ -23,11 +24,11 @@
 <div class="container-fluid px-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
         <div>
-            <h2 class="page-title text-dark mb-0">Detalle de Variante</h2>
+            <h2 class="page-title mb-0">Detalle de Variante</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
-                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('producto-variantes.index') }}" class="text-decoration-none">Variantes</a></li>
-                <li class="breadcrumb-item active">Ficha de registro</li>
+                <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{{ route('producto-variantes.index') }}" class="text-decoration-none text-muted">Variantes</a></li>
+                <li class="breadcrumb-item active fw-medium text-dark">Ficha de registro</li>
             </ol>
         </div>
 

@@ -5,6 +5,8 @@
 @push('css')
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
+    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .help-text-soft { font-size: 0.8rem; color: #6c757d; }
     .purchase-alert { border-left: 4px solid #198754; }
     .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap; }
@@ -32,11 +34,11 @@
 
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
-        <h2 class="fw-bold text-dark mb-0">Registrar Compra</h2>
+        <h2 class="page-title mb-0">Registrar Compra</h2>
         <ol class="breadcrumb mb-0 mt-1 fs-7">
-            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none">Inicio</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('compras.index') }}" class="text-decoration-none">Compras</a></li>
-            <li class="breadcrumb-item active">Nueva compra</li>
+            <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('compras.index') }}" class="text-decoration-none text-muted">Compras</a></li>
+            <li class="breadcrumb-item active fw-medium text-dark">Nueva compra</li>
         </ol>
     </div>
 

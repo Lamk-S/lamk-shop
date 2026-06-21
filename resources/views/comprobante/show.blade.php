@@ -4,6 +4,7 @@
 @push('css')
 <style>
     .page-title { font-weight: 800; letter-spacing: -.025em; color: #0f172a; }
+    .fs-7 { font-size: 0.875rem; }
     .breadcrumb-custom .breadcrumb-item + .breadcrumb-item::before { content: "›"; color: #94a3b8; font-size: 1.1rem; vertical-align: middle; }
     .main-card { border: 0; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02); overflow: hidden; background: #ffffff; }
     .card-gradient-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid #edf2f7; position: relative; }
