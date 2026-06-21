@@ -28,39 +28,24 @@ class ProductoVarianteController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
+        $query->when($request->filled('q'), function ($q) use ($request) {
             $search = trim((string) $request->input('q'));
-            $query->where(function ($q) use ($search) {
-                $q->where('codigo_variante', 'like', "%{$search}%")
+            $q->where(function ($sub) use ($search) {
+                $sub->where('codigo_variante', 'like', "%{$search}%")
                     ->orWhere('codigo_barra', 'like', "%{$search}%")
-                    ->orWhereHas('producto', function ($qp) use ($search) {
-                        $qp->where('codigo', 'like', "%{$search}%")
-                            ->orWhere('nombre', 'like', "%{$search}%");
-                    })
-                    ->orWhereHas('talla', function ($qt) use ($search) {
-                        $qt->where('codigo', 'like', "%{$search}%")
-                            ->orWhere('nombre', 'like', "%{$search}%");
-                    });
+                    ->orWhereHas('producto', fn($qp) => $qp->where('codigo', 'like', "%{$search}%")->orWhere('nombre', 'like', "%{$search}%"))
+                    ->orWhereHas('talla', fn($qt) => $qt->where('codigo', 'like', "%{$search}%")->orWhere('nombre', 'like', "%{$search}%"));
             });
-        }
-
-        if ($request->filled('producto_id')) {
-            $query->where('producto_id', $request->input('producto_id'));
-        }
-
-        if ($request->filled('talla_id')) {
-            $query->where('talla_id', $request->input('talla_id'));
-        }
-
-        if ($request->filled('estado')) {
-            if ($request->input('estado') === 'activo') {
-                $query->where('estado', 1)->whereNull('deleted_at');
-            } elseif ($request->input('estado') === 'inactivo') {
-                $query->where(function ($q) {
-                    $q->where('estado', 0)->orWhereNotNull('deleted_at');
-                });
-            }
-        }
+        })
+        ->when($request->filled('producto_id'), fn($q) => $q->where('producto_id', $request->producto_id))
+        ->when($request->filled('talla_id'), fn($q) => $q->where('talla_id', $request->talla_id))
+        ->when($request->filled('estado'), function ($q) use ($request) {
+            match ($request->estado) {
+                'activo' => $q->where('estado', 1)->whereNull('deleted_at'),
+                'inactivo' => $q->where(fn($sub) => $sub->where('estado', 0)->orWhereNotNull('deleted_at')),
+                default => $q,
+            };
+        });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;

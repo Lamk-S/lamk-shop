@@ -26,28 +26,19 @@ class TallaController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
+        $query->when($request->filled('q'), function ($q) use ($request) {
             $search = trim((string) $request->input('q'));
-
-            $query->where(function ($q) use ($search) {
-                $q->where('codigo', 'like', "%{$search}%")
-                    ->orWhere('nombre', 'like', "%{$search}%")
-                    ->orWhere('tipo_talla', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('tipo_talla')) {
-            $query->where('tipo_talla', $request->input('tipo_talla'));
-        }
-
-        if ($request->filled('estado')) {
+            $q->where(fn($sub) => $sub->where('codigo', 'like', "%{$search}%")->orWhere('nombre', 'like', "%{$search}%"));
+        })
+        ->when($request->filled('tipo_talla'), fn($q) => $q->where('tipo_talla', $request->tipo_talla))
+        ->when($request->filled('estado'), function ($q) use ($request) {
             match ($request->input('estado')) {
-                'activa' => $query->where('estado', 1)->whereNull('deleted_at'),
-                'inactiva' => $query->where('estado', 0)->whereNull('deleted_at'),
-                'eliminada' => $query->onlyTrashed(),
-                default => null,
+                'activa' => $q->where('estado', 1)->whereNull('deleted_at'),
+                'inactiva' => $q->where('estado', 0)->whereNull('deleted_at'),
+                'eliminada' => $q->onlyTrashed(),
+                default => $q,
             };
-        }
+        });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;

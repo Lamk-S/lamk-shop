@@ -23,13 +23,18 @@ class MovimientoCajaController extends Controller implements HasMiddleware
 
     public function index(Request $request)
     {
+        $query = MovimientoCaja::with(['sesionCaja.caja', 'sesionCaja.user'])
+            ->latest('id');
+
+        $query->when($request->filled('tipo'), fn($q) => $q->where('tipo', $request->tipo))
+              ->when($request->filled('origen'), fn($q) => $q->where('origen', $request->origen))
+              ->when($request->filled('fecha_desde'), fn($q) => $q->whereDate('created_at', '>=', $request->fecha_desde))
+              ->when($request->filled('fecha_hasta'), fn($q) => $q->whereDate('created_at', '<=', $request->fecha_hasta));
+
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
 
-        $movimientos = MovimientoCaja::with(['sesionCaja.caja', 'sesionCaja.user'])
-            ->latest('id')
-            ->paginate($perPage)
-            ->withQueryString();
+        $movimientos = $query->paginate($perPage)->withQueryString();
 
         return view('movimiento_caja.index', compact('movimientos', 'perPage'));
     }

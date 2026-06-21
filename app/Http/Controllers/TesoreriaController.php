@@ -33,19 +33,24 @@ class TesoreriaController extends Controller implements HasMiddleware
         $tesoreriaEfectivo = $tesorerias->firstWhere('tipo_cuenta', 'EFECTIVO');
         $tesoreriaBanco = $tesorerias->firstWhere('tipo_cuenta', 'BANCO');
 
-        $perPage = (int) $request->input('per_page', 10);
-        $perPage = in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : 10;
-
-        $movimientos = MovimientoTesoreria::with([
+        $query = MovimientoTesoreria::with([
                 'tesoreria',
-                'user',
-                'venta',
-                'compra',
-                'sesionCaja.caja',
+                'user:id,name',
+                'venta:id,serie,correlativo',
+                'compra:id,correlativo',
+                'sesionCaja.caja:id,nombre',
             ])
-            ->latest('id')
-            ->paginate($perPage)
-            ->withQueryString();
+            ->latest('id');
+
+        $query->when($request->filled('tesoreria_id'), fn($q) => $q->where('tesoreria_id', $request->tesoreria_id))
+              ->when($request->filled('tipo'), fn($q) => $q->where('tipo', $request->tipo))
+              ->when($request->filled('medio'), fn($q) => $q->where('medio', $request->medio))
+              ->when($request->filled('origen'), fn($q) => $q->where('origen', $request->origen));
+
+        $perPage = (int) $request->input('per_page', 15);
+        $perPage = in_array($perPage, [5, 10, 15, 25, 50], true) ? $perPage : 15;
+
+        $movimientos = $query->paginate($perPage)->withQueryString();
 
         return view('tesoreria.index', compact(
             'tesorerias',

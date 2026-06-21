@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\StoreComprobanteRequest;
 use App\Http\Requests\UpdateComprobanteRequest;
 use App\Models\Comprobante;
 use Illuminate\Http\Request;
@@ -25,32 +24,23 @@ class ComprobanteController extends Controller implements HasMiddleware
             ->withTrashed()
             ->latest('id');
 
-        if ($request->filled('q')) {
+        $query->when($request->filled('q'), function ($q) use ($request) {
             $search = trim((string) $request->input('q'));
-            $query->where(function ($q) use ($search) {
-                $q->where('tipo_comprobante', 'like', "%{$search}%")
-                    ->orWhere('serie', 'like', "%{$search}%")
-                    ->orWhere('uso_comprobante', 'like', "%{$search}%")
-                    ->orWhere('ambiente', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('tipo_comprobante')) {
-            $query->where('tipo_comprobante', $request->input('tipo_comprobante'));
-        }
-
-        if ($request->filled('uso_comprobante')) {
-            $query->where('uso_comprobante', $request->input('uso_comprobante'));
-        }
-
-        if ($request->filled('estado')) {
-            match ($request->input('estado')) {
-                'activo' => $query->where('estado', 1)->whereNull('deleted_at'),
-                'inactivo' => $query->where('estado', 0)->whereNull('deleted_at'),
-                'eliminado' => $query->onlyTrashed(),
-                default => null,
+            $q->where(fn($sub) => $sub->where('tipo_comprobante', 'like', "%{$search}%")
+                ->orWhere('serie', 'like', "%{$search}%")
+                ->orWhere('uso_comprobante', 'like', "%{$search}%")
+                ->orWhere('ambiente', 'like', "%{$search}%"));
+        })
+        ->when($request->filled('tipo_comprobante'), fn($q) => $q->where('tipo_comprobante', $request->tipo_comprobante))
+        ->when($request->filled('uso_comprobante'), fn($q) => $q->where('uso_comprobante', $request->uso_comprobante))
+        ->when($request->filled('estado'), function ($q) use ($request) {
+            match ($request->estado) {
+                'activo' => $q->where('estado', 1)->whereNull('deleted_at'),
+                'inactivo' => $q->where('estado', 0)->whereNull('deleted_at'),
+                'eliminado' => $q->onlyTrashed(),
+                default => $q,
             };
-        }
+        });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
