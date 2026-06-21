@@ -2,7 +2,7 @@
     <div class="container-fluid px-4">
         <div class="d-flex align-items-center justify-content-between small">
             <div class="text-muted">
-                Copyright &copy; Lamk's POS {{ date('Y') }}
+                Copyright &copy; Lamk Sports {{ date('Y') }}
             </div>
             <div>
                 <a href="#" class="text-muted text-decoration-none">Políticas de Privacidad</a>

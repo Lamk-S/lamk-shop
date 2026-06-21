@@ -19,4 +19,12 @@ class LoginRequest extends FormRequest
             'remember' => ['nullable', 'boolean'],
         ];
     }
+
+    public function messages(): array
+    {
+        return [
+            'email.required' => 'El correo electrónico es obligatorio para ingresar.',
+            'password.required' => 'Debe ingresar su contraseña.',
+        ];
+    }
 }
