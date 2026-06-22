@@ -12,6 +12,8 @@
     .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap; }
     .table-custom td { vertical-align: middle; }
     .compact-note { font-size: 0.8rem; color: #6c757d; line-height: 1.35; }
+    .scan-success { animation: flashGreen 0.6s ease-out; }
+    @keyframes flashGreen { 0% { background-color: #d1e7dd; } 100% { background-color: transparent; } }
 </style>
 @endpush
 
@@ -26,6 +28,7 @@
             'precio_venta' => (float) ($v->producto->precio_venta ?? 0),
             'producto' => $v->producto->nombre,
             'codigo' => $v->producto->codigo,
+            'codigo_barra' => $v->producto->codigo_barra,
             'talla' => $v->talla?->nombre ?? 'Sin talla',
             'afecto_igv' => (bool) ($v->producto->afecto_igv ?? true),
         ];
@@ -38,7 +41,7 @@
         <ol class="breadcrumb mb-0 mt-1 fs-7">
             <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
             <li class="breadcrumb-item"><a href="{{ route('ventas.index') }}" class="text-decoration-none text-muted">Ventas</a></li>
-            <li class="breadcrumb-item active fw-medium text-dark">Nueva venta</li>
+            <li class="breadcrumb-item active fw-medium text-dark">Nueva Venta de Mostrador</li>
         </ol>
     </div>
 
@@ -60,25 +63,29 @@
         </div>
     @endif
 
-    <div class="alert alert-primary sale-alert rounded-4 border-0 shadow-sm mb-4 bg-white">
-        <div class="d-flex align-items-start gap-3">
-            <div class="fs-4 text-primary"><i class="fa-solid fa-circle-info"></i></div>
-            <div>
-                <div class="fw-semibold mb-1 text-dark">Salida de mercadería</div>
-                <div class="small mb-0 text-muted">
-                    Recuerda verificar el stock disponible antes de agregar el producto. Los métodos de pago mixtos permiten registrar transferencias y efectivo combinados.
-                </div>
-            </div>
-        </div>
-    </div>
-
     <form action="{{ route('ventas.store') }}" method="post" id="formVenta">
         @csrf
         <div class="row g-4">
             <div class="col-xl-8">
-                @include('venta.partials.buscador_producto')
+                
+                @include('venta.partials.escanner')
 
-                <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="accordion mb-4" id="accordionBuscador">
+                    <div class="accordion-item border-0 shadow-sm rounded-4 overflow-hidden">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed bg-white fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBuscador" aria-expanded="false">
+                                <i class="fas fa-search me-2 text-secondary"></i> Falla el código / Búsqueda Manual
+                            </button>
+                        </h2>
+                        <div id="collapseBuscador" class="accordion-collapse collapse" data-bs-parent="#accordionBuscador">
+                            <div class="accordion-body bg-light border-top">
+                                @include('venta.partials.buscador_producto')
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card border-0 shadow-sm rounded-4">
                     <div class="card-body p-4">
                         @include('venta.partials.detalle')
                     </div>
@@ -129,6 +136,7 @@
     let paymentItems = [];
 
     $(document).ready(function () {
+        // 1. Reconstrucción en caso de recarga por error de validación (Old data)
         if (Array.isArray(oldDetails) && oldDetails.length > 0) {
             lineItems = oldDetails.map((detail) => {
                 const variantId = Number(detail.producto_variante_id);
@@ -150,6 +158,47 @@
             updateTotals();
         }
 
+        // ==========================================
+        //  LÓGICA DEL ESCÁNER
+        // ==========================================
+        
+        const $inputEscaner = $('#codigo_escaner');
+        const $indicador = $('#scanner-indicator');
+
+        // Escuchar cuando la app de teléfono envía el código y presiona "Enter"
+        $inputEscaner.on('keypress', function (e) {
+            if (e.which === 13) { // 13 es el código de la tecla ENTER
+                e.preventDefault(); // Evitar que el ENTER envíe el formulario principal
+                const codigoEscaneado = $(this).val().trim();
+                
+                if (codigoEscaneado) {
+                    procesarCodigoEscaneado(codigoEscaneado);
+                }
+                
+                // Limpiamos el input para el siguiente escaneo
+                $(this).val(''); 
+            }
+        });
+
+        // UX: Mantener siempre el foco en el escáner si el usuario hace clic fuera de otras áreas vitales
+        // Esto asegura que si el cajero cliquea por error fuera, la pistola no deje de funcionar.
+        $(document).on('click', function(e) {
+            const noForzarFoco = $(e.target).closest('input, select, textarea, button, a, .bootstrap-select, .modal').length;
+            if (!noForzarFoco) {
+                $inputEscaner.focus();
+            }
+        });
+
+        $inputEscaner.on('focus', function() {
+            $indicador.html('<i class="fas fa-circle-notch fa-spin me-1"></i> Cursor activo. Listo para escanear.').removeClass('text-danger').addClass('text-success');
+        }).on('blur', function() {
+            $indicador.html('<i class="fas fa-exclamation-circle me-1"></i> Cursor inactivo. Haz clic arriba para escanear.').removeClass('text-success').addClass('text-danger');
+        });
+
+        $('#variante_id').on('change', mostrarValores);
+        $('#btn_agregar').on('click', agregarProducto);
+        $('#btnCancelarVenta').on('click', cancelarVenta);
+
         if (Array.isArray(oldPayments) && oldPayments.length > 0) {
             paymentItems = oldPayments.map((pago) => ({
                 metodo_pago: (pago.metodo_pago ?? 'EFECTIVO').toString().toUpperCase(),
@@ -158,21 +207,11 @@
                 observacion: pago.observacion ?? '',
             }));
         } else if (initialMetodoPago === 'MIXTO') {
-            paymentItems = [{
-                metodo_pago: 'EFECTIVO',
-                monto: Number($('#inputTotal').val() || 0),
-                referencia_operacion: '',
-                observacion: '',
-            }];
+            paymentItems = [{ metodo_pago: 'EFECTIVO', monto: Number($('#inputTotal').val() || 0), referencia_operacion: '', observacion: '' }];
         }
-
         renderPaymentRows();
         updatePaymentSummary();
         updateMetodoPagoUI();
-
-        $('#variante_id').on('change', mostrarValores);
-        $('#btn_agregar').on('click', agregarProducto);
-        $('#btnCancelarVenta').on('click', cancelarVenta);
 
         $('#metodo_pago').on('change', function () {
             updateMetodoPagoUI();
@@ -185,14 +224,10 @@
             }
         });
 
-        $('#btnAddPaymentRow').on('click', function () {
-            addPaymentRow(true);
-        });
+        $('#btnAddPaymentRow').on('click', function () { addPaymentRow(true); });
+        $('#paymentRowsContainer').on('input change', 'input, select', function () { updatePaymentSummary(); });
 
-        $('#paymentRowsContainer').on('input change', 'input, select', function () {
-            updatePaymentSummary();
-        });
-
+        // Creación Rápida de Cliente AJAX
         const $quickClienteForm = $('#quickClienteModal form');
         if ($quickClienteForm.length > 0) {
             $quickClienteForm.on('submit', function(e) {
@@ -214,11 +249,9 @@
                         const text = `${data.label} — ${data.documento || 'DOC'} ${data.numero_documento}`;
 
                         $select.selectpicker('destroy');
-
                         if ($select.find(`option[value="${data.id}"]`).length === 0) {
                             $select.append($('<option>', {
-                                value: data.id,
-                                text: text,
+                                value: data.id, text: text,
                                 'data-tipo-persona': data.tipo_persona,
                                 'data-doc-codigo': data.documento,
                                 'data-doc-numero': data.numero_documento
@@ -233,6 +266,8 @@
                         $('#quickClienteModal').modal('hide');
                         $form[0].reset();
                         showToast(response.message, 'success');
+                        
+                        setTimeout(() => { $('#codigo_escaner').focus(); }, 300);
                     },
                     error: function(xhr) {
                         if (xhr.status === 422) {
@@ -254,13 +289,109 @@
         mostrarValores();
     });
 
-    function getVariantMeta(variantId) {
-        return variantData.find(v => Number(v.id) === Number(variantId)) || null;
+    // ==========================================
+    //  NÚCLEO DE PROCESAMIENTO DEL ESCÁNER
+    // ==========================================
+    function procesarCodigoEscaneado(codigo) {
+        // 1. Buscar coincidencia por código de barra (prioridad) o por código interno SKU
+        const meta = variantData.find(v => 
+            (v.codigo_barra && v.codigo_barra.toUpperCase() === codigo.toUpperCase()) || 
+            (v.codigo && v.codigo.toUpperCase() === codigo.toUpperCase())
+        );
+
+        // 2. Validación de existencia
+        if (!meta) {
+            showToast('El producto no está registrado en el sistema.', 'error');
+            reproducirSonido('error');
+            return;
+        }
+
+        const idVariante = meta.id;
+        const stock = meta.stock;
+        const precioUnitario = meta.precio_venta;
+
+        // 3. Validación de Stock
+        if (stock <= 0) {
+            showToast('Stock agotado para: ' + meta.producto, 'error');
+            reproducirSonido('error');
+            return;
+        }
+
+        // 4. Lógica de inserción en carrito
+        const existingIndex = lineItems.findIndex(item => Number(item.producto_variante_id) === idVariante);
+
+        if (existingIndex !== -1) {
+            // Ya existe en la lista: Aumenta la cantidad
+            const current = lineItems[existingIndex];
+            if ((current.cantidad + 1) > stock) {
+                showToast(`Solo quedan ${stock} unidades de este producto.`, 'error');
+                reproducirSonido('error');
+                return;
+            }
+            current.cantidad += 1;
+            showToast('+1 agregado (' + meta.producto + ')', 'success');
+        } else {
+            // Nuevo en la lista: Se agrega
+            lineItems.push({
+                producto_variante_id: idVariante,
+                cantidad: 1,
+                precio_unitario: precioUnitario,
+                descuento: 0,
+                producto: meta.producto,
+                codigo: meta.codigo,
+                talla: meta.talla,
+                stock: stock,
+                afecto_igv: meta.afecto_igv
+            });
+            showToast('Producto agregado (' + meta.talla + ')', 'success');
+        }
+
+        // 5. Renderizar, animar fila y emitir sonido Beep
+        reproducirSonido('success');
+        renderRows();
+        
+        // Destello visual en la última fila agregada/modificada
+        const $filaAfectada = existingIndex !== -1 ? $(`#tabla_detalle tbody tr:eq(${existingIndex})`) : $('#tabla_detalle tbody tr:last');
+        $filaAfectada.addClass('scan-success');
+        setTimeout(() => { $filaAfectada.removeClass('scan-success'); }, 600);
     }
 
-    function parseBoolean(value) {
-        return value === true || value === 1 || value === '1' || value === 'true';
+    // Pequeño Beep sintético
+    function reproducirSonido(tipo) {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            
+            if (tipo === 'success') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.1);
+            } else {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.2, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.2);
+            }
+        } catch(e) { /* Fallback silencioso si el navegador bloquea audio automático */ }
     }
+
+
+    // ==========================================
+    // BÚSQUEDA MANUAL Y TABLA
+    // ==========================================
+    
+    function getVariantMeta(variantId) { return variantData.find(v => Number(v.id) === Number(variantId)) || null; }
+    function parseBoolean(value) { return value === true || value === 1 || value === '1' || value === 'true'; }
 
     function mostrarValores() {
         const variantId = Number($('#variante_id').val());
@@ -268,113 +399,60 @@
         const meta = getVariantMeta(variantId);
 
         if (!variantId) {
-            $('#stock').val('');
-            $('#precio_venta').val('');
-            $('#variante_resumen').text('Seleccione un producto para ver stock y precio');
+            $('#stock').val(''); $('#precio_venta').val('');
+            $('#variante_resumen').text('Seleccione un producto de la lista');
             return;
         }
 
         const stock = Number($option.data('stock') ?? meta?.stock ?? 0);
-
-        const precioVenta = Number(
-            $option.data('precio') ??
-            $option.data('precio-venta') ??
-            $option.data('precioVenta') ??
-            meta?.precio_venta ??
-            0
-        );
+        const precioVenta = Number($option.data('precio') ?? meta?.precio_venta ?? 0);
 
         $('#stock').val(stock);
         $('#precio_venta').val(precioVenta.toFixed(2));
-
-        $('#variante_resumen').html(
-            `<strong>${meta?.producto ?? $option.data('producto') ?? 'Producto'}</strong> · ${meta?.talla ?? $option.data('talla') ?? 'Sin talla'}`
-        );
+        $('#variante_resumen').html(`<strong>${meta?.producto ?? $option.data('producto')}</strong> · ${meta?.talla ?? $option.data('talla')}`);
     }
 
+    // Agregar producto desde el formulario manual
     function agregarProducto() {
         const idVariante = Number($('#variante_id').val());
-        if (!idVariante) {
-            showToast('Seleccione un producto', 'error');
-            return;
-        }
+        if (!idVariante) { showToast('Seleccione un producto manual', 'error'); return; }
 
         const $option = $('#variante_id option:selected');
         const meta = getVariantMeta(idVariante);
-
         const stock = Number($option.data('stock') ?? meta?.stock ?? 0);
-        const precioUnitario = Number($('#precio_venta').val()) || Number(
-            $option.data('precio') ??
-            $option.data('precio-venta') ??
-            meta?.precio_venta ??
-            0
-        );
+        const precioUnitario = Number($('#precio_venta').val()) || Number($option.data('precio') ?? meta?.precio_venta ?? 0);
         const producto = meta?.producto || $option.data('producto') || 'Producto';
         const codigo = meta?.codigo || $option.data('codigo') || '';
         const talla = meta?.talla || $option.data('talla') || 'Sin talla';
-        const afectoIgv = parseBoolean(meta?.afecto_igv ?? $option.data('afecto-igv') ?? $option.data('afectoigv') ?? true);
+        const afectoIgv = parseBoolean(meta?.afecto_igv ?? true);
         const cantidad = Number($('#cantidad').val());
         const descuento = Number($('#descuento').val()) || 0;
 
-        if (!Number.isInteger(cantidad) || cantidad <= 0) {
-            showToast('Ingrese una cantidad válida', 'error');
-            return;
-        }
-
-        if (cantidad > stock) {
-            showToast('La cantidad supera el stock disponible', 'error');
-            return;
-        }
-
-        if (precioUnitario <= 0) {
-            showToast('Precio unitario inválido', 'error');
-            return;
-        }
-
-        if (descuento < 0) {
-            showToast('Descuento inválido', 'error');
-            return;
-        }
+        if (!Number.isInteger(cantidad) || cantidad <= 0) { showToast('Cantidad inválida', 'error'); return; }
+        if (cantidad > stock) { showToast('Supera stock disponible', 'error'); return; }
+        if (precioUnitario <= 0) { showToast('Precio inválido', 'error'); return; }
+        if (descuento < 0) { showToast('Descuento inválido', 'error'); return; }
 
         const existingIndex = lineItems.findIndex(item => Number(item.producto_variante_id) === idVariante);
 
         if (existingIndex !== -1) {
             const current = lineItems[existingIndex];
-            const nuevaCantidad = Number(current.cantidad) + cantidad;
-
-            if (nuevaCantidad > stock) {
-                showToast('Stock insuficiente para acumular la cantidad', 'error');
-                return;
+            if ((Number(current.cantidad) + cantidad) > stock) {
+                showToast('Stock insuficiente para acumular', 'error'); return;
             }
-
-            current.cantidad = nuevaCantidad;
+            current.cantidad = Number(current.cantidad) + cantidad;
             current.precio_unitario = precioUnitario;
             current.descuento = round(Number(current.descuento) + descuento);
-            current.producto = producto;
-            current.codigo = codigo;
-            current.talla = talla;
-            current.stock = stock;
-            current.afecto_igv = afectoIgv;
-
-            showToast('La variante ya estaba en el detalle; se actualizó la cantidad.', 'success');
+            showToast('Actualizado correctamente', 'success');
         } else {
-            lineItems.push({
-                producto_variante_id: idVariante,
-                cantidad,
-                precio_unitario: precioUnitario,
-                descuento,
-                producto,
-                codigo,
-                talla,
-                stock,
-                afecto_igv: afectoIgv
-            });
-
-            showToast('Producto agregado al carrito', 'success');
+            lineItems.push({ producto_variante_id: idVariante, cantidad, precio_unitario: precioUnitario, descuento, producto, codigo, talla, stock, afecto_igv: afectoIgv });
+            showToast('Añadido desde búsqueda manual', 'success');
         }
 
         renderRows();
         limpiarCampos();
+        
+        $('#codigo_escaner').focus();
     }
 
     function renderRows() {
@@ -401,14 +479,16 @@
                         <input type="hidden" name="detalles[${index}][precio_unitario]" value="${item.precio_unitario}">
                         <input type="hidden" name="detalles[${index}][descuento]" value="${item.descuento}">
                         <div>${item.producto}</div>
-                        <div class="small text-muted">${item.codigo}</div>
+                        <div class="small text-muted font-monospace">${item.codigo}</div>
                     </td>
                     <td class="align-middle text-center">${item.talla}</td>
-                    <td class="align-middle text-center">${item.cantidad}</td>
-                    <td class="align-middle text-end">${item.precio_unitario.toFixed(2)}</td>
-                    <td class="align-middle text-end text-danger">${item.descuento > 0 ? '-S/ ' + item.descuento.toFixed(2) : 'S/ 0.00'}</td>
-                    <td class="align-middle text-end">${igv.toFixed(2)}</td>
-                    <td class="align-middle text-end fw-bold text-dark">${totalLinea.toFixed(2)}</td>
+                    <td class="align-middle text-center">
+                        <span class="badge bg-light text-dark border fs-6">${item.cantidad}</span>
+                    </td>
+                    <td class="align-middle text-end font-monospace">${item.precio_unitario.toFixed(2)}</td>
+                    <td class="align-middle text-end text-danger font-monospace">${item.descuento > 0 ? '-S/ ' + item.descuento.toFixed(2) : 'S/ 0.00'}</td>
+                    <td class="align-middle text-end font-monospace">${igv.toFixed(2)}</td>
+                    <td class="align-middle text-end fw-bold text-dark fs-6 font-monospace">${totalLinea.toFixed(2)}</td>
                     <td class="align-middle text-center">
                         <button class="btn btn-sm btn-outline-danger border-0" type="button" onclick="eliminarProducto(${index})" title="Quitar">
                             <i class="fa-solid fa-times"></i>
@@ -426,29 +506,26 @@
     function eliminarProducto(indice) {
         lineItems.splice(indice, 1);
         renderRows();
-        showToast('Producto eliminado', 'success');
+        showToast('Producto eliminado del carrito', 'success');
+        $('#codigo_escaner').focus();
     }
 
     function cancelarVenta() {
-        lineItems = [];
-        paymentItems = [];
-        renderRows();
-        renderPaymentRows();
-        limpiarCampos();
-        updatePaymentSummary();
-        showToast('Venta cancelada', 'success');
+        lineItems = []; paymentItems = [];
+        renderRows(); renderPaymentRows();
+        limpiarCampos(); updatePaymentSummary();
+        showToast('Venta limpiada', 'success');
+        $('#codigo_escaner').focus();
     }
 
     function updateTotals() {
         const subtotalBruto = lineItems.reduce((acc, item) => acc + (Number(item.cantidad) * Number(item.precio_unitario)), 0);
         const descuentoTotal = lineItems.reduce((acc, item) => acc + Number(item.descuento), 0);
         const baseImponible = Math.max(0, subtotalBruto - descuentoTotal);
-
         const igv = lineItems.reduce((acc, item) => {
             const base = Math.max(0, (Number(item.cantidad) * Number(item.precio_unitario)) - Number(item.descuento));
             return acc + (item.afecto_igv ? (base * 0.18) : 0);
         }, 0);
-
         const total = round(baseImponible + igv);
 
         $('#subtotal_bruto').text(subtotalBruto.toFixed(2));
@@ -477,45 +554,25 @@
 
     function limpiarCampos() {
         $('#variante_id').selectpicker('val', '');
-        $('#cantidad').val('1');
-        $('#precio_venta').val('');
-        $('#descuento').val('0');
-        $('#stock').val('');
-        $('#variante_resumen').text('Seleccione un producto para ver stock y precio');
+        $('#cantidad').val('1'); $('#precio_venta').val(''); $('#descuento').val('0'); $('#stock').val('');
+        $('#variante_resumen').text('Seleccione un producto manual');
     }
 
-    function round(num, decimales = 2) {
-        return Number(parseFloat(num).toFixed(decimales));
-    }
+    function round(num, decimales = 2) { return Number(parseFloat(num).toFixed(decimales)); }
 
     function showToast(message, icon = 'error') {
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            showConfirmButton: false,
-            timer: 2000,
-            timerProgressBar: true,
-            icon: icon,
-            title: message
-        });
+        Swal.fire({ toast: true, position: 'top-end', showConfirmButton: false, timer: 1500, timerProgressBar: true, icon: icon, title: message });
     }
 
+    // ==========================================
+    // PAGOS MULTIPLES
+    // ==========================================
     function updateMetodoPagoUI() {
-        const metodo = String($('#metodo_pago').val() || '').toUpperCase();
-        const isMixto = metodo === 'MIXTO';
-
+        const isMixto = String($('#metodo_pago').val() || '').toUpperCase() === 'MIXTO';
         $('#pagoMultipleSection').toggle(isMixto);
         $('#btnAddPaymentRow').prop('disabled', !isMixto);
-
-        if (!isMixto) {
-            $('#paymentRowsContainer').find('input, select, textarea').prop('disabled', false);
-        }
-
-        if (isMixto && paymentItems.length === 0) {
-            addPaymentRow(false);
-        }
+        if (!isMixto) $('#paymentRowsContainer').find('input, select, textarea').prop('disabled', false);
     }
-
     function getPaymentRowsFromDom() {
         const rows = [];
         $('#paymentRowsContainer .payment-row').each(function () {
@@ -529,110 +586,44 @@
         });
         return rows;
     }
-
     function addPaymentRow(autofocus = true) {
         paymentItems = getPaymentRowsFromDom();
-        paymentItems.push({
-            metodo_pago: 'EFECTIVO',
-            monto: Number($('#inputTotal').val() || 0),
-            referencia_operacion: '',
-            observacion: '',
-        });
-
+        paymentItems.push({ metodo_pago: 'EFECTIVO', monto: Number($('#inputTotal').val() || 0), referencia_operacion: '', observacion: '' });
         renderPaymentRows();
-
-        if (autofocus) {
-            $('#paymentRowsContainer .payment-row:last [name$="[monto]"]').focus();
-        }
+        if (autofocus) $('#paymentRowsContainer .payment-row:last [name$="[monto]"]').focus();
         updatePaymentSummary();
     }
-
     function removePaymentRow(index) {
-        paymentItems = getPaymentRowsFromDom();
-        paymentItems.splice(index, 1);
-        renderPaymentRows();
-        updatePaymentSummary();
+        paymentItems = getPaymentRowsFromDom(); paymentItems.splice(index, 1);
+        renderPaymentRows(); updatePaymentSummary();
     }
-
     function renderPaymentRows() {
-        const $container = $('#paymentRowsContainer');
-        $container.empty();
-
-        if (!paymentItems.length) {
-            $container.append(`
-                <div class="text-muted small">
-                    No hay pagos adicionales registrados.
-                </div>
-            `);
-            return;
-        }
-
+        const $container = $('#paymentRowsContainer'); $container.empty();
+        if (!paymentItems.length) { $container.append(`<div class="text-muted small">No hay pagos adicionales registrados.</div>`); return; }
         paymentItems.forEach((pago, index) => {
-            const row = `
+            $container.append(`
                 <div class="payment-row border rounded-3 p-3 mb-3 bg-light">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <strong class="small text-dark">Pago ${index + 1}</strong>
-                        <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removePaymentRow(${index})">
-                            Eliminar
-                        </button>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0" onclick="removePaymentRow(${index})">Eliminar</button>
                     </div>
                     <div class="row g-2">
-                        <div class="col-12">
-                            <label class="form-label small mb-1">Método</label>
-                            <select name="pagos[${index}][metodo_pago]" class="form-select form-select-sm">
-                                <option value="EFECTIVO" ${pago.metodo_pago === 'EFECTIVO' ? 'selected' : ''}>Efectivo</option>
-                                <option value="TARJETA" ${pago.metodo_pago === 'TARJETA' ? 'selected' : ''}>Tarjeta</option>
-                                <option value="TRANSFERENCIA" ${pago.metodo_pago === 'TRANSFERENCIA' ? 'selected' : ''}>Transferencia</option>
-                                <option value="YAPE" ${pago.metodo_pago === 'YAPE' ? 'selected' : ''}>Yape</option>
-                                <option value="PLIN" ${pago.metodo_pago === 'PLIN' ? 'selected' : ''}>Plin</option>
-                                <option value="OTRO" ${pago.metodo_pago === 'OTRO' ? 'selected' : ''}>Otro</option>
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small mb-1">Monto</label>
-                            <input type="number" step="0.01" min="0.01" name="pagos[${index}][monto]" class="form-control form-control-sm" value="${Number(pago.monto || 0).toFixed(2)}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small mb-1">Referencia</label>
-                            <input type="text" name="pagos[${index}][referencia_operacion]" class="form-control form-control-sm" maxlength="100" value="${escapeHtml(pago.referencia_operacion || '')}">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label small mb-1">Observación</label>
-                            <textarea name="pagos[${index}][observacion]" class="form-control form-control-sm" rows="2" maxlength="255">${escapeHtml(pago.observacion || '')}</textarea>
-                        </div>
+                        <div class="col-12"><label class="form-label small mb-1">Método</label><select name="pagos[${index}][metodo_pago]" class="form-select form-select-sm"><option value="EFECTIVO" ${pago.metodo_pago==='EFECTIVO'?'selected':''}>Efectivo</option><option value="TARJETA" ${pago.metodo_pago==='TARJETA'?'selected':''}>Tarjeta</option><option value="TRANSFERENCIA" ${pago.metodo_pago==='TRANSFERENCIA'?'selected':''}>Transferencia</option><option value="YAPE" ${pago.metodo_pago==='YAPE'?'selected':''}>Yape</option><option value="PLIN" ${pago.metodo_pago==='PLIN'?'selected':''}>Plin</option><option value="OTRO" ${pago.metodo_pago==='OTRO'?'selected':''}>Otro</option></select></div>
+                        <div class="col-12"><label class="form-label small mb-1">Monto</label><input type="number" step="0.01" min="0.01" name="pagos[${index}][monto]" class="form-control form-control-sm" value="${Number(pago.monto||0).toFixed(2)}"></div>
+                        <div class="col-12"><label class="form-label small mb-1">Referencia</label><input type="text" name="pagos[${index}][referencia_operacion]" class="form-control form-control-sm" maxlength="100" value="${escapeHtml(pago.referencia_operacion||'')}"></div>
                     </div>
                 </div>
-            `;
-            $container.append(row);
+            `);
         });
     }
-
     function updatePaymentSummary() {
         const total = Number($('#inputTotal').val() || 0);
         const pagos = getPaymentRowsFromDom();
         const pagado = round(pagos.reduce((acc, pago) => acc + (Number(pago.monto) || 0), 0));
         const pendiente = round(Math.max(0, total - pagado));
-
-        $('#pagoTotalProgramado').text(total.toFixed(2));
-        $('#pagoTotalRegistrado').text(pagado.toFixed(2));
-        $('#pagoSaldoPendiente').text(pendiente.toFixed(2));
-
-        const metodo = String($('#metodo_pago').val() || '').toUpperCase();
-        if (metodo === 'MIXTO') {
-            $('#pagoHelp').text('En venta mixta puedes registrar varios métodos de pago. Ingresa bien los montos.');
-        } else {
-            $('#pagoHelp').text('Pago simple: el sistema registrará el total en un solo movimiento hacia caja.');
-        }
+        $('#pagoTotalProgramado').text(total.toFixed(2)); $('#pagoTotalRegistrado').text(pagado.toFixed(2)); $('#pagoSaldoPendiente').text(pendiente.toFixed(2));
     }
-
-    function escapeHtml(text) {
-        return String(text)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-    }
+    function escapeHtml(text) { return String(text).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
 
     window.removePaymentRow = removePaymentRow;
     window.updatePaymentSummary = updatePaymentSummary;
