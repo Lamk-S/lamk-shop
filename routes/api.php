@@ -1,21 +1,15 @@
 <?php
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
+use App\Events\BarcodeScanned;
 
-Route::post('/scanner/receive', function (Request $request) {
-    $data = $request->validate([
-        'codigo' => ['required', 'string', 'max:255'],
+Route::post('/scanner/push', function (Request $request) {
+    $request->validate([
+        'codigo' => 'required|string',
     ]);
 
-    Cache::put('pos.scanner.latest', $data['codigo'], now()->addSeconds(15));
+    broadcast(new BarcodeScanned($request->codigo));
 
-    return response()->json(['ok' => true]);
-});
-
-Route::get('/scanner/pull', function () {
-    return response()->json([
-        'codigo' => Cache::pull('pos.scanner.latest'),
-    ]);
+    return response()->json(['status' => 'success', 'message' => 'Código emitido']);
 });
