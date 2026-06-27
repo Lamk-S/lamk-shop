@@ -225,7 +225,7 @@
                 $inputEscaner.val('').focus();
             }
 
-            // Si alguien escribe o un lector manda Enter
+            // Si alguien escribe o un lector físico de pistola manda Enter
             $inputEscaner.on('keydown', function(e) {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -233,28 +233,22 @@
                 }
             });
 
-            // Leer el último código enviado por el teléfono
-            async function consultarQr() {
-                try {
-                    const r = await fetch('/api/scanner/pull', {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
+            // ESCUCHA DEL EVENTO WEBSOCKETS (CANAL PÚBLICO)
+            if (window.Echo) {
+                window.Echo.channel('pos-scanner-channel')
+                    .listen('BarcodeScanned', (e) => {
+                        console.log('Código recibido vía WebSockets:', e.codigo);
+                        // Destello visual en el input para indicar recepción
+                        $inputEscaner.addClass('scan-success');
+                        setTimeout(() => $inputEscaner.removeClass('scan-success'), 600);
+                        
+                        recibirCodigo(e.codigo);
                     });
-
-                    const data = await r.json();
-                    if (data.codigo) {
-                        recibirCodigo(data.codigo);
-                    }
-                } catch (e) {
-                    // silencioso
-                }
+            } else {
+                console.warn('Laravel Echo no está configurado. ¿Ejecutaste npm run dev/build?');
             }
 
-            setInterval(consultarQr, 250);
-
             // UX: Mantener siempre el foco en el escáner si el usuario hace clic fuera de otras áreas vitales
-            // Esto asegura que si el cajero cliquea por error fuera, la pistola no deje de funcionar.
             $(document).on('click', function(e) {
                 const noForzarFoco = $(e.target).closest(
                     'input, select, textarea, button, a, .bootstrap-select, .modal').length;
@@ -395,7 +389,8 @@
         function procesarCodigoEscaneado(codigo) {
             // 1. Buscar coincidencia por código interno SKU
             const meta = variantData.find(v =>
-                (v.codigo && v.codigo.toUpperCase() === codigo.toUpperCase())
+                (v.codigo && v.codigo.toUpperCase() === codigo.toUpperCase()) || 
+                (v.codigo_barra && v.codigo_barra.toUpperCase() === codigo.toUpperCase())
             );
 
             // 2. Validación de existencia
@@ -488,7 +483,6 @@
                 /* Fallback silencioso si el navegador bloquea audio automático */
             }
         }
-
 
         // ==========================================
         // BÚSQUEDA MANUAL Y TABLA
