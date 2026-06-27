@@ -16,6 +16,8 @@
     @stack('css-datatable')
     @stack('css')
 
+    @vite(['resources/js/app.js'])
+
     <style>
         body { background-color: #f4f6f9; color: #333; }
         .sb-nav-fixed #layoutSidenav #layoutSidenav_content { background-color: #f8f9fa; }
