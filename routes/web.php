@@ -51,7 +51,7 @@ Route::middleware('auth')->group(function () {
     // Panel y Perfil
     Route::post('/logout', [LogoutController::class, 'logout'])->name('logout');
     Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-    Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     // MÓDULO: Catálogo Deportivo (Ropa, Calzado, Accesorios)
     Route::resource('categorias', CategoriaController::class)->except(['show']);
