@@ -6,56 +6,33 @@
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
     <style>
-        .page-title {
-            font-weight: 800;
-            letter-spacing: -.02em;
-            color: #0f172a;
-        }
-
-        .fs-7 {
-            font-size: 0.875rem;
-        }
-
-        .help-text-soft {
-            font-size: 0.8rem;
-            color: #6c757d;
-        }
-
-        .sale-alert {
-            border-left: 4px solid #0d6efd;
-        }
-
-        .table-custom th {
-            background-color: #f8f9fa;
-            color: #495057;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-
-        .table-custom td {
-            vertical-align: middle;
-        }
-
-        .compact-note {
-            font-size: 0.8rem;
-            color: #6c757d;
-            line-height: 1.35;
-        }
-
-        .scan-success {
-            animation: flashGreen 0.6s ease-out;
-        }
-
+        .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
+        .fs-7 { font-size: 0.875rem; }
+        .help-text-soft { font-size: 0.8rem; color: #6c757d; }
+        .sale-alert { border-left: 4px solid #0d6efd; }
+        .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap; }
+        .table-custom td { vertical-align: middle; }
+        .compact-note { font-size: 0.8rem; color: #6c757d; line-height: 1.35; }
+        .scan-success { animation: flashGreen 0.6s ease-out; }
         @keyframes flashGreen {
-            0% {
-                background-color: #d1e7dd;
-            }
-
-            100% {
-                background-color: transparent;
-            }
+            0% { background-color: #d1e7dd; }
+            100% { background-color: transparent; }
+        }
+        .scanner-bg-icon i { font-size: 4rem; }
+        .scanner-input { font-size: 1.75rem; }
+        .scanner-title { font-size: 1rem; }
+        @media (max-width: 992px) {
+            .scanner-bg-icon i { font-size: 3rem; }
+            .scanner-input { font-size: 1.35rem; }
+        }
+        @media (max-width: 576px) {
+            .scanner-body { padding: 1rem !important; }
+            .scanner-title { font-size: 0.95rem; }
+            .scanner-description { font-size: 0.8rem; line-height: 1.4; }
+            .scanner-group { font-size: 0.9rem; }
+            .scanner-input { font-size: 1rem; padding: 0.75rem; }
+            .scanner-bg-icon i { font-size: 2rem; }
+            #scanner-indicator { font-size: 0.75rem; }
         }
     </style>
 @endpush

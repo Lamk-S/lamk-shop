@@ -6,8 +6,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
 <style>
     .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
-    .table-custom th { background-color: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: .05em; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
-    .table-custom td { vertical-align: middle; color: #334155; border-bottom: 1px solid #f1f5f9; }
+    .table-soft thead th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
+    .table-soft td { vertical-align: middle; color: #334155; }
+    .card-soft { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
     .fs-7 { font-size: 0.875rem; }
     .fs-8 { font-size: 0.75rem; }
     .table-wrap { border-radius: 1rem; overflow: hidden; border: 1px solid #e2e8f0; }
@@ -119,10 +120,20 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card card-soft">
+        <div class="card-header bg-white border-bottom border-light p-4 d-flex align-items-center gap-3">
+            <div class="bg-success bg-opacity-10 text-success rounded-circle d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
+                <i class="fa-solid fa-bag-shopping"></i>
+            </div>
+            <div>
+                <h5 class="mb-0 fw-bold text-dark">Registro de Ventas</h5>
+            <div class="text-muted small">Historial de ventas realizadas por terminal.</div>
+            </div>
+        </div>
+
         <div class="card-body p-0">
-            <div class="table-responsive table-wrap">
-                <table class="table table-hover table-custom align-middle mb-0">
+            <div class="table-responsive bg-white">
+                <table class="table table-hover table-soft mb-0">
                     <thead>
                         <tr>
                             <th class="ps-4">Comprobante</th>
