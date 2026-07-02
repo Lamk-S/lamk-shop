@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoProducto;
 use App\Http\Requests\StoreProductoVarianteRequest;
 use App\Http\Requests\UpdateProductoVarianteRequest;
 use App\Models\Producto;
@@ -32,20 +33,19 @@ class ProductoVarianteController extends Controller implements HasMiddleware
             $search = trim((string) $request->input('q'));
             $q->where(function ($sub) use ($search) {
                 $sub->where('codigo_variante', 'like', "%{$search}%")
-                    ->orWhere('codigo_barra', 'like', "%{$search}%")
                     ->orWhereHas('producto', fn($qp) => $qp->where('codigo', 'like', "%{$search}%")->orWhere('nombre', 'like', "%{$search}%"))
                     ->orWhereHas('talla', fn($qt) => $qt->where('codigo', 'like', "%{$search}%")->orWhere('nombre', 'like', "%{$search}%"));
             });
         })
-        ->when($request->filled('producto_id'), fn($q) => $q->where('producto_id', $request->producto_id))
-        ->when($request->filled('talla_id'), fn($q) => $q->where('talla_id', $request->talla_id))
-        ->when($request->filled('estado'), function ($q) use ($request) {
-            match ($request->estado) {
-                'activo' => $q->where('estado', 1)->whereNull('deleted_at'),
-                'inactivo' => $q->where(fn($sub) => $sub->where('estado', 0)->orWhereNotNull('deleted_at')),
-                default => $q,
-            };
-        });
+            ->when($request->filled('producto_id'), fn($q) => $q->where('producto_id', $request->producto_id))
+            ->when($request->filled('talla_id'), fn($q) => $q->where('talla_id', $request->talla_id))
+            ->when($request->filled('estado'), function ($q) use ($request) {
+                match ($request->estado) {
+                    'activo' => $q->where('estado', 1)->whereNull('deleted_at'),
+                    'inactivo' => $q->where(fn($sub) => $sub->where('estado', 0)->orWhereNotNull('deleted_at')),
+                    default => $q,
+                };
+            });
 
         $perPage = (int) $request->input('per_page', 15);
         $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
@@ -113,7 +113,6 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                     $existing->restore();
                     $existing->update([
                         'codigo_variante' => $variantCode,
-                        'codigo_barra' => $data['codigo_barra'] ?? null,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
                         'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
@@ -126,7 +125,6 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                         'producto_id' => $producto->id,
                         'talla_id' => $talla->id,
                         'codigo_variante' => $variantCode,
-                        'codigo_barra' => $data['codigo_barra'] ?? null,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
                         'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
@@ -204,8 +202,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 $producto_variante->update([
                     'producto_id' => $producto->id,
                     'talla_id' => $talla->id,
-                    'codigo_variante' => $producto->codigo . '-' . $talla->codigo,
-                    'codigo_barra' => $data['codigo_barra'] ?? null,
+                    'codigo_variante' => ProductoVariante::generarCodigoVariante($producto, $talla),
                     'stock_actual' => $data['stock_actual'],
                     'stock_minimo' => $data['stock_minimo'],
                     'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? $producto_variante->costo_ultimo_compra,
@@ -247,13 +244,13 @@ class ProductoVarianteController extends Controller implements HasMiddleware
 
     private function validarCompatibilidadProductoTalla(Producto $producto, Talla $talla): void
     {
-        if ($producto->tipo_producto === 'ACCESORIO' && $talla->tipo_talla !== 'UNICA') {
+        if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->tipo_talla !== Talla::TIPO_UNICA) {
             throw ValidationException::withMessages([
                 'talla_id' => 'Los accesorios deben usar talla única.',
             ]);
         }
 
-        if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->tipo_talla === 'UNICA') {
+        if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->tipo_talla === Talla::TIPO_UNICA) {
             throw ValidationException::withMessages([
                 'talla_id' => 'Las zapatillas y la ropa no pueden usar talla única.',
             ]);

@@ -62,7 +62,6 @@ class ProductoVariantesSeeder extends Seeder
                     ],
                     [
                         'codigo_variante' => $variantCode,
-                        'codigo_barra' => $variantCode,
                         'stock_actual' => $cantidad,
                         'stock_minimo' => $producto->tipo_producto === 'ACCESORIO' ? 3 : 1,
                         'estado' => 1,

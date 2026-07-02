@@ -21,7 +21,6 @@ class ProductoSeeder extends Seeder
                 DB::table('productos')->updateOrInsert(
                     ['codigo' => $item['codigo']],
                     [
-                        'codigo_barra' => null,
                         'nombre' => $item['nombre'],
                         'descripcion' => 'Producto inicial para Lamk Sports.',
                         'img_path' => null,

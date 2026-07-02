@@ -17,7 +17,6 @@ class UpdateProductoRequest extends FormRequest
     {
         $this->merge([
             'codigo' => $this->filled('codigo') ? strtoupper(trim($this->input('codigo'))) : null,
-            'codigo_barra' => $this->filled('codigo_barra') ? trim($this->input('codigo_barra')) : null,
             'nombre' => $this->filled('nombre') ? trim($this->input('nombre')) : null,
             'descripcion' => $this->filled('descripcion') ? trim($this->input('descripcion')) : null,
             'maneja_tallas' => filter_var($this->input('maneja_tallas'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
@@ -36,12 +35,6 @@ class UpdateProductoRequest extends FormRequest
                 'max:50',
                 Rule::unique('productos', 'codigo')->ignore($producto?->id),
             ],
-            'codigo_barra' => [
-                'nullable',
-                'string',
-                'max:80',
-                Rule::unique('productos', 'codigo_barra')->ignore($producto?->id),
-            ],
             'nombre' => ['required', 'string', 'max:120'],
             'descripcion' => ['nullable', 'string'],
             'img_path' => ['nullable', 'image', 'max:2048'],
@@ -58,7 +51,7 @@ class UpdateProductoRequest extends FormRequest
             'variantes' => ['nullable', 'array'],
             'variantes.*.id' => ['nullable', 'integer'],
             'variantes.*.talla_id' => ['nullable', 'integer', Rule::exists('tallas', 'id')],
-            'variantes.*.codigo_barra' => ['nullable', 'string', 'max:80'],
+            'variantes.*.codigo_variante' => ['nullable', 'string', 'max:80'],
             'variantes.*.stock_actual' => ['nullable', 'integer', 'min:0'],
             'variantes.*.stock_minimo' => ['nullable', 'integer', 'min:0'],
             'variantes.*.estado' => ['nullable', 'boolean'],

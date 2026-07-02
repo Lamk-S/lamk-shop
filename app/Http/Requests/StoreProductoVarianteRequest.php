@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoProducto;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\Talla;
@@ -21,7 +22,6 @@ class StoreProductoVarianteRequest extends FormRequest
         return [
             'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')],
             'talla_id' => ['required', 'integer', Rule::exists('tallas', 'id')],
-            'codigo_barra' => ['nullable', 'string', 'max:80', Rule::unique('producto_variantes', 'codigo_barra')],
             'stock_actual' => ['required', 'integer', 'min:0'],
             'stock_minimo' => ['required', 'integer', 'min:0'],
             'estado' => ['nullable', 'boolean'],
@@ -38,11 +38,11 @@ class StoreProductoVarianteRequest extends FormRequest
                 return;
             }
 
-            if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->codigo === 'UNICA') {
+            if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->codigo === Talla::CODIGO_UNICA) {
                 $validator->errors()->add('talla_id', 'Las zapatillas y la ropa deportiva no pueden usar talla única.');
             }
 
-            if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
+            if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->codigo !== Talla::CODIGO_UNICA) {
                 $validator->errors()->add('talla_id', 'Los accesorios deben usar talla única.');
             }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoProducto;
 use App\Http\Requests\StoreProductoRequest;
 use App\Http\Requests\UpdateProductoRequest;
 use App\Models\Categoria;
@@ -40,7 +41,6 @@ class ProductoController extends Controller implements HasMiddleware
             $search = trim((string) $request->input('q'));
             $q->where(function ($subQ) use ($search) {
                 $subQ->where('codigo', 'like', "%{$search}%")
-                     ->orWhere('codigo_barra', 'like', "%{$search}%")
                      ->orWhere('nombre', 'like', "%{$search}%");
             });
         })
@@ -70,21 +70,13 @@ class ProductoController extends Controller implements HasMiddleware
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
         $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();
         $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', 'ROPA')->orderBy('orden')->get();
-        $tallaUnica = Talla::where('estado', 1)->where('codigo', 'UNICA')->first();
 
-        $optionsTipoProducto = [
-            'ZAPATILLA' => 'Zapatilla',
-            'ROPA' => 'Ropa',
-            'ACCESORIO' => 'Accesorio',
-        ];
+        $tallaUnica = Talla::where('estado', 1)->where('codigo', Talla::CODIGO_UNICA)->first();
+
+        $optionsTipoProducto = TipoProducto::opciones();
 
         return view('producto.create', compact(
-            'categorias',
-            'marcas',
-            'tallasCalzado',
-            'tallasRopa',
-            'tallaUnica',
-            'optionsTipoProducto'
+            'categorias', 'marcas', 'tallasCalzado', 'tallasRopa', 'tallaUnica', 'optionsTipoProducto'
         ));
     }
 
@@ -103,7 +95,6 @@ class ProductoController extends Controller implements HasMiddleware
 
                 $producto->fill([
                     'codigo' => $data['codigo'],
-                    'codigo_barra' => $data['codigo_barra'] ?? null,
                     'nombre' => $data['nombre'],
                     'descripcion' => $data['descripcion'] ?? null,
                     'img_path' => $imgPath,
@@ -179,7 +170,6 @@ class ProductoController extends Controller implements HasMiddleware
 
                 $producto->update([
                     'codigo' => $data['codigo'],
-                    'codigo_barra' => $data['codigo_barra'] ?? null,
                     'nombre' => $data['nombre'],
                     'descripcion' => $data['descripcion'] ?? null,
                     'img_path' => $imgPath,
@@ -227,11 +217,11 @@ class ProductoController extends Controller implements HasMiddleware
 
     private function syncVariantes(Producto $producto, Request $request, bool $isUpdate = false): void
     {
-        $tallaUnica = Talla::where('codigo', 'UNICA')->firstOrFail();
+        $tallaUnica = Talla::where('codigo', Talla::CODIGO_UNICA)->firstOrFail();
 
         $variantes = collect($request->input('variantes', []))
             ->filter(function ($variante) {
-                return !empty($variante['talla_id']) || !empty($variante['stock_actual']) || !empty($variante['codigo_barra']);
+                return !empty($variante['talla_id']) || !empty($variante['stock_actual']) || !empty($variante['codigo_variante']);
             })
             ->values();
 
@@ -253,7 +243,7 @@ class ProductoController extends Controller implements HasMiddleware
             : collect([
                 [
                     'talla_id' => $tallaUnica->id,
-                    'codigo_barra' => $request->input('codigo_barra'),
+                    'codigo_variante' => ProductoVariante::generarCodigoVariante($producto, $tallaUnica),
                     'stock_actual' => $stockTotal,
                     'stock_minimo' => $request->input('stock_minimo', 0),
                 ],
@@ -268,13 +258,12 @@ class ProductoController extends Controller implements HasMiddleware
 
         foreach ($variantes as $row) {
             $talla = Talla::findOrFail($row['talla_id']);
-            $codigoVariante = $producto->codigo . '-' . $talla->codigo;
+            $codigoVariante = ProductoVariante::generarCodigoVariante($producto, $talla);
 
             $variantData = [
                 'producto_id' => $producto->id,
                 'talla_id' => $talla->id,
                 'codigo_variante' => $codigoVariante,
-                'codigo_barra' => $row['codigo_barra'] ?? null,
                 'stock_actual' => (int) ($row['stock_actual'] ?? 0),
                 'stock_minimo' => (int) ($row['stock_minimo'] ?? 0),
                 'estado' => (int) ($row['estado'] ?? 1),
