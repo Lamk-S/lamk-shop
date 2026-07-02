@@ -11,11 +11,10 @@ return new class extends Migration
         Schema::create('productos', function (Blueprint $table) {
             $table->id();
             $table->string('codigo', 50)->unique();
-            $table->string('codigo_barra', 80)->nullable()->unique();
             $table->string('nombre', 120)->index();
             $table->text('descripcion')->nullable();
             $table->string('img_path', 2048)->nullable();
-            $table->enum('tipo_producto', ['ZAPATILLA', 'ROPA', 'ACCESORIO'])->index();
+            $table->string('tipo_producto', 30)->index(); 
             $table->boolean('maneja_tallas')->default(false)->index();
             $table->decimal('precio_compra', 12, 2)->default(0);
             $table->decimal('precio_venta', 12, 2)->default(0);
