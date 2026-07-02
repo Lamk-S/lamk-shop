@@ -55,7 +55,7 @@
         <div class="card-body p-4 bg-light bg-opacity-50">
             <form method="GET" action="{{ route('compras.index') }}" id="filtro-compras-form">
                 <div class="row g-3 align-items-end">
-                    <div class="col-lg-3 col-md-6">
+                    <div class="col-lg-4 col-md-6">
                         <label class="form-label">Proveedor</label>
                         <select name="proveedor_id" id="proveedor_id" class="form-control selectpicker show-tick shadow-sm" data-live-search="true" data-size="7" title="Todos los proveedores">
                             <option value="">-- Todos --</option>
@@ -67,9 +67,9 @@
                         </select>
                     </div>
 
-                    <div class="col-lg-2 col-md-4">
+                    <div class="col-lg-4 col-md-6">
                         <label class="form-label">Estado doc.</label>
-                        <select name="estado_documento" id="estado_documento" class="form-select shadow-sm">
+                        <select name="es|tado_documento" id="estado_documento" class="form-select shadow-sm">
                             <option value="">Todos</option>
                             @foreach ($optionsEstadoDocumento as $value => $label)
                                 <option value="{{ $value }}" @selected(request('estado_documento') === $value)>{{ $label }}</option>
@@ -77,7 +77,7 @@
                         </select>
                     </div>
 
-                    <div class="col-lg-2 col-md-4">
+                    <div class="col-lg-4 col-md-6">
                         <label class="form-label">Estado pago</label>
                         <select name="estado_pago" id="estado_pago" class="form-select shadow-sm">
                             <option value="">Todos</option>
@@ -87,7 +87,7 @@
                         </select>
                     </div>
 
-                    <div class="col-lg-2 col-md-4">
+                    <div class="col-lg-4 col-md-6">
                         <label class="form-label">Método Pago</label>
                         <select name="metodo_pago" id="metodo_pago" class="form-select shadow-sm">
                             <option value="">Todos</option>
@@ -97,20 +97,20 @@
                         </select>
                     </div>
 
-                    <div class="col-lg-2 col-md-8">
+                    <div class="col-lg-4 col-md-6">
                         <div class="d-flex gap-2">
-                            <div class="w-50">
+                            <div class="flex-grow-1 w-50">
                                 <label class="form-label">Desde</label>
-                                <input type="date" name="fecha_desde" id="fecha_desde" class="form-control shadow-sm fs-7 p-1" value="{{ request('fecha_desde') }}">
+                                <input type="date" name="fecha_desde" id="fecha_desde" class="form-control shadow-sm" value="{{ request('fecha_desde') }}">
                             </div>
-                            <div class="w-50">
+                            <div class="flex-grow-1 w-50">
                                 <label class="form-label">Hasta</label>
-                                <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control shadow-sm fs-7 p-1" value="{{ request('fecha_hasta') }}">
+                                <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control shadow-sm" value="{{ request('fecha_hasta') }}">
                             </div>
                         </div>
                     </div>
 
-                    <div class="col-lg-1 col-md-4 d-flex justify-content-end">
+                    <div class="col-lg-4 col-md-6 d-flex justify-content-end">
                         <a href="{{ route('compras.index') }}" class="btn btn-outline-secondary w-100" data-bs-toggle="tooltip" title="Limpiar filtros">
                             <i class="fas fa-eraser"></i>
                         </a>

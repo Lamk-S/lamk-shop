@@ -48,8 +48,8 @@
                     'stock' => (int) $v->stock_actual,
                     'precio_venta' => (float) ($v->producto->precio_venta ?? 0),
                     'producto' => $v->producto->nombre,
-                    'codigo' => $v->producto->codigo,
-                    'codigo_barra' => $v->producto->codigo_barra,
+                    'codigo_producto' => $v->producto->codigo,
+                    'codigo_variante' => $v->codigo_variante,
                     'talla' => $v->talla?->nombre ?? 'Sin talla',
                     'afecto_igv' => (bool) ($v->producto->afecto_igv ?? true),
                 ];
@@ -175,7 +175,7 @@
                         precio_unitario: Number(detail.precio_unitario ?? meta.precio_venta ?? 0),
                         descuento: Number(detail.descuento ?? 0),
                         producto: meta.producto ?? 'Producto',
-                        codigo: meta.codigo ?? '',
+                        codigo_variante: meta.codigo_variante ?? '',
                         talla: meta.talla ?? 'Sin talla',
                         stock: meta.stock ?? 0,
                         afecto_igv: !!meta.afecto_igv
@@ -364,10 +364,11 @@
         //  NÚCLEO DE PROCESAMIENTO DEL ESCÁNER
         // ==========================================
         function procesarCodigoEscaneado(codigo) {
-            // 1. Buscar coincidencia por código interno SKU
+            // 1. Buscar coincidencia por código interno
+            const codigoBuscado = String(codigo).trim().toUpperCase();
+
             const meta = variantData.find(v =>
-                (v.codigo && v.codigo.toUpperCase() === codigo.toUpperCase()) || 
-                (v.codigo_barra && v.codigo_barra.toUpperCase() === codigo.toUpperCase())
+                String(v.codigo_variante).toUpperCase() === codigoBuscado
             );
 
             // 2. Validación de existencia
@@ -409,7 +410,8 @@
                     precio_unitario: precioUnitario,
                     descuento: 0,
                     producto: meta.producto,
-                    codigo: meta.codigo,
+                    codigo_variante: meta.codigo_variante,
+                    codigo_producto: meta.codigo_producto,
                     talla: meta.talla,
                     stock: stock,
                     afecto_igv: meta.afecto_igv
@@ -509,7 +511,8 @@
             const precioUnitario = Number($('#precio_venta').val()) || Number($option.data('precio') ?? meta
                 ?.precio_venta ?? 0);
             const producto = meta?.producto || $option.data('producto') || 'Producto';
-            const codigo = meta?.codigo || $option.data('codigo') || '';
+            const codigoProducto = meta?.codigo_producto || $option.data('codigo-producto') || '';
+            const codigoVariante = meta?.codigo_variante || $option.data('codigo-variante') || '';
             const talla = meta?.talla || $option.data('talla') || 'Sin talla';
             const afectoIgv = parseBoolean(meta?.afecto_igv ?? true);
             const cantidad = Number($('#cantidad').val());
@@ -551,7 +554,8 @@
                     precio_unitario: precioUnitario,
                     descuento,
                     producto,
-                    codigo,
+                    codigo_producto: codigoProducto,
+                    codigo_variante: codigoVariante,
                     talla,
                     stock,
                     afecto_igv: afectoIgv
@@ -589,7 +593,7 @@
                         <input type="hidden" name="detalles[${index}][precio_unitario]" value="${item.precio_unitario}">
                         <input type="hidden" name="detalles[${index}][descuento]" value="${item.descuento}">
                         <div>${item.producto}</div>
-                        <div class="small text-muted font-monospace">${item.codigo}</div>
+                        <div class="small text-muted font-monospace">${item.codigo_producto}</div>
                     </td>
                     <td class="align-middle text-center">${item.talla}</td>
                     <td class="align-middle text-center">

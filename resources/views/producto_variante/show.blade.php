@@ -88,7 +88,7 @@
                             <div class="col-md-6">
                                 <span class="data-label">Tipo de producto</span>
                                 <div class="data-value">
-                                    {{ $producto ? ucfirst(strtolower($producto->tipo_producto)) : 'N/A' }}
+                                    {{ $producto ? ucfirst(strtolower($producto->tipo_producto->value)) : 'N/A' }}
                                 </div>
                             </div>
 
@@ -100,12 +100,7 @@
                             </div>
 
                             <div class="col-md-6">
-                                <span class="data-label">Código de barra</span>
-                                <div class="data-value">{{ $productoVariante->codigo_barra ?: 'No registrado' }}</div>
-                            </div>
-
-                            <div class="col-md-6">
-                                <span class="data-label">Código variante</span>
+                                <span class="data-label">SKU</span>
                                 <div class="data-value">{{ $productoVariante->codigo_variante }}</div>
                             </div>
                         </div>

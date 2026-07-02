@@ -77,9 +77,11 @@
                     <label for="tipo_producto" class="form-label">Clasificación</label>
                     <select name="tipo_producto" id="tipo_producto" class="form-select shadow-sm">
                         <option value="">Todas</option>
-                        <option value="ZAPATILLA" @selected(request('tipo_producto') === 'ZAPATILLA')>Zapatilla</option>
-                        <option value="ROPA" @selected(request('tipo_producto') === 'ROPA')>Ropa</option>
-                        <option value="ACCESORIO" @selected(request('tipo_producto') === 'ACCESORIO')>Accesorio</option>
+                        @foreach(\App\Enums\TipoProducto::opciones() as $value => $label)
+                            <option value="{{ $value }}" @selected(request('tipo_producto') === $value)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
                     </select>
                 </div>
 
@@ -149,7 +151,7 @@
                                 <td>
                                     <div class="small mb-1">
                                         <span class="chip chip-muted"><i class="fas fa-tag"></i> {{ optional($item->marca)->nombre ?? 'Genérico' }}</span>
-                                        <span class="chip chip-muted"><i class="fas fa-layer-group"></i> {{ ucfirst(strtolower($item->tipo_producto)) }}</span>
+                                        <span class="chip chip-muted"><i class="fas fa-layer-group"></i> {{ ucfirst(strtolower($item->tipo_producto?->value ?? $item->tipo_producto)) }}</span>
                                     </div>
                                     <div>
                                         @if($item->maneja_tallas)

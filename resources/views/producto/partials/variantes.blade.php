@@ -25,8 +25,7 @@
                 </p>
             </div>
             <div>
-                <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-3" id="add-variant-row">
-                    <i class="fas fa-plus me-1"></i>Añadir Variante de Talla
+                <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-3" id="add-variant-row">Añadir Variante de Talla
                 </button>
             </div>
         </div>
@@ -44,10 +43,8 @@
                 <thead class="table-light text-secondary small text-uppercase">
                     <tr>
                         <th style="min-width: 250px;">Talla Asignada <span class="text-danger">*</span></th>
-                        <th style="min-width: 200px;">Código de Barras de Variante <span class="text-muted fw-normal">(Opcional)</span></th>
                         <th style="width: 150px;" class="text-center">Stock Físico Inicial</th>
                         <th style="width: 150px;" class="text-center">Mínimo Alerta</th>
-                        <th style="width: 140px;" class="text-center">Disponibilidad</th>
                         <th style="width: 80px;" class="text-center text-danger"><i class="fa-solid fa-trash-can"></i></th>
                     </tr>
                 </thead>
@@ -84,12 +81,6 @@
                                 @enderror
                             </td>
                             <td>
-                                <input type="text" name="variantes[{{ $index }}][codigo_barra]" class="form-control form-control-sm variant-barcode @error("variantes.$index.codigo_barra") is-invalid @enderror" value="{{ old("variantes.$index.codigo_barra", $row['codigo_barra'] ?? '') }}" placeholder="Código de barras específico">
-                                @error("variantes.$index.codigo_barra")
-                                    <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
-                                @enderror
-                            </td>
-                            <td>
                                 <input type="number" min="0" name="variantes[{{ $index }}][stock_actual]" class="form-control form-control-sm text-center variant-stock-qty @error("variantes.$index.stock_actual") is-invalid @enderror" value="{{ old("variantes.$index.stock_actual", $row['stock_actual'] ?? 0) }}">
                                 @error("variantes.$index.stock_actual")
                                     <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
@@ -100,12 +91,6 @@
                                 @error("variantes.$index.stock_minimo")
                                     <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
                                 @enderror
-                            </td>
-                            <td>
-                                <select name="variantes[{{ $index }}][estado]" class="form-select form-select-sm">
-                                    <option value="1" @selected((string)($row['estado'] ?? 1) === '1')>Activo</option>
-                                    <option value="0" @selected((string)($row['estado'] ?? 1) === '0')>Inactivo</option>
-                                </select>
                             </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-variant-row border-0">
@@ -151,7 +136,7 @@
             </select>
         </td>
         <td>
-            <input type="text" name="variantes[__INDEX__][codigo_barra]" class="form-control form-control-sm variant-barcode" placeholder="Código de barras específico">
+            <input type="text" name="variantes[__INDEX__][codigo_variante]" class="form-control form-control-sm variant-barcode" placeholder="Código de variante">
         </td>
         <td>
             <input type="number" min="0" name="variantes[__INDEX__][stock_actual]" class="form-control form-control-sm text-center variant-stock-qty" value="0">
@@ -184,7 +169,6 @@
         const addBtn = document.getElementById('add-variant-row');
         const rowsContainer = document.getElementById('variant-rows');
         const template = document.getElementById('variant-row-template');
-        const generalBarcode = document.getElementById('codigo_barra');
         const totalStockPreview = document.getElementById('total-stock-preview');
         const tallaUnicaId = @json($tallaUnicaId);
 
@@ -194,13 +178,21 @@
 
         function syncUI() {
             const tipo = tipoProducto.value;
-            const isTallaUnica = !manejaTallas.checked;
 
-            if (tipo === 'ACCESORIO') {
-                if (tipoProducto.dataset.lastValue !== 'ACCESORIO') {
-                    manejaTallas.checked = false;
-                }
+            if (tipo === 'ZAPATILLA' || tipo === 'ROPA') {
+                manejaTallas.checked = true;
+                manejaTallas.style.opacity = '0.65';
+                manejaTallas.style.cursor = 'not-allowed';
+            } else if (tipo === 'ACCESORIO') {
+                manejaTallas.checked = false;
+                manejaTallas.style.opacity = '0.65';
+                manejaTallas.style.cursor = 'not-allowed';
+            } else {
+                manejaTallas.style.opacity = '1';
+                manejaTallas.style.cursor = 'pointer';
             }
+
+            const isTallaUnica = !manejaTallas.checked;
 
             if (isTallaUnica) {
                 addBtn.style.setProperty('display', 'none', 'important');
@@ -239,8 +231,6 @@
                     hiddenInput.value = tallaUnicaId;
                     activeRow.appendChild(hiddenInput);
                 }
-                
-                syncBarcodeValues();
             }
         }
 
@@ -249,7 +239,7 @@
                 const selectTalla = row.querySelector('.variant-talla');
                 if (selectTalla) {
                     selectTalla.removeAttribute('disabled');
-                    if (selectTalla.value === tallaUnicaId && rowIndex > 1) {
+                    if (selectTalla.value === tallaUnicaId && rowsContainer.querySelectorAll('.variant-row').length > 1) {
                         selectTalla.value = '';
                     }
                 }
@@ -259,15 +249,6 @@
 
         function removeHiddenTallaInputs(row) {
             row.querySelectorAll('.hidden-talla-id-fix').forEach(el => el.remove());
-        }
-
-        function syncBarcodeValues() {
-            if (!manejaTallas.checked) {
-                const firstBarcode = rowsContainer.querySelector('.variant-barcode');
-                if (firstBarcode && generalBarcode) {
-                    firstBarcode.value = generalBarcode.value;
-                }
-            }
         }
 
         function reindexRows() {
@@ -334,9 +315,12 @@
             }
         });
 
-        if (generalBarcode) {
-            generalBarcode.addEventListener('input', syncBarcodeValues);
-        }
+        manejaTallas.addEventListener('click', function (e) {
+            const tipo = tipoProducto.value;
+            if (tipo === 'ZAPATILLA' || tipo === 'ROPA' || tipo === 'ACCESORIO') {
+                e.preventDefault();
+            }
+        });
 
         tipoProducto.addEventListener('change', syncUI);
         manejaTallas.addEventListener('change', syncUI);

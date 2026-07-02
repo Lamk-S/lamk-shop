@@ -54,7 +54,7 @@
     <div class="card border-0 shadow-sm rounded-4 mb-4">
         <div class="card-body p-4 bg-light bg-opacity-50">
             <form method="GET" action="{{ route('ventas.index') }}" id="filtro-ventas-form" class="row g-3 align-items-end">
-                <div class="col-lg-3 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <label class="filter-label">Cliente / Comprador</label>
                     <select name="cliente_id" id="cliente_id" class="form-control selectpicker show-tick" data-live-search="true" data-size="6" title="Todos los clientes">
                         <option value="">-- Todos --</option>
@@ -66,7 +66,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-4">
+                <div class="col-lg-4 col-md-6">
                     <label class="filter-label">Estado Doc.</label>
                     <select name="estado_documento" id="estado_documento" class="form-select shadow-sm">
                         <option value="">Todos</option>
@@ -76,7 +76,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-4">
+                <div class="col-lg-4 col-md-6">
                     <label class="filter-label">Comprobante</label>
                     <select name="comprobante_id" id="comprobante_id" class="form-select shadow-sm">
                         <option value="">Todos</option>
@@ -88,7 +88,7 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-4">
+                <div class="col-lg-4 col-md-6">
                     <label class="filter-label">Método Pago</label>
                     <select name="metodo_pago" id="metodo_pago" class="form-select shadow-sm">
                         <option value="">Todos</option>
@@ -98,20 +98,20 @@
                     </select>
                 </div>
 
-                <div class="col-lg-2 col-md-6">
+                <div class="col-lg-4 col-md-6">
                     <div class="d-flex gap-2">
-                        <div class="w-50">
+                        <div class="flex-grow-1 w-50">
                             <label class="filter-label">Desde</label>
-                            <input type="date" name="fecha_desde" id="fecha_desde" class="form-control shadow-sm p-1 fs-7" value="{{ request('fecha_desde') }}">
+                            <input type="date" name="fecha_desde" id="fecha_desde" class="form-control shadow-sm" value="{{ request('fecha_desde') }}">
                         </div>
-                        <div class="w-50">
+                        <div class="flex-grow-1 w-50">
                             <label class="filter-label">Hasta</label>
-                            <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control shadow-sm p-1 fs-7" value="{{ request('fecha_hasta') }}">
+                            <input type="date" name="fecha_hasta" id="fecha_hasta" class="form-control shadow-sm" value="{{ request('fecha_hasta') }}">
                         </div>
                     </div>
                 </div>
 
-                <div class="col-lg-1 col-md-12 d-flex justify-content-end">
+                <div class="col-lg-4 col-md-6 d-flex justify-content-end">
                     <a href="{{ route('ventas.index') }}" class="btn btn-outline-secondary w-100" data-bs-toggle="tooltip" title="Limpiar filtros">
                         <i class="fas fa-eraser"></i>
                     </a>

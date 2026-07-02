@@ -16,11 +16,12 @@
                             data-stock="{{ $variante->stock_actual ?? 0 }}"
                             data-precio="{{ $variante->producto->precio_venta ?? 0 }}"
                             data-producto="{{ $variante->producto->nombre }}"
-                            data-codigo="{{ $variante->producto->codigo }}"
+                            data-codigo-producto="{{ $variante->producto->codigo }}"
+                            data-codigo-variante="{{ $variante->codigo_variante }}"
                             data-talla="{{ $variante->talla?->nombre ?? 'Sin talla' }}"
                             data-afecto-igv="{{ (int) ($variante->producto->afecto_igv ?? 1) }}"
                         >
-                            {{ $variante->producto->codigo }} - {{ $variante->producto->nombre }} - {{ $variante->talla?->nombre ?? 'Sin talla' }}
+                            {{ $variante->codigo_variante }} - {{ $variante->producto->nombre }} - {{ $variante->talla?->nombre ?? 'Sin talla' }}
                         </option>
                     @endforeach
                 </select>
