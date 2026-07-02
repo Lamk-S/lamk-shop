@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoProducto;
 use App\Models\Producto;
 use App\Models\Talla;
 use Illuminate\Foundation\Http\FormRequest;
@@ -19,7 +20,6 @@ class StoreProductoRequest extends FormRequest
     {
         $this->merge([
             'codigo' => $this->filled('codigo') ? strtoupper(trim($this->input('codigo'))) : null,
-            'codigo_barra' => $this->filled('codigo_barra') ? trim($this->input('codigo_barra')) : null,
             'nombre' => $this->filled('nombre') ? trim($this->input('nombre')) : null,
             'descripcion' => $this->filled('descripcion') ? trim($this->input('descripcion')) : null,
             'maneja_tallas' => filter_var($this->input('maneja_tallas'), FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE),
@@ -31,11 +31,10 @@ class StoreProductoRequest extends FormRequest
     {
         return [
             'codigo' => ['required', 'string', 'max:50', Rule::unique('productos', 'codigo')],
-            'codigo_barra' => ['nullable', 'string', 'max:80', Rule::unique('productos', 'codigo_barra')],
             'nombre' => ['required', 'string', 'max:120'],
             'descripcion' => ['nullable', 'string'],
             'img_path' => ['nullable', 'image', 'max:2048'],
-            'tipo_producto' => ['required', Rule::in(['ZAPATILLA', 'ROPA', 'ACCESORIO'])],
+            'tipo_producto' => ['required', Rule::enum(TipoProducto::class)],
             'maneja_tallas' => ['required', 'boolean'],
             'precio_compra' => ['required', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
@@ -47,7 +46,7 @@ class StoreProductoRequest extends FormRequest
 
             'variantes' => ['nullable', 'array'],
             'variantes.*.talla_id' => ['nullable', 'integer', Rule::exists('tallas', 'id')],
-            'variantes.*.codigo_barra' => ['nullable', 'string', 'max:80'],
+            'variantes.*.codigo_variante' => ['nullable', 'string', 'max:80', Rule::unique('producto_variantes', 'codigo_variante')],
             'variantes.*.stock_actual' => ['nullable', 'integer', 'min:0'],
             'variantes.*.stock_minimo' => ['nullable', 'integer', 'min:0'],
             'variantes.*.estado' => ['nullable', 'boolean'],
@@ -57,14 +56,14 @@ class StoreProductoRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function ($validator) {
-            $tipo = $this->input('tipo_producto');
+            $tipo = TipoProducto::tryFrom($this->input('tipo_producto'));
             $manejaTallas = filter_var($this->input('maneja_tallas'), FILTER_VALIDATE_BOOLEAN);
 
-            if (in_array($tipo, ['ZAPATILLA', 'ROPA'], true) && !$manejaTallas) {
+            if (in_array($tipo, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && !$manejaTallas) {
                 $validator->errors()->add('maneja_tallas', 'Las zapatillas y la ropa deportiva deben manejar tallas.');
             }
 
-            if ($tipo === 'ACCESORIO' && $manejaTallas) {
+            if ($tipo === TipoProducto::ACCESORIO && $manejaTallas) {
                 $validator->errors()->add('maneja_tallas', 'Los accesorios deben manejar talla única.');
             }
 

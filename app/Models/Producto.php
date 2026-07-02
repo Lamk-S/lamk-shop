@@ -2,12 +2,12 @@
 
 namespace App\Models;
 
+use App\Enums\TipoProducto;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class Producto extends Model
 {
@@ -15,7 +15,6 @@ class Producto extends Model
 
     protected $fillable = [
         'codigo',
-        'codigo_barra',
         'nombre',
         'descripcion',
         'img_path',
@@ -30,6 +29,7 @@ class Producto extends Model
     ];
 
     protected $casts = [
+        'tipo_producto' => TipoProducto::class,
         'maneja_tallas' => 'boolean',
         'afecto_igv' => 'boolean',
         'precio_compra' => 'decimal:2',

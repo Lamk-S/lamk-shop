@@ -17,7 +17,6 @@ class ProductoVariante extends Model
         'producto_id',
         'talla_id',
         'codigo_variante',
-        'codigo_barra',
         'stock_actual',
         'stock_minimo',
         'costo_promedio',
@@ -61,5 +60,12 @@ class ProductoVariante extends Model
     public function scopeActivas(Builder $query): Builder
     {
         return $query->where('estado', true);
+    }
+
+    public static function generarCodigoVariante(
+        Producto $producto,
+        Talla $talla
+    ): string {
+        return "{$producto->codigo}-{$talla->codigo}";
     }
 }

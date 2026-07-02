@@ -23,12 +23,6 @@ class UpdateProductoVarianteRequest extends FormRequest
         return [
             'producto_id' => ['required', 'integer', Rule::exists('productos', 'id')],
             'talla_id' => ['required', 'integer', Rule::exists('tallas', 'id')],
-            'codigo_barra' => [
-                'nullable',
-                'string',
-                'max:80',
-                Rule::unique('producto_variantes', 'codigo_barra')->ignore($variante?->id),
-            ],
             'stock_actual' => ['required', 'integer', 'min:0'],
             'stock_minimo' => ['required', 'integer', 'min:0'],
             'estado' => ['required', 'boolean'],

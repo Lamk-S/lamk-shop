@@ -11,6 +11,9 @@ class Talla extends Model
 {
     use HasFactory, SoftDeletes;
 
+    public const CODIGO_UNICA = 'UNICA';
+    public const TIPO_UNICA = 'UNICA';
+
     protected $fillable = [
         'codigo',
         'nombre',

@@ -57,8 +57,7 @@
                             Producto maestro <span class="text-danger">*</span>
                         </label>
                         <select
-                            name="producto_id"
-                            id="producto_id"
+                            name="producto_id" id="producto_id"
                             class="selectpicker form-control border shadow-sm @error('producto_id') is-invalid @enderror"
                             data-width="100%"
                             data-live-search="true"
@@ -67,8 +66,8 @@
                             data-none-selected-text="Busque y seleccione un producto..."
                         >
                             @foreach($productos as $producto)
-                                <option value="{{ $producto->id }}" data-tipo="{{ $producto->tipo_producto }}" @selected(old('producto_id', $productoVariante->producto_id) == $producto->id)>
-                                    {{ $producto->codigo }} — {{ $producto->nombre }} ({{ ucfirst(strtolower($producto->tipo_producto)) }})
+                                <option value="{{ $producto->id }}" data-tipo="{{ $producto->tipo_producto->value }}" @selected(old('producto_id', $productoVariante->producto_id) == $producto->id)>
+                                    {{ $producto->codigo }} — {{ $producto->nombre }} ({{ ucfirst(strtolower($producto->tipo_producto->value)) }})
                                 </option>
                             @endforeach
                         </select>
@@ -88,9 +87,7 @@
                             data-width="100%"
                             data-live-search="true"
                             data-size="5"
-                            title="Seleccione primero un producto..."
-                            data-none-selected-text="Seleccione primero un producto..."
-                            disabled
+                            value="{{ old('talla_id', $productoVariante->talla_id) }}"
                         ></select>
                         @error('talla_id')
                             <div class="text-danger mt-1 small">{{ $message }}</div>
@@ -98,25 +95,6 @@
                         <div class="helper-box mt-3 text-muted small" id="talla-helper">
                             <i class="fas fa-info-circle me-1"></i>Selecciona un producto para filtrar las tallas válidas.
                         </div>
-                    </div>
-
-                    <div class="col-lg-6">
-                        <label for="codigo_barra" class="form-label form-label-custom">
-                            Código de barra <span class="text-muted fw-normal">(opcional)</span>
-                        </label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0 text-muted"><i class="fas fa-barcode"></i></span>
-                            <input
-                                type="text"
-                                name="codigo_barra"
-                                id="codigo_barra"
-                                class="form-control border-start-0 @error('codigo_barra') is-invalid @enderror"
-                                value="{{ old('codigo_barra', $productoVariante->codigo_barra) }}"
-                            >
-                        </div>
-                        @error('codigo_barra')
-                            <div class="text-danger mt-1 small">{{ $message }}</div>
-                        @enderror
                     </div>
 
                     <div class="col-lg-2 col-md-4">
@@ -167,7 +145,7 @@
                     <div class="col-12 mt-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-3 border-top pt-4">
                         <a href="{{ route('producto-variantes.index') }}" class="btn btn-light px-4">Cancelar</a>
                         <button type="submit" class="btn btn-warning px-5 shadow-sm fw-bold">
-                            <i class="fas fa-sync-alt me-2"></i>Actualizar variante
+                            <i class="fas fa-sync-alt me-2"></i>El SKU es generado automáticamente y no puede modificarse.
                         </button>
                     </div>
                 </div>

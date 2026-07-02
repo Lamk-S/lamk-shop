@@ -1,7 +1,8 @@
 @php
     $editing = isset($producto) && $producto->exists;
     $selectedCategorias = old('categoria_id', $editing ? $producto->categorias->pluck('id')->all() : []);
-    $tipoProductoActual = old('tipo_producto', $editing ? $producto->tipo_producto : '');
+    $tipoActual = $editing ? (is_object($producto->tipo_producto) ? $producto->tipo_producto->value : $producto->tipo_producto) : '';
+    $tipoProductoActual = old('tipo_producto', $tipoActual);
     $manejaTallasActual = old('maneja_tallas', $editing ? (int) $producto->maneja_tallas : 1);
     $afectoIgvActual = old('afecto_igv', $editing ? (int) $producto->afecto_igv : 1);
     $variantRows = old('variantes');
@@ -12,7 +13,7 @@
                 return [
                     'id' => $v->id,
                     'talla_id' => $v->talla_id,
-                    'codigo_barra' => $v->codigo_barra,
+                    'codigo_variante' => $v->codigo_variante,
                     'stock_actual' => $v->stock_actual,
                     'stock_minimo' => $v->stock_minimo,
                     'estado' => $v->estado,
@@ -28,7 +29,7 @@
             [
                 'id' => null,
                 'talla_id' => '',
-                'codigo_barra' => '',
+                'codigo_variante' => '',
                 'stock_actual' => 0,
                 'stock_minimo' => 0,
                 'estado' => 1,
@@ -75,14 +76,6 @@
                             <input type="text" name="codigo" id="codigo" class="form-control border-start-0 @error('codigo') is-invalid @enderror" value="{{ old('codigo', $editing ? $producto->codigo : '') }}" placeholder="Ej. NIKE-PEG39" autocomplete="off">
                         </div>
                         @error('codigo') <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> @enderror
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="codigo_barra" class="form-label form-label-custom">
-                            Código de Barras Global <span class="text-muted fw-normal">(EAN / Maestro)</span>
-                        </label>
-                        <input type="text" name="codigo_barra" id="codigo_barra" class="form-control @error('codigo_barra') is-invalid @enderror" value="{{ old('codigo_barra', $editing ? $producto->codigo_barra : '') }}" placeholder="Ej. 7750123456789">
-                        @error('codigo_barra') <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
                     <div class="col-md-12">
@@ -156,13 +149,19 @@
                         <label for="tipo_producto" class="form-label form-label-custom">
                             Línea o Tipo de Producto <span class="text-danger">*</span>
                         </label>
-                        <select name="tipo_producto" id="tipo_producto" class="form-select fw-medium @error('tipo_producto') is-invalid @enderror">
+                        <select name="tipo_producto" id="tipo_producto" class="form-control selectpicker show-tick border shadow-sm @error('tipo_producto') is-invalid @enderror">
                             <option value="">Seleccione tipo...</option>
-                            <option value="ZAPATILLA" @selected($tipoProductoActual === 'ZAPATILLA')>👟 Zapatilla</option>
-                            <option value="ROPA" @selected($tipoProductoActual === 'ROPA')>👕 Ropa / Textil</option>
-                            <option value="ACCESORIO" @selected($tipoProductoActual === 'ACCESORIO')>🎒 Accesorio / Equipo</option>
+                            @isset($optionsTipoProducto)
+                                @foreach($optionsTipoProducto as $value => $label)
+                                    <option value="{{ $value }}" @selected($tipoProductoActual === $value)>
+                                        {{ $value === 'ZAPATILLA' ? '👟 ' : ($value === 'ROPA' ? '👕 ' : '🎒 ') }}{{ $label }}
+                                    </option>
+                                @endforeach
+                            @endisset
                         </select>
-                        @error('tipo_producto') <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> @enderror
+                        @error('tipo_producto') 
+                            <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> 
+                        @enderror
                     </div>
 
                     <div class="col-md-12">
@@ -204,13 +203,21 @@
                             @endforeach
                         </select>
                         @error('categoria_id') <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> @enderror
+                        @error('categoria_id.*') <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> @enderror
                     </div>
 
                     <div class="col-md-12">
                         <div class="p-3 info-badge-summary border shadow-sm d-flex align-items-center justify-content-between">
                             <div>
                                 <div class="form-check form-switch mb-0">
-                                    <input class="form-check-input style-switch" type="checkbox" role="switch" id="maneja_tallas" name="maneja_tallas" value="1" @checked((string) $manejaTallasActual === '1')>
+                                    <input type="hidden" name="maneja_tallas" value="0">
+                                    <input class="form-check-input style-switch" 
+                                        type="checkbox" 
+                                        role="switch" 
+                                        id="maneja_tallas" 
+                                        name="maneja_tallas" 
+                                        value="1" 
+                                        @checked((string) $manejaTallasActual === '1')>
                                     <label class="form-check-label fw-bold text-dark small" for="maneja_tallas">
                                         Segmentación por Tallas / Curvas
                                     </label>
@@ -220,7 +227,9 @@
                                 </div>
                             </div>
                         </div>
-                        @error('maneja_tallas') <div class="text-danger mt-1 small">{{ $message }}</div> @enderror
+                        @error('maneja_tallas') 
+                            <div class="text-danger mt-1 small"><i class="fas fa-info-circle me-1"></i>{{ $message }}</div> 
+                        @enderror
                     </div>
 
                     <div class="col-md-12">

@@ -117,7 +117,7 @@
                         <tr>
                             <th class="ps-4" style="min-width: 250px;">Producto / Marca</th>
                             <th style="min-width: 120px;">Talla</th>
-                            <th>Códigos (SKU / Barras)</th>
+                            <th>Códigos SKU</th>
                             <th class="text-center" style="width: 120px;">Stock Real</th>
                             <th class="text-center" style="width: 130px;">Estado</th>
                             @can('gestionar_productos')
@@ -152,8 +152,8 @@
 
                                 <td class="py-3">
                                     <div class="font-monospace fw-bold text-dark fs-7" title="SKU Interno"><i class="fas fa-hashtag text-muted me-1"></i>{{ $item->codigo_variante }}</div>
-                                    @if($item->codigo_barra)
-                                        <div class="font-monospace text-muted small mt-1" title="EAN/UPC"><i class="fas fa-barcode me-1"></i>{{ $item->codigo_barra }}</div>
+                                    @if($item->codigo_variante)
+                                        <div class="font-monospace text-muted small mt-1" title="EAN/UPC"><i class="fas fa-barcode me-1"></i>{{ $item->codigo_variante }}</div>
                                     @endif
                                 </td>
 
