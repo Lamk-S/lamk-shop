@@ -21,6 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'gestionar_clientes',
             'gestionar_proveedores',
             'gestionar_productos',
+            'ver_productos',
             'gestionar_categorias',
             'gestionar_marcas',
             'gestionar_tallas',
@@ -52,28 +53,34 @@ class RolesAndPermissionsSeeder extends Seeder
         foreach ($roles as $roleName) {
             Role::findOrCreate($roleName, 'web');
         }
-
+        
+        // ADMINISTRADOR: Acceso total
         Role::findByName('administrador', 'web')->givePermissionTo(Permission::all());
 
+        // VENDEDOR: Híbrido que atiende y cobra en su propia terminal.
         Role::findByName('vendedor', 'web')->givePermissionTo([
             'ver_dashboard',
             'gestionar_clientes',
-            'gestionar_productos',
+            'ver_productos',
             'registrar_ventas',
-            'gestionar_comprobantes',
+            'abrir_caja',
+            'cerrar_caja',
+            'movimientos_caja',
         ]);
 
+        // CAJERO: Enfocado netamente en el flujo de dinero y cobranza.
         Role::findByName('cajero', 'web')->givePermissionTo([
             'ver_dashboard',
             'gestionar_clientes',
+            'ver_productos',
             'registrar_ventas',
             'anular_ventas',
             'abrir_caja',
             'cerrar_caja',
             'movimientos_caja',
-            'gestionar_comprobantes',
         ]);
 
+        // ENCARGADO DE ALMACÉN: Logística pura.
         Role::findByName('encargado_almacen', 'web')->givePermissionTo([
             'ver_dashboard',
             'gestionar_proveedores',
