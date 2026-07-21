@@ -42,31 +42,23 @@ class EmpresaConfiguracionController extends Controller implements HasMiddleware
 
     public function update(UpdateEmpresaConfiguracionRequest $request, EmpresaConfiguracion $empresaConfiguracion)
     {
-        try {
-            $data = $request->validated();
+        $data = $request->validated();
 
-            if ($request->hasFile('logo')) {
-                if (
-                    $empresaConfiguracion->logo_path &&
-                    Storage::disk('public')->exists($empresaConfiguracion->logo_path)
-                ) {
-                    Storage::disk('public')->delete($empresaConfiguracion->logo_path);
-                }
-
-                $logoName = time() . '_' . $request->file('logo')->getClientOriginalName();
-                $request->file('logo')->storeAs('empresa', $logoName, 'public');
-                $data['logo_path'] = 'empresa/' . $logoName;
+        if ($request->hasFile('logo')) {
+            if (
+                $empresaConfiguracion->logo_path &&
+                Storage::disk('public')->exists($empresaConfiguracion->logo_path)
+            ) {
+                Storage::disk('public')->delete($empresaConfiguracion->logo_path);
             }
 
-            $empresaConfiguracion->update($data);
-
-            return redirect()
-                ->route('empresa-configuracion.show', $empresaConfiguracion)
-                ->with('success', 'Configuración de empresa actualizada correctamente');
-        } catch (\Exception $e) {
-            return back()
-                ->withErrors(['error' => 'Error al actualizar la configuración: ' . $e->getMessage()])
-                ->withInput();
+            $data['logo_path'] = $request->file('logo')->store('empresa', 'public');
         }
+
+        $empresaConfiguracion->update($data);
+
+        return redirect()
+            ->route('empresa-configuracion.show', $empresaConfiguracion)
+            ->with('success', 'Configuración de empresa actualizada correctamente.');
     }
 }
