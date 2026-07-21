@@ -79,14 +79,14 @@
                     </a>
                 @endcan
 
-                @can('gestionar_productos')
+                @canany(['gestionar_productos', 'ver_productos'])
                     <a class="nav-link {{ request()->routeIs('productos.*') ? 'active text-info' : '' }}" href="{{ route('productos.index') }}">
                         <div class="sb-nav-link-icon"><i class="fa-solid fa-shirt"></i></div> Catálogo de Ropa
                     </a>
                     <a class="nav-link {{ request()->routeIs('producto-variantes.*') ? 'active text-info' : '' }}" href="{{ route('producto-variantes.index') }}">
                         <div class="sb-nav-link-icon"><i class="fa-solid fa-shoe-prints"></i></div> Calzado y Variantes
                     </a>
-                @endcan
+                @endcanany
 
                 @can('gestionar_categorias')
                     <a class="nav-link {{ request()->routeIs('categorias.*') ? 'active text-info' : '' }}" href="{{ route('categorias.index') }}">
@@ -163,10 +163,12 @@
             <div class="small text-muted mb-1 text-uppercase tracking-wide" style="font-size: 0.65rem;">Estado de Terminal</div>
             
             @php
-                $sesionAbierta = \App\Models\SesionCaja::with('caja')
-                    ->where('user_id', auth()->id())
-                    ->whereNull('saldo_final_declarado')
-                    ->first();
+                $sesionAbierta = cache()->remember('sesion_caja_user_' . auth()->id(), 300, function () {
+                    return \App\Models\SesionCaja::with('caja')
+                        ->where('user_id', auth()->id())
+                        ->whereNull('saldo_final_declarado')
+                        ->first();
+                });
             @endphp
 
             @if($sesionAbierta && $sesionAbierta->caja)
