@@ -34,10 +34,10 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="quick_cliente_tipo_persona" class="form-label fw-medium text-secondary">
+                            <label for="modal_tipo_persona" class="form-label fw-medium text-secondary">
                                 Tipo de persona <span class="text-danger">*</span>
                             </label>
-                            <select name="tipo_persona" id="quick_cliente_tipo_persona" class="form-select" required>
+                            <select name="tipo_persona" id="modal_tipo_persona" class="form-select" required>
                                 <option value="">Seleccione...</option>
                                 <option value="natural" @selected(old('tipo_persona') === 'natural')>Natural</option>
                                 <option value="juridica" @selected(old('tipo_persona') === 'juridica')>Jurídica</option>
@@ -48,10 +48,10 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_documento_id" class="form-label fw-medium text-secondary">
+                            <label for="modal_documento_id" class="form-label fw-medium text-secondary">
                                 Tipo de documento <span class="text-danger">*</span>
                             </label>
-                            <select name="documento_id" id="quick_cliente_documento_id" class="form-select" required>
+                            <select name="documento_id" id="modal_documento_id" class="form-select" required>
                                 <option value="">Seleccione...</option>
                                 @isset($documentos)
                                     @foreach ($documentos as $documento)
@@ -71,32 +71,38 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_numero_documento" class="form-label fw-medium text-secondary">
+                            <label for="modal_numero_documento" class="form-label fw-medium text-secondary">
                                 Número de documento <span class="text-danger">*</span>
                             </label>
-                            <input
-                                type="text"
-                                name="numero_documento"
-                                id="quick_cliente_numero_documento"
-                                class="form-control"
-                                value="{{ old('numero_documento') }}"
-                                placeholder="Ej. 87689765"
-                                autocomplete="off"
-                                required
-                            >
+                            <div class="input-group">
+                                <input
+                                    type="text"
+                                    name="numero_documento"
+                                    id="modal_numero_documento"
+                                    class="form-control"
+                                    value="{{ old('numero_documento') }}"
+                                    placeholder="Ej. 87689765"
+                                    autocomplete="off"
+                                    maxlength="11"
+                                    required
+                                >
+                                <button type="button" class="btn btn-info text-white" id="btnBuscarDoc">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
                             @error('numero_documento')
                                 <div class="text-danger small mt-1">{{ $message }}</div>
                             @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="quick_cliente_telefono" class="form-label fw-medium text-secondary">
+                            <label for="modal_telefono" class="form-label fw-medium text-secondary">
                                 Teléfono
                             </label>
                             <input
                                 type="text"
                                 name="telefono"
-                                id="quick_cliente_telefono"
+                                id="modal_telefono"
                                 class="form-control"
                                 value="{{ old('telefono') }}"
                                 placeholder="Ej. 987654321"
@@ -108,13 +114,13 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_cliente_email" class="form-label fw-medium text-secondary">
+                            <label for="modal_email" class="form-label fw-medium text-secondary">
                                 Correo electrónico
                             </label>
                             <input
                                 type="email"
                                 name="email"
-                                id="quick_cliente_email"
+                                id="modal_email"
                                 class="form-control"
                                 value="{{ old('email') }}"
                                 placeholder="Ej. cliente@correo.com"
@@ -126,13 +132,13 @@
                         </div>
 
                         <div class="col-md-6 quick-cliente-natural-field d-none">
-                            <label for="quick_cliente_nombres" class="form-label fw-medium text-secondary">
+                            <label for="modal_nombres" class="form-label fw-medium text-secondary">
                                 Nombres <span class="text-danger">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="nombres"
-                                id="quick_cliente_nombres"
+                                id="modal_nombres"
                                 class="form-control"
                                 value="{{ old('nombres') }}"
                                 placeholder="Ej. Juan"
@@ -144,13 +150,13 @@
                         </div>
 
                         <div class="col-md-6 quick-cliente-natural-field d-none">
-                            <label for="quick_cliente_apellidos" class="form-label fw-medium text-secondary">
+                            <label for="modal_apellidos" class="form-label fw-medium text-secondary">
                                 Apellidos <span class="text-danger">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="apellidos"
-                                id="quick_cliente_apellidos"
+                                id="modal_apellidos"
                                 class="form-control"
                                 value="{{ old('apellidos') }}"
                                 placeholder="Ej. Pérez"
@@ -162,13 +168,13 @@
                         </div>
 
                         <div class="col-md-12 quick-cliente-juridica-field d-none">
-                            <label for="quick_cliente_razon_social" class="form-label fw-medium text-secondary">
+                            <label for="modal_razon_social" class="form-label fw-medium text-secondary">
                                 Razón social <span class="text-danger">*</span>
                             </label>
                             <input
                                 type="text"
                                 name="razon_social"
-                                id="quick_cliente_razon_social"
+                                id="modal_razon_social"
                                 class="form-control"
                                 value="{{ old('razon_social') }}"
                                 placeholder="Ej. Lamk Sports S.A.C."
@@ -180,13 +186,13 @@
                         </div>
 
                         <div class="col-md-12">
-                            <label for="quick_cliente_direccion" class="form-label fw-medium text-secondary">
+                            <label for="modal_direccion" class="form-label fw-medium text-secondary">
                                 Dirección
                             </label>
                             <input
                                 type="text"
                                 name="direccion"
-                                id="quick_cliente_direccion"
+                                id="modal_direccion"
                                 class="form-control"
                                 value="{{ old('direccion') }}"
                                 placeholder="Ej. Av. Principal 123"
@@ -213,13 +219,13 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const tipoPersona = document.getElementById('quick_cliente_tipo_persona');
-        const documentoSelect = document.getElementById('quick_cliente_documento_id');
+        const tipoPersona = document.getElementById('modal_tipo_persona');
+        const documentoSelect = document.getElementById('modal_documento_id');
         const naturalFields = document.querySelectorAll('.quick-cliente-natural-field');
         const juridicaFields = document.querySelectorAll('.quick-cliente-juridica-field');
-        const nombres = document.getElementById('quick_cliente_nombres');
-        const apellidos = document.getElementById('quick_cliente_apellidos');
-        const razonSocial = document.getElementById('quick_cliente_razon_social');
+        const nombres = document.getElementById('modal_nombres');
+        const apellidos = document.getElementById('modal_apellidos');
+        const razonSocial = document.getElementById('modal_razon_social');
 
         function setRequired(elements, required) {
             elements.forEach((el) => {

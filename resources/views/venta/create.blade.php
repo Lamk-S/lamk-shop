@@ -361,6 +361,59 @@
         });
 
         // ==========================================
+        // BÚSQUEDA DE DNI/RUC EN MODAL (APIS PERÚ)
+        // ==========================================
+        $('#btnBuscarDoc').on('click', function() {
+            const $btn = $(this);
+            const originalHtml = $btn.html();
+            const documento = $('#modal_numero_documento').val().trim();
+
+            if (documento.length !== 8 && documento.length !== 11) {
+                showToast('Ingrese un DNI (8 dígitos) o RUC (11 dígitos).', 'warning');
+                return;
+            }
+
+            $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+            $.ajax({
+                url: '{{ route("api-peru.consultar") }}',
+                method: 'GET',
+                data: { documento: documento },
+                success: function(res) {
+                    if (documento.length === 8) {
+                        // Respuesta de RENIEC (DNI)
+                        // La API v2 devuelve nombres, apellidoPaterno, apellidoMaterno
+                        $('#modal_nombres').val(res.nombres);
+                        $('#modal_apellidos').val(res.apellidoPaterno + ' ' + res.apellidoMaterno);
+                        
+                        // Seleccionar Persona Natural automáticamente si tienes el select
+                        $('#modal_tipo_persona').val('natural').trigger('change');
+                    } else {
+                        // Respuesta de SUNAT (RUC)
+                        $('#modal_razon_social').val(res.razonSocial);
+                        $('#modal_direccion').val(res.direccion || '');
+                        
+                        // Seleccionar Persona Jurídica automáticamente
+                        $('#modal_tipo_persona').val('juridica').trigger('change');
+                    }
+                    showToast('Datos recuperados exitosamente.', 'success');
+                },
+                error: function(xhr) {
+                    let msg = 'Error al buscar el documento.';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        msg = xhr.responseJSON.error;
+                    }
+                    showToast(msg, 'error');
+                    // Limpiar campos si falla
+                    $('#modal_nombres, #modal_apellidos, #modal_razon_social, #modal_direccion').val('');
+                },
+                complete: function() {
+                    $btn.prop('disabled', false).html(originalHtml);
+                }
+            });
+        });
+
+        // ==========================================
         //  NÚCLEO DE PROCESAMIENTO DEL ESCÁNER
         // ==========================================
         function procesarCodigoEscaneado(codigo) {
