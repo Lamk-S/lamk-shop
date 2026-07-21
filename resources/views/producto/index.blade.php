@@ -121,9 +121,9 @@
                             <th class="text-end">P. Compra</th>
                             <th class="text-end">P. Venta</th>
                             <th class="text-center">Estado</th>
-                            @can('gestionar_productos')
+                            @canany(['gestionar_productos', 'ver_productos'])
                                 <th class="text-center" style="width: 120px;">Acciones</th>
-                            @endcan
+                            @endcanany
                         </tr>
                     </thead>
                     <tbody>
@@ -175,21 +175,23 @@
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-2 rounded-pill">Inactivo</span>
                                     @endif
                                 </td>
-                                @can('gestionar_productos')
+                                @canany(['gestionar_productos', 'ver_productos'])
                                     <td class="text-center">
                                         <div class="btn-group shadow-sm table-actions bg-white" role="group">
                                             <button type="button" class="btn btn-sm btn-outline-secondary text-info border-light" data-bs-toggle="modal" data-bs-target="#verModal-{{ $item->id }}" title="Ver detalle">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <a href="{{ route('productos.edit', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }} border-light" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">
-                                                <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-trash-alt' : 'fa-trash-restore-alt' }}"></i>
-                                            </button>
+                                            @can('gestionar_productos')
+                                                <a href="{{ route('productos.edit', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }} border-light" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}">
+                                                    <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-trash-alt' : 'fa-trash-restore-alt' }}"></i>
+                                                </button>
+                                            @endcan
                                         </div>
                                     </td>
-                                @endcan
+                                @endcanany
                             </tr>
                         @empty
                             <tr>
@@ -233,14 +235,116 @@
 </div>
 
 @foreach($productos as $item)
-    @can('gestionar_productos')
+    @canany(['gestionar_productos', 'ver_productos'])
+        <!-- Modal Ver Detalles -->
         <div class="modal fade" id="verModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content border-0 shadow">
+                    <div class="modal-header bg-light border-bottom-0">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <i class="fas fa-box-open me-2 text-primary"></i>Detalle del Producto
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="row g-4">
+                            <!-- Columna de Imagen -->
+                            <div class="col-md-4 text-center">
+                                @if($item->img_path)
+                                    <img src="{{ asset('storage/' . $item->img_path) }}" alt="{{ $item->nombre }}" class="img-fluid rounded-3 shadow-sm" style="max-height: 250px; object-fit: contain;">
+                                @else
+                                    <div class="bg-light rounded-3 d-flex align-items-center justify-content-center w-100 shadow-sm" style="height: 250px;">
+                                        <i class="fas fa-image fa-4x text-secondary opacity-25"></i>
+                                    </div>
+                                @endif
+                            </div>
+                            
+                            <!-- Columna de Datos -->
+                            <div class="col-md-8">
+                                <h4 class="fw-bold mb-1 text-dark">{{ $item->nombre }}</h4>
+                                <div class="mb-3">
+                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1">{{ $item->codigo }}</span>
+                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">{{ optional($item->marca)->nombre ?? 'Genérico' }}</span>
+                                    @if($item->codigo_barra)
+                                        <span class="badge bg-light text-secondary border border-secondary border-opacity-25 ms-1"><i class="fas fa-barcode me-1"></i>{{ $item->codigo_barra }}</span>
+                                    @endif
+                                </div>
+                                
+                                <p class="text-muted small mb-4">{{ $item->descripcion ?? 'No hay descripción disponible para este producto.' }}</p>
+
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Clasificación</div>
+                                            <div class="fw-medium text-dark">{{ ucfirst(strtolower($item->tipo_producto?->value ?? $item->tipo_producto)) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Stock General</div>
+                                            <div class="fw-bold {{ ($item->stock_total ?? 0) <= ($item->stock_minimo ?? 5) ? 'text-danger' : 'text-success' }}">
+                                                {{ number_format((float) ($item->stock_total ?? 0), 0) }} Unidades
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Precio Compra</div>
+                                            <div class="fw-medium text-dark">S/ {{ number_format((float) $item->precio_compra, 2) }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                            <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Precio Venta</div>
+                                            <div class="fw-bold text-success">S/ {{ number_format((float) $item->precio_venta, 2) }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light border-top-0">
+                        <button type="button" class="btn btn-secondary fw-medium px-4" data-bs-dismiss="modal">Cerrar</button>
+                        @can('gestionar_productos')
+                            <a href="{{ route('productos.edit', $item) }}" class="btn btn-primary fw-medium px-4">
+                                <i class="fas fa-edit me-2"></i>Editar
+                            </a>
+                        @endcan
+                    </div>
                 </div>
+            </div>
         </div>
+    @endcanany
+
+    @can('gestionar_productos')
+        <!-- Modal Confirmación de Eliminación / Restauración -->
         <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
              <div class="modal-dialog modal-dialog-centered">
-                </div>
+                 <div class="modal-content border-0 shadow">
+                     <div class="modal-header {{ !$item->trashed() && (int) $item->estado === 1 ? 'bg-danger bg-opacity-10 text-danger' : 'bg-success bg-opacity-10 text-success' }} border-bottom-0">
+                         <h5 class="modal-title fw-bold">
+                             <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-exclamation-triangle' : 'fa-check-circle' }} me-2"></i>
+                             Confirmar acción
+                         </h5>
+                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                     </div>
+                     <div class="modal-body p-4 text-center">
+                         <p class="mb-0 fs-5">
+                             ¿Estás seguro de que deseas {{ !$item->trashed() && (int) $item->estado === 1 ? 'desactivar' : 'activar' }} el producto <br><strong class="text-dark">{{ $item->nombre }}</strong>?
+                         </p>
+                     </div>
+                     <div class="modal-footer bg-light border-top-0 justify-content-center">
+                         <button type="button" class="btn btn-light fw-medium px-4" data-bs-dismiss="modal">Cancelar</button>
+                         <form action="{{ route('productos.destroy', $item) }}" method="POST" class="d-inline">
+                             @csrf
+                             @method('DELETE')
+                             <button type="submit" class="btn {{ !$item->trashed() && (int) $item->estado === 1 ? 'btn-danger' : 'btn-success' }} fw-medium px-4">
+                                 Sí, {{ !$item->trashed() && (int) $item->estado === 1 ? 'Desactivar' : 'Activar' }}
+                             </button>
+                         </form>
+                     </div>
+                 </div>
+            </div>
         </div>
     @endcan
 @endforeach

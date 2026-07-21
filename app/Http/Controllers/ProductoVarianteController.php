@@ -19,7 +19,8 @@ class ProductoVarianteController extends Controller implements HasMiddleware
     public static function middleware(): array
     {
         return [
-            new Middleware('permission:gestionar_productos', only: ['index', 'create', 'store', 'show', 'edit', 'update', 'destroy']),
+            new Middleware('permission:gestionar_productos|ver_productos', only: ['index', 'show']),
+            new Middleware('permission:gestionar_productos', only: ['create', 'store', 'edit', 'update', 'destroy']),
         ];
     }
 
