@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class ProductoSeeder extends Seeder
 {
@@ -15,15 +17,32 @@ class ProductoSeeder extends Seeder
         $brandIds = DB::table('marcas')->pluck('id', 'nombre')->toArray();
 
         $items = $this->items();
+        Storage::disk('public')->makeDirectory('productos');
+        $sourcePath = database_path('seeders/images/productos');
 
-        DB::transaction(function () use ($items, $categoryIds, $brandIds, $now) {
+        DB::transaction(function () use ($items, $categoryIds, $brandIds, $now, $sourcePath) {
             foreach ($items as $item) {
+                
+                $imagePath = null;
+                $extensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+                foreach ($extensions as $ext) {
+                    $filename = $item['codigo'] . '.' . $ext;
+                    
+                    if (File::exists($sourcePath . '/' . $filename)) {
+                        Storage::disk('public')->put('productos/' . $filename, File::get($sourcePath . '/' . $filename));
+                        
+                        $imagePath = 'productos/' . $filename;
+                        break;
+                    }
+                }
+
                 DB::table('productos')->updateOrInsert(
                     ['codigo' => $item['codigo']],
                     [
                         'nombre' => $item['nombre'],
                         'descripcion' => 'Producto inicial para Lamk Sports.',
-                        'img_path' => null,
+                        'img_path' => $imagePath,
                         'tipo_producto' => $item['tipo_producto'],
                         'maneja_tallas' => $item['maneja_tallas'],
                         'precio_compra' => $item['precio_compra'],
@@ -96,7 +115,7 @@ class ProductoSeeder extends Seeder
             ['codigo' => 'LAM-ROP-032', 'nombre' => 'Puma Pantalón Jogger', 'marca' => 'Puma', 'categoria' => 'Ropa Deportiva', 'tipo_producto' => 'ROPA', 'maneja_tallas' => true, 'precio_compra' => 58.00, 'precio_venta' => 96.00, 'stock_minimo' => 4],
             ['codigo' => 'LAM-ROP-033', 'nombre' => 'Under Armour Licra Deportiva', 'marca' => 'Under Armour', 'categoria' => 'Ropa Deportiva', 'tipo_producto' => 'ROPA', 'maneja_tallas' => true, 'precio_compra' => 52.00, 'precio_venta' => 88.00, 'stock_minimo' => 3],
             ['codigo' => 'LAM-ROP-034', 'nombre' => 'Reebok Casaca Rompeviento', 'marca' => 'Reebok', 'categoria' => 'Ropa Deportiva', 'tipo_producto' => 'ROPA', 'maneja_tallas' => true, 'precio_compra' => 68.00, 'precio_venta' => 112.00, 'stock_minimo' => 3],
-            ['codigo' => 'LAM-ROP-035', 'nombre' => 'Fila Top Deportivo', 'marca' => 'Fila', 'categoria' => 'Ropa Deportiva', 'tipo_producto' => 'ROPA', 'maneja_tallas' => true, 'precio_compra' => 34.00, 'precio_venta' => 56.00, 'stock_minimo' => 5],
+            ['codigo' => 'LAM-ROP-035', 'nombre' => 'Fila Conjunto Deportivo', 'marca' => 'Fila', 'categoria' => 'Ropa Deportiva', 'tipo_producto' => 'ROPA', 'maneja_tallas' => true, 'precio_compra' => 75.00, 'precio_venta' => 128.00, 'stock_minimo' => 5],
 
             // ACCESORIOS
             ['codigo' => 'LAM-ACC-036', 'nombre' => 'Nike Medias Deportivas Pack x3', 'marca' => 'Nike', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 18.00, 'precio_venta' => 29.00, 'stock_minimo' => 8],
@@ -106,12 +125,12 @@ class ProductoSeeder extends Seeder
             ['codigo' => 'LAM-ACC-040', 'nombre' => 'Reebok Botella Deportiva', 'marca' => 'Reebok', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 12.00, 'precio_venta' => 20.00, 'stock_minimo' => 10],
             ['codigo' => 'LAM-ACC-041', 'nombre' => 'New Balance Maleta Gym', 'marca' => 'New Balance', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 58.00, 'precio_venta' => 94.00, 'stock_minimo' => 3],
             ['codigo' => 'LAM-ACC-042', 'nombre' => 'Asics Banda Elástica Set', 'marca' => 'Asics', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 24.00, 'precio_venta' => 39.00, 'stock_minimo' => 5],
-            ['codigo' => 'LAM-ACC-043', 'nombre' => 'Skechers Cinturón Running', 'marca' => 'Skechers', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 20.00, 'precio_venta' => 33.00, 'stock_minimo' => 5],
+            ['codigo' => 'LAM-ACC-043', 'nombre' => 'Skechers Central II Backpack', 'marca' => 'Skechers', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 165, 'precio_venta' => 205.00, 'stock_minimo' => 5],
             ['codigo' => 'LAM-ACC-044', 'nombre' => 'Fila Muñequera Deportiva', 'marca' => 'Fila', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 14.00, 'precio_venta' => 24.00, 'stock_minimo' => 6],
             ['codigo' => 'LAM-ACC-045', 'nombre' => 'Champion Toalla Deportiva', 'marca' => 'Champion', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 28.00, 'precio_venta' => 45.00, 'stock_minimo' => 5],
             ['codigo' => 'LAM-ACC-046', 'nombre' => 'Nike Lentes Deportivos', 'marca' => 'Nike', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 42.00, 'precio_venta' => 69.00, 'stock_minimo' => 3],
             ['codigo' => 'LAM-ACC-047', 'nombre' => 'Adidas Guantes Training', 'marca' => 'Adidas', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 26.00, 'precio_venta' => 42.00, 'stock_minimo' => 4],
-            ['codigo' => 'LAM-ACC-048', 'nombre' => 'Puma Vincha Deportiva', 'marca' => 'Puma', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 10.00, 'precio_venta' => 18.00, 'stock_minimo' => 10],
+            ['codigo' => 'LAM-ACC-048', 'nombre' => 'Nike Guantes Training', 'marca' => 'Nike', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 79.00, 'precio_venta' => 100.00, 'stock_minimo' => 10],
             ['codigo' => 'LAM-ACC-049', 'nombre' => 'Under Armour Plantillas Deportivas', 'marca' => 'Under Armour', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 19.00, 'precio_venta' => 31.00, 'stock_minimo' => 6],
             ['codigo' => 'LAM-ACC-050', 'nombre' => 'Reebok Cuerda para Saltar', 'marca' => 'Reebok', 'categoria' => 'Accesorios', 'tipo_producto' => 'ACCESORIO', 'maneja_tallas' => false, 'precio_compra' => 16.00, 'precio_venta' => 27.00, 'stock_minimo' => 8],
         ];

@@ -120,9 +120,9 @@
                             <th>Códigos SKU</th>
                             <th class="text-center" style="width: 120px;">Stock Real</th>
                             <th class="text-center" style="width: 130px;">Estado</th>
-                            @can('gestionar_productos')
+                            @canany(['gestionar_productos', 'ver_productos'])
                                 <th class="text-center pe-4" style="width: 120px;">Acciones</th>
-                            @endcan
+                            @endcanany
                         </tr>
                     </thead>
                     <tbody>
@@ -142,21 +142,18 @@
                                         <span class="small text-muted fw-medium"><i class="fas fa-tag me-1 text-primary text-opacity-50"></i>{{ optional($item->producto->marca)->nombre ?? 'Sin marca' }}</span>
                                     </div>
                                 </td>
-
                                 <td class="py-3">
                                     <span class="chip shadow-sm border-{{ optional($item->talla)->tipo_talla === 'CALZADO' ? 'info' : 'primary' }} border-opacity-25">
                                         <i class="fas {{ optional($item->talla)->tipo_talla === 'CALZADO' ? 'fa-shoe-prints text-info' : 'fa-tshirt text-primary' }}"></i>
                                         {{ optional($item->talla)->nombre ?? 'Única' }}
                                     </span>
                                 </td>
-
                                 <td class="py-3">
                                     <div class="font-monospace fw-bold text-dark fs-7" title="SKU Interno"><i class="fas fa-hashtag text-muted me-1"></i>{{ $item->codigo_variante }}</div>
                                     @if($item->codigo_variante)
                                         <div class="font-monospace text-muted small mt-1" title="EAN/UPC"><i class="fas fa-barcode me-1"></i>{{ $item->codigo_variante }}</div>
                                     @endif
                                 </td>
-
                                 <td class="text-center py-3">
                                     <div class="badge {{ $stockClass }} bg-opacity-10 {{ str_replace('bg-', 'border border-', $stockClass) }} border-opacity-25 rounded-pill px-3 py-2 fs-7 font-monospace shadow-sm" title="Mínimo sugerido: {{ $stockMin }}">
                                         {{ number_format($stockReal, 0) }} ud.
@@ -165,7 +162,6 @@
                                         <div class="text-warning small mt-1" style="font-size: 0.65rem; font-weight: 700;"><i class="fas fa-exclamation-triangle me-1"></i>LOW STOCK</div>
                                     @endif
                                 </td>
-
                                 <td class="text-center py-3">
                                     @if(!$item->trashed() && (int) $item->estado === 1)
                                         <span class="badge bg-success text-white px-3 py-1 rounded-pill shadow-sm"><i class="fas fa-circle ms-n1 me-1" style="font-size: 0.5rem; vertical-align: middle;"></i> Activo</span>
@@ -173,26 +169,27 @@
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-1 rounded-pill">Inactivo</span>
                                     @endif
                                 </td>
-
-                                @can('gestionar_productos')
+                                @canany(['gestionar_productos', 'ver_productos'])
                                     <td class="text-center pe-4 py-3">
                                         <div class="btn-group shadow-sm table-actions" role="group">
                                             <a href="{{ route('producto-variantes.show', $item) }}" class="btn btn-light border text-info" data-bs-toggle="tooltip" title="Auditar movimientos">
                                                 <i class="fas fa-eye"></i>
                                             </a>
-                                            <a href="{{ route('producto-variantes.edit', $item) }}" class="btn btn-light border text-primary" data-bs-toggle="tooltip" title="Editar variante">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <button type="button"
-                                                class="btn btn-light border {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }}"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#confirmModal-{{ $item->id }}"
-                                                title="{{ !$item->trashed() && (int) $item->estado === 1 ? 'Desactivar SKU' : 'Restaurar SKU' }}">
-                                                <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-ban' : 'fa-trash-restore-alt' }}"></i>
-                                            </button>
+                                            @can('gestionar_productos')
+                                                <a href="{{ route('producto-variantes.edit', $item) }}" class="btn btn-light border text-primary" data-bs-toggle="tooltip" title="Editar variante">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button"
+                                                    class="btn btn-light border {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }}"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#confirmModal-{{ $item->id }}"
+                                                    title="{{ !$item->trashed() && (int) $item->estado === 1 ? 'Desactivar SKU' : 'Restaurar SKU' }}">
+                                                    <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-ban' : 'fa-trash-restore-alt' }}"></i>
+                                                </button>
+                                            @endcan
                                         </div>
                                     </td>
-                                @endcan
+                                @endcanany
                             </tr>
                         @empty
                             <tr>
