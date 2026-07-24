@@ -467,7 +467,7 @@
                     codigo_producto: meta.codigo_producto,
                     talla: meta.talla,
                     stock: stock,
-                    afecto_igv: meta.afecto_igv
+                    afecto_igv: 0.0
                 });
                 showToast('Producto agregado (' + meta.talla + ')', 'success');
             }
@@ -633,9 +633,9 @@
             }
 
             lineItems.forEach((item, index) => {
-                const base = round((item.cantidad * item.precio_unitario) - item.descuento);
-                const igv = item.afecto_igv ? round(base * 0.18) : 0;
-                const totalLinea = round(base + igv);
+                const totalLinea = Math.max(0, round((item.cantidad * item.precio_unitario) - item.descuento));
+                const base = item.afecto_igv ? round(totalLinea / 1.18) : totalLinea;
+                const igv = item.afecto_igv ? round(totalLinea - base) : 0;
 
                 const row = `
                 <tr>
@@ -662,7 +662,7 @@
                         </button>
                     </td>
                 </tr>
-            `;
+                `;
                 $tbody.append(row);
             });
 
@@ -689,27 +689,35 @@
         }
 
         function updateTotals() {
-            const subtotalBruto = lineItems.reduce((acc, item) => acc + (Number(item.cantidad) * Number(item
-                .precio_unitario)), 0);
-            const descuentoTotal = lineItems.reduce((acc, item) => acc + Number(item.descuento), 0);
-            const baseImponible = Math.max(0, subtotalBruto - descuentoTotal);
-            const igv = lineItems.reduce((acc, item) => {
-                const base = Math.max(0, (Number(item.cantidad) * Number(item.precio_unitario)) - Number(item
-                    .descuento));
-                return acc + (item.afecto_igv ? (base * 0.18) : 0);
-            }, 0);
-            const total = round(baseImponible + igv);
+            let baseImponibleTotal = 0;
+            let igvTotal = 0;
+            let descuentoTotal = 0;
+            let totalFinalPagar = 0;
 
-            $('#subtotal_bruto').text(subtotalBruto.toFixed(2));
+            lineItems.forEach(item => {
+                const totalLinea = Math.max(0, (Number(item.cantidad) * Number(item.precio_unitario)) - Number(item.descuento));
+                descuentoTotal += Number(item.descuento);
+                totalFinalPagar += totalLinea;
+
+                if (item.afecto_igv) {
+                    const base = totalLinea / 1.18;
+                    baseImponibleTotal += base;
+                    igvTotal += (totalLinea - base);
+                } else {
+                    baseImponibleTotal += totalLinea;
+                }
+            });
+
+            $('#subtotal_bruto').text(baseImponibleTotal.toFixed(2));
             $('#descuento_total').text(descuentoTotal.toFixed(2));
-            $('#igv').text(igv.toFixed(2));
-            $('#total').text(total.toFixed(2));
+            $('#igv').text(igvTotal.toFixed(2));
+            $('#total').text(totalFinalPagar.toFixed(2));
 
-            $('#inputSubtotal').val(subtotalBruto.toFixed(2));
+            $('#inputSubtotal').val(baseImponibleTotal.toFixed(2));
             $('#inputDescuentoTotal').val(descuentoTotal.toFixed(2));
-            $('#inputIgvTotal').val(igv.toFixed(2));
-            $('#inputTotal').val(total.toFixed(2));
-            $('#ventaTotalResumen').text(total.toFixed(2));
+            $('#inputIgvTotal').val(igvTotal.toFixed(2));
+            $('#inputTotal').val(totalFinalPagar.toFixed(2));
+            $('#ventaTotalResumen').text(totalFinalPagar.toFixed(2));
 
             updatePaymentSummary();
         }
