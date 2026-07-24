@@ -253,7 +253,7 @@
     @hasrole('cajero')
         <div class="row g-4 mb-4">
             <div class="col-lg-6">
-                <div class="card dashboard-card h-100 border-start border-success border-5">
+                <div class="card dashboard-card h-100">
                     <div class="card-body p-4">
                         <h4 class="fw-bold text-dark mb-4">Estado de tu Terminal</h4>
                         

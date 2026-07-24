@@ -118,7 +118,9 @@
                             <th style="min-width: 280px;">Identificación de Producto</th>
                             <th style="min-width: 200px;">Clasificación</th>
                             <th class="text-center">Stock Actual</th>
-                            <th class="text-end">P. Compra</th>
+                            @can('gestionar_productos')
+                                <th class="text-end">P. Compra</th>
+                            @endcan
                             <th class="text-end">P. Venta</th>
                             <th class="text-center">Estado</th>
                             @canany(['gestionar_productos', 'ver_productos'])
@@ -166,7 +168,9 @@
                                         {{ number_format((float) ($item->stock_total ?? 0), 0) }} unid.
                                     </span>
                                 </td>
-                                <td class="text-end fw-semibold text-secondary">S/ {{ number_format((float) $item->precio_compra, 2) }}</td>
+                                @can('gestionar_productos')
+                                    <td class="text-end fw-semibold text-secondary">S/ {{ number_format((float) $item->precio_compra, 2) }}</td>
+                                @endcan
                                 <td class="text-end fw-bold text-success">S/ {{ number_format((float) $item->precio_venta, 2) }}</td>
                                 <td class="text-center">
                                     @if(!$item->trashed() && (int) $item->estado === 1)
@@ -273,12 +277,14 @@
                                 <p class="text-muted small mb-4">{{ $item->descripcion ?? 'No hay descripción disponible para este producto.' }}</p>
 
                                 <div class="row g-3">
+                                    @can('gestionar_productos')
                                     <div class="col-sm-6">
                                         <div class="p-3 bg-light rounded-3 border border-light-subtle">
                                             <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Clasificación</div>
                                             <div class="fw-medium text-dark">{{ ucfirst(strtolower($item->tipo_producto?->value ?? $item->tipo_producto)) }}</div>
                                         </div>
                                     </div>
+                                    @endcan
                                     <div class="col-sm-6">
                                         <div class="p-3 bg-light rounded-3 border border-light-subtle">
                                             <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Stock General</div>
@@ -287,12 +293,14 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="col-sm-6">
-                                        <div class="p-3 bg-light rounded-3 border border-light-subtle">
-                                            <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Precio Compra</div>
-                                            <div class="fw-medium text-dark">S/ {{ number_format((float) $item->precio_compra, 2) }}</div>
+                                    @can('gestionar_productos')
+                                        <div class="col-sm-6">
+                                            <div class="p-3 bg-light rounded-3 border border-light-subtle">
+                                                <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Precio Compra</div>
+                                                <div class="fw-medium text-dark">S/ {{ number_format((float) $item->precio_compra, 2) }}</div>
+                                            </div>
                                         </div>
-                                    </div>
+                                    @endcan
                                     <div class="col-sm-6">
                                         <div class="p-3 bg-light rounded-3 border border-light-subtle">
                                             <div class="small text-muted text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Precio Venta</div>
@@ -300,6 +308,33 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Sección de Tallas / Variantes -->
+                                @if(isset($item->variantes) && $item->variantes->isNotEmpty())
+                                    <div class="mt-4 pt-3 border-top border-light-subtle">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">
+                                                <i class="fas fa-tags me-1"></i> Disponibilidad por Talla
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach($item->variantes as $variante)
+                                                <div class="border {{ $variante->stock_actual > 0 ? 'border-primary bg-primary bg-opacity-10' : 'border-danger bg-danger bg-opacity-10 opacity-75' }} rounded-3 px-3 py-2 text-center shadow-sm" style="min-width: 75px;">
+                                                    <!-- Nombre de la Talla -->
+                                                    <span class="d-block fw-bold {{ $variante->stock_actual > 0 ? 'text-primary' : 'text-danger' }}">
+                                                        {{ $variante->talla->nombre ?? $variante->talla ?? $variante->nombre }}
+                                                    </span>
+                                                    <!-- Cantidad en Stock -->
+                                                    <span class="d-block {{ $variante->stock_actual > 0 ? 'text-dark fw-medium' : 'text-danger fw-bold' }}" style="font-size: 0.75rem;">
+                                                        {{ $variante->stock_actual > 0 ? number_format((float)$variante->stock_actual, 0) . ' ud.' : 'Agotado' }}
+                                                    </span>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+
                             </div>
                         </div>
                     </div>
