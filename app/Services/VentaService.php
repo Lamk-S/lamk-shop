@@ -107,9 +107,15 @@ class VentaService
 
                 $costoUnitario = $this->inventarioService->obtenerCostoSalida($variante);
 
-                $base = round(($cantidad * $precioUnitario) - $descuento, 2);
-                $impuesto = $producto->afecto_igv ? round($base * $igv / 100, 2) : 0.00;
-                $totalLinea = round($base + $impuesto, 2);
+                $totalLinea = round(($cantidad * $precioUnitario) - $descuento, 2);
+
+                if ($producto->afecto_igv) {
+                    $base = round($totalLinea / (1 + ($igv / 100)), 2); 
+                    $impuesto = round($totalLinea - $base, 2);
+                } else {
+                    $base = $totalLinea;
+                    $impuesto = 0.00;
+                }
 
                 $lineas[] = [
                     'variante' => $variante,
@@ -117,7 +123,7 @@ class VentaService
                     'cantidad' => $cantidad,
                     'precio_unitario' => $precioUnitario,
                     'descuento' => $descuento,
-                    'subtotal' => round($cantidad * $precioUnitario, 2),
+                    'subtotal' => $base,
                     'impuesto' => $impuesto,
                     'total' => $totalLinea,
                     'costo_unitario' => $costoUnitario,
@@ -127,7 +133,7 @@ class VentaService
                     'talla_nombre' => $variante->talla->nombre,
                 ];
 
-                $subtotal += round($cantidad * $precioUnitario, 2);
+                $subtotal += $base;
                 $descuentoTotal += $descuento;
                 $impuestoTotal += $impuesto;
                 $total += $totalLinea;
