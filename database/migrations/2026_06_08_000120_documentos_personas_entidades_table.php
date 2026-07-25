@@ -18,7 +18,7 @@ return new class extends Migration
 
         Schema::create('personas', function (Blueprint $table) {
             $table->id();
-            $table->enum('tipo_persona', ['natural', 'juridica'])->index();
+            $table->string('tipo_persona', 20)->index();
             $table->foreignId('documento_id')->constrained('documentos')->restrictOnDelete();
             $table->string('numero_documento', 25);
             $table->string('nombres', 120)->nullable();

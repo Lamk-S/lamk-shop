@@ -10,12 +10,12 @@ return new class extends Migration
     {
         Schema::create('comprobantes', function (Blueprint $table) {
             $table->id();
-            $table->enum('tipo_comprobante', ['TICKET', 'BOLETA', 'FACTURA', 'NOTA_CREDITO', 'NOTA_DEBITO'])->index();
+            $table->string('tipo_comprobante', 30)->index();
             $table->string('serie', 20);
-            $table->enum('uso_comprobante', ['COMPRA', 'VENTA'])->default('VENTA')->index();
+            $table->string('uso_comprobante', 20)->default('VENTA')->index();
             $table->unsignedInteger('correlativo_actual')->default(0);
             $table->boolean('es_electronico')->default(false);
-            $table->enum('ambiente', ['SIMULADO', 'PRODUCCION'])->default('SIMULADO');
+            $table->string('ambiente', 20)->default('SIMULADO');
             $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
             $table->softDeletes();

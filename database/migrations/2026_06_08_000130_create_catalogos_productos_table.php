@@ -30,7 +30,7 @@ return new class extends Migration
             $table->id();
             $table->string('codigo', 20)->unique(); // 35, 36, 37, S, M, L, XL, UNICA
             $table->string('nombre', 50);           // Talla 35, Small, Única, etc.
-            $table->enum('tipo_talla', ['CALZADO', 'ROPA', 'UNICA'])->index();
+            $table->string('tipo_talla', 20)->index();
             $table->integer('orden')->default(0)->index();
             $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
