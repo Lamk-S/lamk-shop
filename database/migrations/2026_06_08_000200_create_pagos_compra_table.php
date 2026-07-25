@@ -11,23 +11,11 @@ return new class extends Migration
         Schema::create('pagos_compra', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('compra_id')
-                ->constrained('compras')
-                ->cascadeOnDelete();
+            $table->foreignId('compra_id')->constrained('compras')->cascadeOnDelete();
+            $table->foreignId('cuenta_por_pagar_id')->nullable()->constrained('cuentas_por_pagar')->nullOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
 
-            $table->foreignId('cuenta_por_pagar_id')
-                ->nullable()
-                ->constrained('cuentas_por_pagar')
-                ->nullOnDelete();
-
-            $table->foreignId('user_id')
-                ->nullable()
-                ->constrained('users')
-                ->nullOnDelete();
-
-            $table->enum('metodo_pago', ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])
-                ->index();
-
+            $table->string('metodo_pago', 30)->index();
             $table->decimal('monto', 12, 2);
             $table->string('referencia_operacion', 100)->nullable();
             $table->string('moneda', 10)->default('PEN');

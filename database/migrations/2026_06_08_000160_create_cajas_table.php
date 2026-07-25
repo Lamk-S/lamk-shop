@@ -29,7 +29,7 @@ return new class extends Migration
             $table->decimal('saldo_final_declarado', 12, 2)->nullable();
             $table->decimal('saldo_final_esperado', 12, 2)->nullable();
             $table->decimal('diferencia', 12, 2)->nullable();
-            $table->enum('estado_sesion', ['ABIERTA', 'CERRADA', 'ANULADA'])->default('ABIERTA')->index();
+            $table->string('estado_sesion', 20)->default('ABIERTA')->index();
             $table->text('observacion_apertura')->nullable();
             $table->text('observacion_cierre')->nullable();
             $table->timestamps();
@@ -41,8 +41,8 @@ return new class extends Migration
         Schema::create('movimientos_caja', function (Blueprint $table) {
             $table->id();
             $table->foreignId('sesion_caja_id')->constrained('sesiones_caja')->cascadeOnDelete();
-            $table->enum('tipo', ['INGRESO', 'EGRESO'])->index();
-            $table->enum('origen', ['APERTURA', 'VENTA', 'CIERRE', 'AJUSTE', 'INGRESO_MANUAL', 'EGRESO_MANUAL', 'ANULACION'])->index();
+            $table->string('tipo', 20)->index();
+            $table->string('origen', 30)->index();
             $table->string('descripcion', 255);
             $table->decimal('monto', 12, 2);
             $table->nullableMorphs('referencia');

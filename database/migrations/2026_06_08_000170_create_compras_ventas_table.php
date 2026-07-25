@@ -11,19 +11,9 @@ return new class extends Migration
         Schema::create('compras', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('proveedor_id')
-                ->nullable()
-                ->constrained('proveedores')
-                ->nullOnDelete();
-
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->restrictOnDelete();
-
-            $table->foreignId('comprobante_id')
-                ->nullable()
-                ->constrained('comprobantes')
-                ->nullOnDelete();
+            $table->foreignId('proveedor_id')->nullable()->constrained('proveedores')->nullOnDelete();
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('comprobante_id')->nullable()->constrained('comprobantes')->nullOnDelete();
 
             $table->string('tipo_comprobante', 20)->nullable();
             $table->string('serie', 20)->nullable();
@@ -36,9 +26,7 @@ return new class extends Migration
             $table->string('proveedor_telefono', 20)->nullable();
             $table->string('proveedor_email', 100)->nullable();
 
-            $table->enum('metodo_pago', ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'CREDITO', 'MIXTO'])
-                ->default('EFECTIVO');
-
+            $table->string('metodo_pago', 30)->default('EFECTIVO');
             $table->string('moneda', 10)->default('PEN');
             $table->dateTime('fecha_emision')->index();
 
@@ -50,16 +38,10 @@ return new class extends Migration
             $table->decimal('monto_pagado', 12, 2)->default(0);
             $table->decimal('saldo_pendiente', 12, 2)->default(0);
 
-            $table->enum('estado_pago', ['PENDIENTE', 'PARCIAL', 'PAGADA', 'ANULADA'])
-                ->default('PENDIENTE')
-                ->index();
-
+            $table->string('estado_pago', 20)->default('PENDIENTE')->index();
             $table->date('fecha_vencimiento')->nullable()->index();
             $table->dateTime('fecha_pago_total')->nullable();
-
-            $table->enum('estado_documento', ['REGISTRADA', 'RECEPCIONADA', 'ANULADA', 'PENDIENTE'])
-                ->default('RECEPCIONADA')
-                ->index();
+            $table->string('estado_documento', 20)->default('RECEPCIONADA')->index();
 
             $table->text('observacion')->nullable();
             $table->text('motivo_anulacion')->nullable();
@@ -75,14 +57,8 @@ return new class extends Migration
 
         Schema::create('compra_producto', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('compra_id')
-                ->constrained('compras')
-                ->cascadeOnDelete();
-
-            $table->foreignId('producto_variante_id')
-                ->constrained('producto_variantes')
-                ->restrictOnDelete();
+            $table->foreignId('compra_id')->constrained('compras')->cascadeOnDelete();
+            $table->foreignId('producto_variante_id')->constrained('producto_variantes')->restrictOnDelete();
 
             $table->unsignedInteger('cantidad');
             $table->decimal('costo_unitario', 12, 2);
@@ -105,23 +81,10 @@ return new class extends Migration
         Schema::create('ventas', function (Blueprint $table) {
             $table->id();
 
-            $table->foreignId('cliente_id')
-                ->nullable()
-                ->constrained('clientes')
-                ->nullOnDelete();
-
-            $table->foreignId('user_id')
-                ->constrained('users')
-                ->restrictOnDelete();
-
-            $table->foreignId('sesion_caja_id')
-                ->constrained('sesiones_caja')
-                ->restrictOnDelete();
-
-            $table->foreignId('comprobante_id')
-                ->nullable()
-                ->constrained('comprobantes')
-                ->nullOnDelete();
+            $table->foreignId('cliente_id')->nullable()->constrained('clientes')->nullOnDelete();
+            $table->foreignId('user_id')->constrained('users')->restrictOnDelete();
+            $table->foreignId('sesion_caja_id')->constrained('sesiones_caja')->restrictOnDelete();
+            $table->foreignId('comprobante_id')->nullable()->constrained('comprobantes')->nullOnDelete();
 
             $table->string('tipo_comprobante', 20)->nullable();
             $table->string('serie', 20)->nullable();
@@ -133,10 +96,7 @@ return new class extends Migration
             $table->string('cliente_direccion', 255)->nullable();
             $table->string('cliente_email', 100)->nullable();
 
-            $table->enum('metodo_pago', ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO', 'MIXTO'])
-                ->default('EFECTIVO')
-                ->index();
-
+            $table->string('metodo_pago', 30)->default('EFECTIVO')->index();
             $table->string('moneda', 10)->default('PEN');
             $table->dateTime('fecha_emision')->index();
 
@@ -148,9 +108,7 @@ return new class extends Migration
             $table->decimal('monto_recibido', 12, 2)->default(0);
             $table->decimal('vuelto_entregado', 12, 2)->default(0);
 
-            $table->enum('estado_documento', ['REGISTRADA', 'EMITIDA', 'ANULADA', 'PENDIENTE'])
-                ->default('EMITIDA')
-                ->index();
+            $table->string('estado_documento', 20)->default('EMITIDA')->index();
 
             $table->text('observacion')->nullable();
             $table->text('motivo_anulacion')->nullable();
@@ -173,14 +131,8 @@ return new class extends Migration
 
         Schema::create('producto_venta', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('venta_id')
-                ->constrained('ventas')
-                ->cascadeOnDelete();
-
-            $table->foreignId('producto_variante_id')
-                ->constrained('producto_variantes')
-                ->restrictOnDelete();
+            $table->foreignId('venta_id')->constrained('ventas')->cascadeOnDelete();
+            $table->foreignId('producto_variante_id')->constrained('producto_variantes')->restrictOnDelete();
 
             $table->unsignedInteger('cantidad');
             $table->decimal('precio_unitario', 12, 2);
@@ -203,21 +155,16 @@ return new class extends Migration
 
         Schema::create('pagos_venta', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('venta_id')->constrained('ventas')->cascadeOnDelete();
 
-            $table->foreignId('venta_id')
-                ->constrained('ventas')
-                ->cascadeOnDelete();
-
-            $table->enum('metodo_pago', ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])
-                ->index();
-
+            $table->string('metodo_pago', 30)->index();
             $table->decimal('monto', 12, 2);
+            $table->dateTime('fecha_pago')->useCurrent()->index();
             $table->string('referencia_operacion', 100)->nullable();
             $table->string('moneda', 10)->default('PEN');
             $table->tinyInteger('estado')->default(1)->index();
 
             $table->timestamps();
-
             $table->index(['venta_id', 'metodo_pago']);
         });
     }
