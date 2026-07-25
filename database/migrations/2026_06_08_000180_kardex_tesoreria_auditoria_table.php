@@ -11,17 +11,8 @@ return new class extends Migration
         Schema::create('kardex', function (Blueprint $table) {
             $table->id();
             $table->foreignId('producto_variante_id')->constrained('producto_variantes')->restrictOnDelete();
-            $table->enum('tipo_transaccion', [
-                'COMPRA',
-                'VENTA',
-                'AJUSTE',
-                'APERTURA',
-                'ANULACION',
-                'DEVOLUCION',
-                'MERMA',
-                'VENCIDO',
-                'TRANSFERENCIA'
-            ])->index();
+            
+            $table->string('tipo_transaccion', 30)->index();
             $table->nullableMorphs('origen');
             $table->string('descripcion', 255);
             $table->unsignedInteger('entrada')->default(0);
@@ -41,7 +32,7 @@ return new class extends Migration
             $table->id();
             $table->string('codigo', 20)->unique();
             $table->string('nombre', 100);
-            $table->enum('tipo_cuenta', ['EFECTIVO', 'BANCO'])->index();
+            $table->string('tipo_cuenta', 20)->index();
             $table->decimal('saldo_actual', 12, 2)->default(0);
             $table->tinyInteger('estado')->default(1)->index();
             $table->timestamps();
@@ -55,19 +46,10 @@ return new class extends Migration
             $table->foreignId('sesion_caja_id')->nullable()->constrained('sesiones_caja')->nullOnDelete();
             $table->foreignId('venta_id')->nullable()->constrained('ventas')->nullOnDelete();
             $table->foreignId('compra_id')->nullable()->constrained('compras')->nullOnDelete();
-            $table->enum('tipo', ['INGRESO', 'EGRESO'])->index();
-            $table->enum('medio', ['EFECTIVO', 'BANCO'])->index();
-            $table->enum('origen', [
-                'CIERRE_CAJA',
-                'VENTA_EFECTIVO',
-                'VENTA_TARJETA',
-                'VENTA_TRANSFERENCIA',
-                'COMPRA_PRODUCTO',
-                'DEPOSITO',
-                'RETIRO',
-                'AJUSTE',
-                'ANULACION'
-            ])->index();
+            
+            $table->string('tipo', 20)->index();
+            $table->string('medio', 20)->index();
+            $table->string('origen', 30)->index();
             $table->string('descripcion', 255);
             $table->decimal('monto', 12, 2);
             $table->decimal('saldo_anterior', 12, 2);
