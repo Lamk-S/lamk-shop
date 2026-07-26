@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoPersona;
 use App\Http\Requests\StoreQuickProveedorRequest;
 use App\Models\Persona;
 use App\Models\Proveedor;
@@ -26,9 +27,9 @@ class ProveedorQuickController extends Controller
                     'tipo_persona' => $data['tipo_persona'],
                     'documento_id' => $data['documento_id'],
                     'numero_documento' => $data['numero_documento'],
-                    'nombres' => $data['tipo_persona'] === 'natural' ? ($data['nombres'] ?? null) : null,
-                    'apellidos' => $data['tipo_persona'] === 'natural' ? ($data['apellidos'] ?? null) : null,
-                    'razon_social' => $data['tipo_persona'] === 'juridica' ? ($data['razon_social'] ?? null) : null,
+                    'nombres' => $data['tipo_persona'] === TipoPersona::NATURAL->value ? ($data['nombres'] ?? null) : null,
+                    'apellidos' => $data['tipo_persona'] === TipoPersona::NATURAL->value ? ($data['apellidos'] ?? null) : null,
+                    'razon_social' => $data['tipo_persona'] === TipoPersona::JURIDICA->value ? ($data['razon_social'] ?? null) : null,
                     'direccion' => $data['direccion'] ?? null,
                     'telefono' => $data['telefono'] ?? null,
                     'email' => $data['email'] ?? null,
