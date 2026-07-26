@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoPago;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ class CuentaPorPagar extends Model
     ];
 
     protected $casts = [
+        'estado' => EstadoPago::class,
         'total' => 'decimal:2',
         'monto_pagado' => 'decimal:2',
         'saldo_pendiente' => 'decimal:2',

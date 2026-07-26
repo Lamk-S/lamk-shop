@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\AmbienteSistema;
+use App\Enums\TipoComprobante;
+use App\Enums\UsoComprobante;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -22,11 +25,13 @@ class Comprobante extends Model
     ];
 
     protected $casts = [
+        'tipo_comprobante' => TipoComprobante::class,
+        'uso_comprobante' => UsoComprobante::class,
+        'ambiente' => AmbienteSistema::class,
         'correlativo_actual' => 'integer',
         'es_electronico' => 'boolean',
         'estado' => 'boolean',
     ];
-
     public function compras()
     {
         return $this->hasMany(Compra::class, 'comprobante_id');

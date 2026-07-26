@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TipoTransaccionKardex;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -27,6 +28,7 @@ class Kardex extends Model
     ];
 
     protected $casts = [
+        'tipo_transaccion' => TipoTransaccionKardex::class,
         'entrada' => 'integer',
         'salida' => 'integer',
         'saldo_anterior' => 'integer',

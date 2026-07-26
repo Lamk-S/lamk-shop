@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoSesion;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,7 @@ class SesionCaja extends Model
     ];
 
     protected $casts = [
+        'estado_sesion' => EstadoSesion::class,
         'fecha_hora_apertura' => 'datetime',
         'fecha_hora_cierre' => 'datetime',
         'saldo_inicial' => 'decimal:2',

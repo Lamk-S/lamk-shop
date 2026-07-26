@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\MetodoPago;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ class PagoCompra extends Model
     ];
 
     protected $casts = [
+        'metodo_pago' => MetodoPago::class,
         'monto' => 'decimal:2',
         'fecha_pago' => 'datetime',
         'estado' => 'boolean',
