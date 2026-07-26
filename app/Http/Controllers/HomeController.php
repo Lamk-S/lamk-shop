@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoDocumentoCompra;
+use App\Enums\EstadoDocumentoVenta;
+use App\Enums\EstadoSesion;
+use App\Enums\MetodoPago;
 use App\Models\Compra;
 use App\Models\Producto;
 use App\Models\SesionCaja;
@@ -36,24 +40,24 @@ class HomeController extends Controller
 
         $kpis = [
             'ventas_hoy' => Venta::whereDate('fecha_emision', today())
-                ->where('estado_documento', '!=', 'ANULADA')
+                ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
                 ->sum('total'),
 
             'compras_hoy' => Compra::whereDate('fecha_emision', today())
-                ->where('estado_documento', '!=', 'ANULADA')
+                ->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
                 ->sum('total'),
 
             'ventas_mes' => Venta::whereMonth('fecha_emision', now()->month)
                 ->whereYear('fecha_emision', now()->year)
-                ->where('estado_documento', '!=', 'ANULADA')
+                ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
                 ->sum('total'),
 
             'compras_mes' => Compra::whereMonth('fecha_emision', now()->month)
                 ->whereYear('fecha_emision', now()->year)
-                ->where('estado_documento', '!=', 'ANULADA')
+                ->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
                 ->sum('total'),
 
-            'sesiones_activas' => SesionCaja::where('estado_sesion', 'ABIERTA')->count(),
+            'sesiones_activas' => SesionCaja::where('estado_sesion', EstadoSesion::ABIERTA)->count(),
 
             'productos_stock_bajo' => Producto::where('estado', 1)
                 ->whereHas('variantes', function($q) {
@@ -67,16 +71,16 @@ class HomeController extends Controller
             $fecha = Carbon::today()->subDays($i);
             $ventasCompras[] = [
                 'fecha' => $fecha->format('d/m'),
-                'ventas' => Venta::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', 'ANULADA')->sum('total'),
-                'compras' => Compra::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', 'ANULADA')->sum('total'),
+                'ventas' => Venta::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)->sum('total'),
+                'compras' => Compra::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)->sum('total'),
             ];
         }
 
-        $metodosVentas = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'];
-        $metodosCompras = ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'CREDITO', 'MIXTO'];
+        $metodosVentas = array_keys(MetodoPago::opciones());
+        $metodosCompras = array_keys(MetodoPago::opciones());
 
         $ventasMetodo = Venta::select(['id', 'total', 'vuelto_entregado'])
-            ->where('estado_documento', '!=', 'ANULADA')
+            ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
             ->with(['pagos' => fn ($q) => $q->select('id', 'venta_id', 'metodo_pago', 'monto', 'estado')->where('estado', 1)])
             ->get();
 
@@ -110,18 +114,24 @@ class HomeController extends Controller
             $ventaTotal = round((float) ($venta->total ?? 0), 2);
             if ($ventaTotal <= 0) continue;
 
-            $pagos = $venta->pagos->filter(fn($pago) => in_array(strtoupper((string) $pago->metodo_pago), $metodos, true) && (float) $pago->monto > 0)->values();
+            // 1. Accedemos a ->value en lugar de usar (string) y strtoupper()
+            $pagos = $venta->pagos->filter(fn($pago) => in_array($pago->metodo_pago->value, $metodos, true) && (float) $pago->monto > 0)->values();
+
             if ($pagos->isEmpty()) continue;
 
-            $esEfectivoConVuelto = $pagos->count() === 1 && strtoupper((string) $pagos->first()->metodo_pago) === 'EFECTIVO' && (float) ($venta->vuelto_entregado ?? 0) > 0;
+            // 2. Comparamos directamente el objeto Enum con nuestro Enum, sin strings quemados
+            $esEfectivoConVuelto = $pagos->count() === 1 
+                && $pagos->first()->metodo_pago === MetodoPago::EFECTIVO 
+                && (float) ($venta->vuelto_entregado ?? 0) > 0;
 
             if ($esEfectivoConVuelto) {
-                $totales['EFECTIVO'] = round($totales['EFECTIVO'] + $ventaTotal, 2);
+                $totales[MetodoPago::EFECTIVO->value] = round($totales[MetodoPago::EFECTIVO->value] + $ventaTotal, 2);
                 continue;
             }
 
             foreach ($pagos as $pago) {
-                $metodo = strtoupper((string) $pago->metodo_pago);
+                // 3. Obtenemos el valor limpio del Enum
+                $metodo = $pago->metodo_pago->value;
                 if (array_key_exists($metodo, $totales)) {
                     $totales[$metodo] = round($totales[$metodo] + (float) $pago->monto, 2);
                 }
@@ -136,7 +146,7 @@ class HomeController extends Controller
         $raw = DB::table('pagos_compra')
             ->join('compras', 'pagos_compra.compra_id', '=', 'compras.id')
             ->where('pagos_compra.estado', 1)
-            ->where('compras.estado_documento', '!=', 'ANULADA')
+            ->where('compras.estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
             ->selectRaw('UPPER(pagos_compra.metodo_pago) as metodo_pago, SUM(pagos_compra.monto) as total')
             ->groupBy('metodo_pago')
             ->pluck('total', 'metodo_pago');

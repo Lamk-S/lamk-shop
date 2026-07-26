@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoDocumentoVenta;
+use App\Enums\MetodoPago;
 use App\Http\Requests\StoreAnulacionVentaRequest;
 use App\Http\Requests\StoreVentaRequest;
 use App\Models\Cliente;
@@ -63,21 +65,8 @@ class VentaController extends Controller implements HasMiddleware
             ->orderBy('serie')
             ->get();
 
-        $optionsEstadoDocumento = [
-            'REGISTRADA' => 'Registrada',
-            'EMITIDA' => 'Emitida',
-            'ANULADA' => 'Anulada',
-            'PENDIENTE' => 'Pendiente',
-        ];
-
-        $optionsMetodosPago = [
-            'EFECTIVO' => 'Efectivo',
-            'TARJETA' => 'Tarjeta (POS)',
-            'TRANSFERENCIA' => 'Transferencia Bancaria',
-            'YAPE' => 'Yape',
-            'PLIN' => 'Plin',
-            'OTRO' => 'Otro',
-        ];
+        $optionsEstadoDocumento = EstadoDocumentoVenta::opciones();
+        $optionsMetodosPago = MetodoPago::opciones();
 
         return view('venta.index', compact(
             'ventas', 'clientes', 'comprobantes', 
@@ -128,24 +117,13 @@ class VentaController extends Controller implements HasMiddleware
             ->orderBy('codigo')
             ->get();
 
-        $optionsMetodosPago = [
-            'EFECTIVO' => 'Efectivo',
-            'TARJETA' => 'Tarjeta',
-            'TRANSFERENCIA' => 'Transferencia',
-            'YAPE' => 'Yape',
-            'PLIN' => 'Plin',
-            'OTRO' => 'Otro',
-        ];
+        $optionsMetodosPago = MetodoPago::opciones();
 
         return view('venta.create', [
-            'variantes' => $variantes,
-            'productos' => $variantes,
-            'clientes' => $clientes,
-            'clienteGenerico' => $clienteGenerico,
-            'documentos' => $documentos,
-            'comprobantes' => $comprobantes,
-            'sesionAbierta' => $sesionAbierta,
-            'optionsMetodosPago' => $optionsMetodosPago,
+            'variantes' => $variantes, 'productos' => $variantes,
+            'clientes' => $clientes, 'clienteGenerico' => $clienteGenerico,
+            'documentos' => $documentos, 'comprobantes' => $comprobantes,
+            'sesionAbierta' => $sesionAbierta, 'optionsMetodosPago' => $optionsMetodosPago,
         ]);
     }
 

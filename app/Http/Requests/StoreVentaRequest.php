@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\MetodoPago;
+use App\Enums\TipoComprobante;
 use App\Models\Cliente;
 use App\Models\Comprobante;
 use App\Models\ProductoVariante;
@@ -63,7 +65,7 @@ class StoreVentaRequest extends FormRequest
 
             'metodo_pago' => [
                 'required',
-                Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO', 'MIXTO']),
+                Rule::enum(MetodoPago::class),
             ],
             'monto_recibido' => ['nullable', 'numeric', 'min:0'],
             'referencia_operacion' => ['nullable', 'string', 'max:100'],
@@ -71,7 +73,7 @@ class StoreVentaRequest extends FormRequest
             'pagos' => ['nullable', 'array'],
             'pagos.*.metodo_pago' => [
                 'required_with:pagos',
-                Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO']),
+                Rule::enum(MetodoPago::class),
             ],
             'pagos.*.monto' => ['required_with:pagos', 'numeric', 'min:0.01'],
             'pagos.*.referencia_operacion' => ['nullable', 'string', 'max:100'],
@@ -148,6 +150,7 @@ class StoreVentaRequest extends FormRequest
             $comprobanteId = $this->input('comprobante_id');
             $clienteId = $this->input('cliente_id');
             $metodoPago = strtoupper((string) $this->input('metodo_pago'));
+            
             $pagos = collect($this->input('pagos', []))->filter(function ($row) {
                 return !empty($row['metodo_pago']) && isset($row['monto']) && (float) $row['monto'] > 0;
             });
@@ -155,11 +158,11 @@ class StoreVentaRequest extends FormRequest
             if ($comprobanteId) {
                 $comprobante = Comprobante::find($comprobanteId);
 
-                if ($comprobante?->tipo_comprobante === 'FACTURA' && ! $clienteId) {
+                if ($comprobante?->tipo_comprobante === TipoComprobante::FACTURA->value && ! $clienteId) {
                     $validator->errors()->add('cliente_id', 'La factura requiere un cliente identificado.');
                 }
 
-                if ($comprobante?->tipo_comprobante === 'FACTURA' && $clienteId) {
+                if ($comprobante?->tipo_comprobante === TipoComprobante::FACTURA->value && $clienteId) {
                     $cliente = Cliente::with('persona.documento')->find($clienteId);
 
                     if (! $cliente || ! $cliente->persona?->documento || $cliente->persona->documento->codigo !== 'RUC') {
@@ -168,16 +171,12 @@ class StoreVentaRequest extends FormRequest
                 }
             }
 
-            if ($metodoPago === 'MIXTO' && $pagos->isEmpty()) {
+            if ($metodoPago === MetodoPago::MIXTO->value && $pagos->isEmpty()) {
                 $validator->errors()->add('pagos', 'Para pago mixto debes registrar al menos un pago.');
             }
 
-            if (in_array($metodoPago, ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'], true) && $pagos->isNotEmpty()) {
+            if ($metodoPago !== MetodoPago::MIXTO->value && $pagos->isNotEmpty()) {
                 $validator->errors()->add('pagos', 'Si eliges un método simple no debes enviar pagos múltiples.');
-            }
-
-            if ($metodoPago === 'MIXTO' && $this->filled('monto_recibido')) {
-                $validator->errors()->add('monto_recibido', 'En pago mixto no uses monto recibido; usa la sección de pagos múltiples.');
             }
         });
     }

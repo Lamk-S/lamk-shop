@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EstadoPago;
+use App\Enums\MetodoPago;
 use App\Models\CuentaPorPagar;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,10 +38,10 @@ class StorePagoCompraRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('cuentas_por_pagar', 'id')->where(function ($query) {
-                    $query->whereIn('estado', ['PENDIENTE', 'PARCIAL']);
+                    $query->whereIn('estado', [EstadoPago::PENDIENTE->value, EstadoPago::PARCIAL->value]);
                 }),
             ],
-            'metodo_pago' => ['required', Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])],
+            'metodo_pago' => ['required', Rule::enum(MetodoPago::class)],
             'monto' => ['required', 'numeric', 'min:0.01'],
             'referencia_operacion' => ['nullable', 'string', 'max:100'],
             'observacion' => ['nullable', 'string', 'max:255'],
@@ -55,7 +57,7 @@ class StorePagoCompraRequest extends FormRequest
                 return;
             }
 
-            if ($cuenta->estado === 'ANULADA') {
+            if ($cuenta->estado === EstadoPago::ANULADA->value) {
                 $validator->errors()->add('cuenta_por_pagar_id', 'No se puede pagar una cuenta anulada.');
                 return;
             }

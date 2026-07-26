@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EstadoSesion;
 use App\Models\SesionCaja;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -33,7 +34,7 @@ class StoreSesionCajaRequest extends FormRequest
             }
 
             $cajaYaAbierta = SesionCaja::where('caja_id', $cajaId)
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA->value)
                 ->exists();
 
             if ($cajaYaAbierta) {
@@ -41,7 +42,7 @@ class StoreSesionCajaRequest extends FormRequest
             }
 
             $usuarioYaAbierto = SesionCaja::where('user_id', $this->user()?->id)
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA->value)
                 ->exists();
 
             if ($usuarioYaAbierto) {

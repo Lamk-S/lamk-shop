@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoDocumentoVenta;
+use App\Enums\EstadoSesion;
+use App\Enums\MetodoPago;
 use App\Models\MovimientoCaja;
 use App\Models\PagoVenta;
 use App\Models\SesionCaja;
@@ -11,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controllers\HasMiddleware;
 use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class PagoVentaController extends Controller implements HasMiddleware
 {
@@ -50,7 +54,7 @@ class PagoVentaController extends Controller implements HasMiddleware
     public function store(Request $request, Venta $venta)
     {
         $data = $request->validate([
-            'metodo_pago' => ['required', 'in:EFECTIVO,TARJETA,TRANSFERENCIA,YAPE,PLIN,OTRO'],
+            'metodo_pago' => ['required', Rule::enum(MetodoPago::class)],
             'monto' => ['required', 'numeric', 'min:0.01'],
             'referencia_operacion' => ['nullable', 'string', 'max:100'],
         ]);
@@ -62,7 +66,7 @@ class PagoVentaController extends Controller implements HasMiddleware
                     ->lockForUpdate()
                     ->firstOrFail();
 
-                if ($venta->estado_documento === 'ANULADA') {
+                if ($venta->estado_documento === EstadoDocumentoVenta::ANULADA) {
                     throw new \Exception('No se puede registrar un pago sobre una venta anulada.');
                 }
 
@@ -73,8 +77,10 @@ class PagoVentaController extends Controller implements HasMiddleware
                     throw new \Exception('El monto del pago supera el saldo pendiente.');
                 }
 
+                $metodoPagoEnum = MetodoPago::from($data['metodo_pago']);
+
                 $pago = $venta->pagos()->create([
-                    'metodo_pago' => strtoupper($data['metodo_pago']),
+                    'metodo_pago' => $metodoPagoEnum, 
                     'monto' => $data['monto'],
                     'referencia_operacion' => $data['referencia_operacion'] ?? null,
                     'moneda' => $venta->moneda ?? 'PEN',
@@ -87,12 +93,12 @@ class PagoVentaController extends Controller implements HasMiddleware
                     'vuelto_entregado' => max(0, $nuevoPagado - (float) $venta->total),
                 ]);
 
-                $metodo = strtoupper($data['metodo_pago']);
+                $metodo = $metodoPagoEnum->value;
 
-                if ($metodo === 'EFECTIVO') {
+                if ($metodo === MetodoPago::EFECTIVO) {
                     $sesion = SesionCaja::whereKey($venta->sesion_caja_id)->lockForUpdate()->first();
 
-                    if (!$sesion || $sesion->estado_sesion !== 'ABIERTA') {
+                    if (!$sesion || $sesion->estado_sesion !== EstadoSesion::ABIERTA) {
                         throw new \Exception('No hay una sesión de caja abierta para registrar el pago en efectivo.');
                     }
 
