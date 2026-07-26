@@ -2,6 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoDocumentoVenta;
+use App\Enums\EstadoSesion;
+use App\Enums\MetodoPago;
+use App\Enums\OrigenMovimientoCaja;
+use App\Enums\OrigenMovimientoTesoreria;
+use App\Enums\TipoComprobante;
+use App\Enums\TipoCuenta;
+use App\Enums\TipoMovimiento;
+use App\Enums\TipoTransaccionKardex;
+use App\Enums\UsoComprobante;
 use App\Models\Cliente;
 use App\Models\Comprobante;
 use App\Models\EmpresaConfiguracion;
@@ -32,7 +42,7 @@ class VentaService
         return DB::transaction(function () use ($data, $user, $request) {
             $sesionAbierta = SesionCaja::query()
                 ->where('user_id', $user->id)
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA)
                 ->lockForUpdate()
                 ->firstOrFail();
 
@@ -59,7 +69,7 @@ class VentaService
             if (!empty($data['comprobante_id'])) {
                 $comprobante = Comprobante::query()
                     ->whereKey($data['comprobante_id'])
-                    ->where('uso_comprobante', 'VENTA')
+                    ->where('uso_comprobante', UsoComprobante::VENTA)
                     ->where('estado', 1)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -73,11 +83,11 @@ class VentaService
                 }
             }
 
-            if (($datosComprobante['tipo_comprobante'] ?? null) === 'FACTURA' && !$cliente) {
+            if (($datosComprobante['tipo_comprobante'] ?? null) === TipoComprobante::FACTURA->value && !$cliente) {
                 throw new RuntimeException('La factura requiere un cliente identificado.');
             }
 
-            if (($datosComprobante['tipo_comprobante'] ?? null) === 'FACTURA' && $cliente?->persona?->documento?->codigo !== 'RUC') {
+            if (($datosComprobante['tipo_comprobante'] ?? null) === TipoComprobante::FACTURA->value && $cliente?->persona?->documento?->codigo !== 'RUC') {
                 throw new RuntimeException('La factura solo puede emitirse a un cliente con RUC.');
             }
 
@@ -153,7 +163,7 @@ class VentaService
             $metodoPagoPrincipal = strtoupper((string) ($data['metodo_pago'] ?? ''));
 
             if ($paymentRows->isEmpty()) {
-                if ($metodoPagoPrincipal === 'MIXTO') {
+                if ($metodoPagoPrincipal === MetodoPago::MIXTO->value) {
                     throw new RuntimeException('Para una venta mixta debes enviar el detalle de pagos.');
                 }
 
@@ -173,7 +183,7 @@ class VentaService
             $pagosTotal = round((float) $paymentRows->sum('monto'), 2);
             $totalVenta = round($total, 2);
 
-            $soloUnPagoEfectivo = $paymentRows->count() === 1 && strtoupper($paymentRows->first()['metodo_pago']) === 'EFECTIVO';
+            $soloUnPagoEfectivo = $paymentRows->count() === 1 && strtoupper($paymentRows->first()['metodo_pago']) === MetodoPago::EFECTIVO->value;
 
             // Validación de montos
             if ($soloUnPagoEfectivo) {
@@ -217,7 +227,7 @@ class VentaService
                 'total' => round($total, 2),
                 'monto_recibido' => $pagosTotal,
                 'vuelto_entregado' => $vueltoEntregado,
-                'estado_documento' => 'EMITIDA',
+                'estado_documento' => EstadoDocumentoVenta::EMITIDA,
                 'observacion' => $data['observacion'] ?? null,
                 'motivo_anulacion' => null,
                 'anulado_at' => null,
@@ -237,7 +247,7 @@ class VentaService
                     'Venta #' . $venta->id,
                     $venta,
                     $user,
-                    'VENTA'
+                    TipoTransaccionKardex::VENTA
                 );
 
                 ProductoVenta::create([
@@ -271,11 +281,11 @@ class VentaService
                     'estado' => 1,
                 ]);
 
-                if ($metodoPago === 'EFECTIVO') {
+                if ($metodoPago === MetodoPago::EFECTIVO->value) {
                     MovimientoCaja::create([
                         'sesion_caja_id' => $sesionAbierta->id,
-                        'tipo' => 'INGRESO',
-                        'origen' => 'VENTA',
+                        'tipo' => TipoMovimiento::INGRESO,
+                        'origen' => OrigenMovimientoCaja::VENTA,
                         'descripcion' => 'Cobro de venta #' . $venta->id,
                         'monto' => $montoPago,
                         'referencia_type' => Venta::class,
@@ -285,8 +295,8 @@ class VentaService
                     if ($soloUnPagoEfectivo && $vueltoEntregado > 0) {
                         MovimientoCaja::create([
                             'sesion_caja_id' => $sesionAbierta->id,
-                            'tipo' => 'EGRESO',
-                            'origen' => 'VENTA',
+                            'tipo' => TipoMovimiento::EGRESO,
+                            'origen' => OrigenMovimientoCaja::VENTA,
                             'descripcion' => 'Vuelto de venta #' . $venta->id,
                             'monto' => $vueltoEntregado,
                             'referencia_type' => Venta::class,
@@ -338,7 +348,7 @@ class VentaService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($venta->estado_documento === 'ANULADA') {
+            if ($venta->estado_documento === EstadoDocumentoVenta::ANULADA) {
                 return $venta;
             }
 
@@ -354,18 +364,18 @@ class VentaService
             }
 
             $sesion = $venta->sesionCaja;
-            $sesionActiva = $sesion && $sesion->estado_sesion === 'ABIERTA';
+            $sesionActiva = $sesion && $sesion->estado_sesion === EstadoSesion::ABIERTA;
 
             foreach ($venta->pagos as $pago) {
                 $metodoPago = strtoupper($pago->metodo_pago);
                 $montoPago = (float) $pago->monto;
 
-                if ($metodoPago === 'EFECTIVO') {
+                if ($metodoPago === MetodoPago::EFECTIVO->value) {
                     if ($sesionActiva) {
                         MovimientoCaja::create([
                             'sesion_caja_id' => $sesion->id,
-                            'tipo' => 'EGRESO',
-                            'origen' => 'ANULACION',
+                            'tipo' => TipoMovimiento::EGRESO,
+                            'origen' => OrigenMovimientoCaja::ANULACION,
                             'descripcion' => 'Anulación de venta #' . $venta->id,
                             'monto' => $montoPago,
                             'referencia_type' => Venta::class,
@@ -373,9 +383,9 @@ class VentaService
                         ]);
                     } else {
                         $this->tesoreriaService->registrarAnulacion(
-                            'EFECTIVO',
+                            TipoCuenta::EFECTIVO->value,
                             $montoPago,
-                            'ANULACION',
+                            OrigenMovimientoTesoreria::ANULACION->value,
                             'Anulación de venta #' . $venta->id,
                             $user->id,
                             $sesion?->id,
@@ -386,9 +396,11 @@ class VentaService
                     }
                 } else {
                     $this->tesoreriaService->registrarAnulacion(
-                        'BANCO',
+                        TipoCuenta::BANCO->value,
                         $montoPago,
-                        in_array($metodoPago, ['TARJETA'], true) ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA',
+                        in_array($metodoPago, [MetodoPago::TARJETA->value], true) 
+                            ? OrigenMovimientoTesoreria::VENTA_TARJETA->value 
+                            : OrigenMovimientoTesoreria::VENTA_TRANSFERENCIA->value,
                         'Anulación de venta #' . $venta->id,
                         $user->id,
                         $sesion?->id,
@@ -404,7 +416,7 @@ class VentaService
             }
 
             $venta->update([
-                'estado_documento' => 'ANULADA',
+                'estado_documento' => EstadoDocumentoVenta::ANULADA,
                 'motivo_anulacion' => $motivo,
                 'anulado_at' => now(),
                 'sunat_estado' => 'ANULADO',

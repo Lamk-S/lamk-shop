@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\TipoComprobante;
+use App\Enums\UsoComprobante;
 use App\Models\Comprobante;
 use Illuminate\Support\Facades\DB;
 
@@ -12,14 +14,14 @@ class ComprobanteService
         if ($comprobanteId) {
             return Comprobante::query()
                 ->whereKey($comprobanteId)
-                ->where('uso_comprobante', 'VENTA')
+                ->where('uso_comprobante', UsoComprobante::VENTA)
                 ->where('estado', 1)
                 ->first();
         }
 
         return Comprobante::query()
-            ->where('uso_comprobante', 'VENTA')
-            ->where('tipo_comprobante', 'TICKET')
+            ->where('uso_comprobante', UsoComprobante::VENTA)
+            ->where('tipo_comprobante', TipoComprobante::TICKET)
             ->where('estado', 1)
             ->orderBy('serie')
             ->first();
@@ -30,7 +32,7 @@ class ComprobanteService
         if ($comprobanteId) {
             return Comprobante::query()
                 ->whereKey($comprobanteId)
-                ->where('uso_comprobante', 'COMPRA')
+                ->where('uso_comprobante', UsoComprobante::COMPRA)
                 ->where('estado', 1)
                 ->first();
         }

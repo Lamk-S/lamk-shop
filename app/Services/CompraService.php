@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoDocumentoCompra;
+use App\Enums\EstadoPago;
+use App\Enums\MetodoPago;
+use App\Enums\UsoComprobante;
 use App\Models\Compra;
 use App\Models\CompraProducto;
 use App\Models\Comprobante;
@@ -47,7 +51,7 @@ class CompraService
             if (!empty($data['comprobante_id'])) {
                 $comprobante = Comprobante::query()
                     ->whereKey($data['comprobante_id'])
-                    ->where('uso_comprobante', 'COMPRA')
+                    ->where('uso_comprobante', UsoComprobante::COMPRA)
                     ->where('estado', 1)
                     ->lockForUpdate()
                     ->firstOrFail();
@@ -131,11 +135,11 @@ class CompraService
 
                 'monto_pagado' => 0,
                 'saldo_pendiente' => round($total, 2),
-                'estado_pago' => 'PENDIENTE',
+                'estado_pago' => EstadoPago::PENDIENTE,
                 'fecha_vencimiento' => $data['fecha_vencimiento'] ?? null,
                 'fecha_pago_total' => null,
 
-                'estado_documento' => 'RECEPCIONADA',
+                'estado_documento' => EstadoDocumentoCompra::RECEPCIONADA,
                 'observacion' => $data['observacion'] ?? null,
                 'motivo_anulacion' => null,
                 'anulado_at' => null,
@@ -181,7 +185,7 @@ class CompraService
                 'saldo_pendiente' => $cuenta->saldo_pendiente,
                 'estado_pago' => $cuenta->estado,
                 'fecha_vencimiento' => $cuenta->fecha_vencimiento,
-                'fecha_pago_total' => $cuenta->estado === 'PAGADA' ? now() : null,
+                'fecha_pago_total' => $cuenta->estado === EstadoPago::PAGADA ? now() : null,
             ]);
 
             $this->auditoriaService->registrar(
@@ -217,7 +221,7 @@ class CompraService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($compra->estado_documento === 'ANULADA') {
+            if ($compra->estado_documento === EstadoDocumentoCompra::ANULADA) {
                 return $compra;
             }
 
@@ -235,7 +239,7 @@ class CompraService
             $this->cuentasPorPagarService->anularPorCompra($compra, $user);
 
             $compra->update([
-                'estado_documento' => 'ANULADA',
+                'estado_documento' => EstadoDocumentoCompra::ANULADA,
                 'motivo_anulacion' => $motivo,
                 'anulado_at' => now(),
             ]);
@@ -278,13 +282,13 @@ class CompraService
             return $pagos;
         }
 
-        $metodoPago = strtoupper((string) ($data['metodo_pago'] ?? 'CREDITO'));
+        $metodoPago = strtoupper((string) ($data['metodo_pago'] ?? MetodoPago::CREDITO->value));
 
-        if ($metodoPago === 'CREDITO') {
+        if ($metodoPago === MetodoPago::CREDITO->value) {
             return [];
         }
 
-        if ($metodoPago === 'MIXTO') {
+        if ($metodoPago === MetodoPago::MIXTO->value) {
             throw new RuntimeException('Para una compra mixta debes enviar el detalle de pagos.');
         }
 

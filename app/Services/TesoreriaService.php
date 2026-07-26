@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\MetodoPago;
+use App\Enums\OrigenMovimientoTesoreria;
+use App\Enums\TipoCuenta;
+use App\Enums\TipoMovimiento;
 use App\Models\Compra;
 use App\Models\MovimientoTesoreria;
 use App\Models\SesionCaja;
@@ -57,10 +61,9 @@ class TesoreriaService
                 ->firstOrFail();
 
             $monto = (float) $data['monto'];
-            $tipo = strtoupper($data['tipo']);
-
+            
             $saldoAnterior = (float) $tesoreria->saldo_actual;
-            $saldoPosterior = $tipo === 'INGRESO'
+            $saldoPosterior = $data['tipo'] === TipoMovimiento::INGRESO
                 ? round($saldoAnterior + $monto, 2)
                 : round($saldoAnterior - $monto, 2);
 
@@ -78,9 +81,9 @@ class TesoreriaService
                 'sesion_caja_id' => $data['sesion_caja_id'] ?? null,
                 'venta_id' => $data['venta_id'] ?? null,
                 'compra_id' => $data['compra_id'] ?? null,
-                'tipo' => $tipo,
-                'medio' => strtoupper($data['medio']),
-                'origen' => strtoupper($data['origen']),
+                'tipo' => $data['tipo'],
+                'medio' => $data['medio'],
+                'origen' => $data['origen'],
                 'descripcion' => $data['descripcion'],
                 'monto' => $monto,
                 'saldo_anterior' => $saldoAnterior,
@@ -93,45 +96,45 @@ class TesoreriaService
 
     public function registrarIngresoEfectivo(array $data): MovimientoTesoreria
     {
-        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-EFECTIVO', 'Caja General', 'EFECTIVO');
+        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-EFECTIVO', 'Caja General', TipoCuenta::EFECTIVO->value);
 
         return $this->registrarMovimiento(array_merge($data, [
             'tesoreria_id' => $tesoreria->id,
-            'tipo' => 'INGRESO',
-            'medio' => 'EFECTIVO',
+            'tipo' => TipoMovimiento::INGRESO,
+            'medio' => TipoCuenta::EFECTIVO->value,
         ]));
     }
 
     public function registrarEgresoEfectivo(array $data): MovimientoTesoreria
     {
-        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-EFECTIVO', 'Caja General', 'EFECTIVO');
+        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-EFECTIVO', 'Caja General', TipoCuenta::EFECTIVO->value);
 
         return $this->registrarMovimiento(array_merge($data, [
             'tesoreria_id' => $tesoreria->id,
-            'tipo' => 'EGRESO',
-            'medio' => 'EFECTIVO',
+            'tipo' => TipoMovimiento::EGRESO,
+            'medio' => TipoCuenta::EFECTIVO->value,
         ]));
     }
 
     public function registrarIngresoBanco(array $data): MovimientoTesoreria
     {
-        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-BANCO', 'Banco Principal', 'BANCO');
+        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-BANCO', 'Banco Principal', TipoCuenta::BANCO->value);
 
         return $this->registrarMovimiento(array_merge($data, [
             'tesoreria_id' => $tesoreria->id,
-            'tipo' => 'INGRESO',
-            'medio' => 'BANCO',
+            'tipo' => TipoMovimiento::INGRESO,
+            'medio' => TipoCuenta::BANCO->value,
         ]));
     }
 
     public function registrarEgresoBanco(array $data): MovimientoTesoreria
     {
-        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-BANCO', 'Banco Principal', 'BANCO');
+        $tesoreria = $this->obtenerBloqueadaPorCodigo('TES-BANCO', 'Banco Principal', TipoCuenta::BANCO->value);
 
         return $this->registrarMovimiento(array_merge($data, [
             'tesoreria_id' => $tesoreria->id,
-            'tipo' => 'EGRESO',
-            'medio' => 'BANCO',
+            'tipo' => TipoMovimiento::EGRESO,
+            'medio' => TipoCuenta::BANCO->value,
         ]));
     }
 
@@ -140,7 +143,7 @@ class TesoreriaService
         return $this->registrarIngresoEfectivo([
             'user_id' => $user?->id,
             'sesion_caja_id' => $sesion->id,
-            'origen' => 'CIERRE_CAJA',
+            'origen' => OrigenMovimientoTesoreria::CIERRE_CAJA,
             'descripcion' => 'Traslado de efectivo desde cierre de caja #' . $sesion->id,
             'monto' => $monto,
             'referencia' => 'CIERRE_CAJA',
@@ -150,9 +153,10 @@ class TesoreriaService
     public function origenDesdeMetodoPago(string $metodoPago): array
     {
         return match (strtoupper($metodoPago)) {
-            'EFECTIVO' => ['codigo' => 'TES-EFECTIVO', 'nombre' => 'Caja General', 'tipo' => 'EFECTIVO'],
-            'TARJETA', 'YAPE', 'PLIN', 'TRANSFERENCIA' => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => 'BANCO'],
-            default => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => 'BANCO'],
+            MetodoPago::EFECTIVO->value => ['codigo' => 'TES-EFECTIVO', 'nombre' => 'Caja General', 'tipo' => TipoCuenta::EFECTIVO->value],
+            MetodoPago::TARJETA->value, MetodoPago::YAPE->value, MetodoPago::PLIN->value, MetodoPago::TRANSFERENCIA->value 
+                => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => TipoCuenta::BANCO->value],
+            default => ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => TipoCuenta::BANCO->value],
         };
     }
 
@@ -165,9 +169,9 @@ class TesoreriaService
             'tesoreria_id' => $tesoreria->id,
             'user_id' => $user?->id,
             'compra_id' => $compra->id,
-            'tipo' => 'EGRESO',
+            'tipo' => TipoMovimiento::EGRESO,
             'medio' => $origen['tipo'],
-            'origen' => 'COMPRA_PRODUCTO',
+            'origen' => OrigenMovimientoTesoreria::COMPRA_PRODUCTO,
             'descripcion' => 'Pago de compra #' . $compra->id,
             'monto' => $monto,
             'numero_operacion' => $referencia,
@@ -185,16 +189,18 @@ class TesoreriaService
         $origen = $this->origenDesdeMetodoPago($metodoPago);
         $tesoreria = $this->obtenerBloqueadaPorCodigo($origen['codigo'], $origen['nombre'], $origen['tipo']);
 
+        $origenMovimiento = $origen['tipo'] === TipoCuenta::EFECTIVO->value
+            ? OrigenMovimientoTesoreria::VENTA_EFECTIVO
+            : ($metodoPago === MetodoPago::TARJETA->value ? OrigenMovimientoTesoreria::VENTA_TARJETA : OrigenMovimientoTesoreria::VENTA_TRANSFERENCIA);
+
         return $this->registrarMovimiento([
             'tesoreria_id' => $tesoreria->id,
             'user_id' => $user?->id,
             'sesion_caja_id' => $sesionCaja?->id,
             'venta_id' => $venta->id,
-            'tipo' => 'INGRESO',
+            'tipo' => TipoMovimiento::INGRESO,
             'medio' => $origen['tipo'],
-            'origen' => $origen['tipo'] === 'EFECTIVO'
-                ? 'VENTA_EFECTIVO'
-                : ($metodoPago === 'TARJETA' ? 'VENTA_TARJETA' : 'VENTA_TRANSFERENCIA'),
+            'origen' => $origenMovimiento,
             'descripcion' => 'Cobro de venta #' . $venta->id,
             'monto' => $monto,
             'numero_operacion' => $referencia,
@@ -212,9 +218,9 @@ class TesoreriaService
         ?int $compraId = null,
         ?string $numeroOperacion = null
     ): MovimientoTesoreria {
-        $origenInfo = strtoupper($medio) === 'EFECTIVO'
-            ? ['codigo' => 'TES-EFECTIVO', 'nombre' => 'Caja General', 'tipo' => 'EFECTIVO']
-            : ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => 'BANCO'];
+        $origenInfo = strtoupper($medio) === TipoCuenta::EFECTIVO->value
+            ? ['codigo' => 'TES-EFECTIVO', 'nombre' => 'Caja General', 'tipo' => TipoCuenta::EFECTIVO->value]
+            : ['codigo' => 'TES-BANCO', 'nombre' => 'Banco Principal', 'tipo' => TipoCuenta::BANCO->value];
 
         $tesoreria = $this->obtenerBloqueadaPorCodigo($origenInfo['codigo'], $origenInfo['nombre'], $origenInfo['tipo']);
 
@@ -224,9 +230,9 @@ class TesoreriaService
             'sesion_caja_id' => $sesionCajaId,
             'venta_id' => $ventaId,
             'compra_id' => $compraId,
-            'tipo' => 'EGRESO',
+            'tipo' => TipoMovimiento::EGRESO,
             'medio' => $origenInfo['tipo'],
-            'origen' => $origen,
+            'origen' => OrigenMovimientoTesoreria::ANULACION,
             'descripcion' => $descripcion,
             'monto' => $monto,
             'numero_operacion' => $numeroOperacion,
