@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TipoPersona;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -24,6 +25,7 @@ class Persona extends Model
     ];
 
     protected $casts = [
+        'tipo_persona' => TipoPersona::class,
         'estado' => 'boolean',
     ];
 

@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoDocumentoCompra;
+use App\Enums\EstadoPago;
+use App\Enums\MetodoPago;
+use App\Enums\TipoCuenta;
 use App\Models\Compra;
 use App\Models\CuentaPorPagar;
 use App\Models\PagoCompra;
@@ -28,7 +32,7 @@ class CuentasPorPagarService
             ->lockForUpdate()
             ->firstOrFail();
 
-        if ($compra->estado_documento === 'ANULADA') {
+        if ($compra->estado_documento === EstadoDocumentoCompra::ANULADA) {
             throw new RuntimeException('No se puede crear cuenta por pagar sobre una compra anulada.');
         }
 
@@ -45,9 +49,9 @@ class CuentasPorPagarService
             ->values();
 
         if ($pagos->isEmpty()) {
-            if (strtoupper((string) $compra->metodo_pago) === 'CREDITO') {
+            if (strtoupper((string) $compra->metodo_pago) === MetodoPago::CREDITO->value) {
                 $pagos = collect();
-            } elseif (strtoupper((string) $compra->metodo_pago) === 'MIXTO') {
+            } elseif (strtoupper((string) $compra->metodo_pago) === MetodoPago::MIXTO->value) {
                 throw new RuntimeException('Para una compra mixta debes enviar el detalle de pagos.');
             } else {
                 $pagos = collect([
@@ -64,11 +68,11 @@ class CuentasPorPagarService
         $montoPagado = round((float) $pagos->sum('monto'), 2);
         $saldoPendiente = round(max(0, (float) $compra->total - $montoPagado), 2);
 
-        $estado = 'PENDIENTE';
+        $estado = EstadoPago::PENDIENTE;
         if ($montoPagado > 0 && $saldoPendiente > 0) {
-            $estado = 'PARCIAL';
+            $estado = EstadoPago::PARCIAL;
         } elseif ($saldoPendiente <= 0) {
-            $estado = 'PAGADA';
+            $estado = EstadoPago::PAGADA;
         }
 
         $cuenta = CuentaPorPagar::create([
@@ -103,7 +107,7 @@ class CuentasPorPagarService
             ->lockForUpdate()
             ->firstOrFail();
 
-        if ($cuenta->estado === 'ANULADA') {
+        if ($cuenta->estado === EstadoPago::ANULADA) {
             throw new RuntimeException('No se puede registrar pago sobre una cuenta anulada.');
         }
 
@@ -153,7 +157,9 @@ class CuentasPorPagarService
                     continue;
                 }
 
-                $medio = strtoupper($pago->metodo_pago) === 'EFECTIVO' ? 'EFECTIVO' : 'BANCO';
+                $medio = strtoupper($pago->metodo_pago) === MetodoPago::EFECTIVO->value 
+                    ? TipoCuenta::EFECTIVO->value 
+                    : TipoCuenta::BANCO->value;
 
                 $this->tesoreriaService->registrarAnulacion(
                     $medio,
@@ -173,7 +179,7 @@ class CuentasPorPagarService
             }
 
             $cuenta->update([
-                'estado' => 'ANULADA',
+                'estado' => EstadoPago::ANULADA,
                 'monto_pagado' => 0,
                 'saldo_pendiente' => 0,
                 'fecha_cancelacion' => now(),
@@ -212,8 +218,6 @@ class CuentasPorPagarService
             'observacion' => $pago['observacion'] ?? null,
         ]);
 
-        $medio = $metodoPago === 'EFECTIVO' ? 'EFECTIVO' : 'BANCO';
-
         $this->tesoreriaService->registrarCompraPago(
             $cuenta->compra,
             $metodoPago,
@@ -240,11 +244,11 @@ class CuentasPorPagarService
 
         $saldoPendiente = round(max(0, (float) $cuenta->total - $montoPagado), 2);
 
-        $estado = 'PENDIENTE';
+        $estado = EstadoPago::PENDIENTE;
         if ($montoPagado > 0 && $saldoPendiente > 0) {
-            $estado = 'PARCIAL';
+            $estado = EstadoPago::PARCIAL;
         } elseif ($saldoPendiente <= 0) {
-            $estado = 'PAGADA';
+            $estado = EstadoPago::PAGADA;
         }
 
         $cuenta->update([

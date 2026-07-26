@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\TipoTransaccionKardex;
 use App\Models\Kardex;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
@@ -90,7 +91,7 @@ class InventarioService
 
             return Kardex::create([
                 'producto_variante_id' => $locked->id,
-                'tipo_transaccion' => 'COMPRA',
+                'tipo_transaccion' => TipoTransaccionKardex::COMPRA,
                 'origen_type' => get_class($origen),
                 'origen_id' => $origen->id,
                 'descripcion' => $descripcion,
@@ -112,8 +113,10 @@ class InventarioService
         string $descripcion,
         Model $origen,
         ?User $user = null,
-        string $tipoTransaccion = 'VENTA'
+        ?TipoTransaccionKardex $tipoTransaccion = null
     ): Kardex {
+        $tipoTransaccion = $tipoTransaccion ?? TipoTransaccionKardex::VENTA;
+
         return DB::transaction(function () use ($variante, $cantidad, $costoUnitario, $descripcion, $origen, $user, $tipoTransaccion) {
             $locked = ProductoVariante::query()
                 ->with('producto')
@@ -187,7 +190,7 @@ class InventarioService
 
             return Kardex::create([
                 'producto_variante_id' => $locked->id,
-                'tipo_transaccion' => 'ANULACION',
+                'tipo_transaccion' => TipoTransaccionKardex::ANULACION,
                 'origen_type' => get_class($origen),
                 'origen_id' => $origen->id,
                 'descripcion' => $descripcion,
@@ -228,7 +231,7 @@ class InventarioService
 
             return Kardex::create([
                 'producto_variante_id' => $locked->id,
-                'tipo_transaccion' => 'ANULACION',
+                'tipo_transaccion' => TipoTransaccionKardex::ANULACION,
                 'origen_type' => get_class($origen),
                 'origen_id' => $origen->id,
                 'descripcion' => $descripcion,
@@ -273,7 +276,7 @@ class InventarioService
 
             return Kardex::create([
                 'producto_variante_id' => $locked->id,
-                'tipo_transaccion' => 'AJUSTE',
+                'tipo_transaccion' => TipoTransaccionKardex::AJUSTE,
                 'origen_type' => null,
                 'origen_id' => null,
                 'descripcion' => $descripcion,

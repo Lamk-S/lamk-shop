@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoDocumentoCompra;
+use App\Enums\EstadoPago;
+use App\Enums\MetodoPago;
+use App\Enums\TipoComprobante;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -45,6 +49,10 @@ class Compra extends Model
     ];
 
     protected $casts = [
+        'tipo_comprobante' => TipoComprobante::class,
+        'metodo_pago' => MetodoPago::class,
+        'estado_pago' => EstadoPago::class,
+        'estado_documento' => EstadoDocumentoCompra::class,
         'fecha_emision' => 'datetime',
         'fecha_vencimiento' => 'date',
         'fecha_pago_total' => 'datetime',

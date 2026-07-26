@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\EstadoSesion;
+use App\Enums\OrigenMovimientoCaja;
+use App\Enums\OrigenMovimientoTesoreria;
+use App\Enums\TipoMovimiento;
 use App\Models\Caja;
 use App\Models\MovimientoCaja;
 use App\Models\SesionCaja;
@@ -20,7 +24,7 @@ class CajaService
     {
         return SesionCaja::query()
             ->where('user_id', $userId)
-            ->where('estado_sesion', 'ABIERTA')
+            ->where('estado_sesion', EstadoSesion::ABIERTA)
             ->first();
     }
 
@@ -28,22 +32,27 @@ class CajaService
     {
         return SesionCaja::query()
             ->where('caja_id', $cajaId)
-            ->where('estado_sesion', 'ABIERTA')
+            ->where('estado_sesion', EstadoSesion::ABIERTA)
             ->first();
     }
 
-    public function abrirCaja(User $user, int $cajaId, ?float $saldoInicial = null, ?string $observacion = null): SesionCaja
-    {
+    public function abrirCaja(
+        User $user,
+        int $cajaId,
+        ?float $saldoInicial = null,
+        ?string $observacion = null
+    ): SesionCaja {
         return DB::transaction(function () use ($user, $cajaId, $saldoInicial, $observacion) {
+
             $caja = Caja::query()
                 ->whereKey($cajaId)
-                ->where('estado', 1)
+                ->where('estado', true)
                 ->lockForUpdate()
                 ->firstOrFail();
 
             $cajaAbierta = SesionCaja::query()
                 ->where('caja_id', $caja->id)
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA)
                 ->lockForUpdate()
                 ->exists();
 
@@ -53,7 +62,7 @@ class CajaService
 
             $usuarioAbierto = SesionCaja::query()
                 ->where('user_id', $user->id)
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA)
                 ->lockForUpdate()
                 ->exists();
 
@@ -68,60 +77,65 @@ class CajaService
                 'user_id' => $user->id,
                 'fecha_hora_apertura' => now(),
                 'saldo_inicial' => $saldoInicialReal,
-                'saldo_final_declarado' => null,
                 'saldo_final_esperado' => $saldoInicialReal,
-                'diferencia' => null,
-                'estado_sesion' => 'ABIERTA',
+                'estado_sesion' => EstadoSesion::ABIERTA,
                 'observacion_apertura' => $observacion,
-                'observacion_cierre' => null,
             ]);
 
             MovimientoCaja::create([
                 'sesion_caja_id' => $sesion->id,
-                'tipo' => 'INGRESO',
-                'origen' => 'APERTURA',
+                'tipo' => TipoMovimiento::INGRESO,
+                'origen' => OrigenMovimientoCaja::APERTURA,
                 'descripcion' => 'Apertura de caja ' . $caja->nombre,
                 'monto' => $saldoInicialReal,
-                'referencia_type' => null,
-                'referencia_id' => null,
             ]);
 
             return $sesion;
         });
     }
 
-    public function cerrarCaja(SesionCaja $sesion, float $saldoDeclarado, ?string $observacion = null, ?User $userCierre = null): SesionCaja
-    {
-        return DB::transaction(function () use ($sesion, $saldoDeclarado, $observacion, $userCierre) {
+    public function cerrarCaja(SesionCaja $sesion, 
+        float $saldoDeclarado,
+        ?string $observacion = null,
+        ?User $userCierre = null
+    ): SesionCaja {
+        return DB::transaction(function () use (
+            $sesion,
+            $saldoDeclarado,
+            $observacion,
+            $userCierre
+        ) {
+
             $sesion = SesionCaja::query()
                 ->whereKey($sesion->id)
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            if ($sesion->estado_sesion !== 'ABIERTA') {
+            if ($sesion->estado_sesion !== EstadoSesion::ABIERTA) {
                 throw new RuntimeException('La sesión ya está cerrada o anulada.');
             }
 
-            $ingresosOperativos = (float) $sesion->movimientosCaja()
-                ->where('tipo', 'INGRESO')
-                ->where('origen', '!=', 'APERTURA')
-                ->sum('monto');
+            $sesion->loadMissing('caja');
 
-            $egresosOperativos = (float) $sesion->movimientosCaja()
-                ->where('tipo', 'EGRESO')
-                ->sum('monto');
+            $saldoEsperado = $this->calcularSaldoEsperado($sesion);
 
-            $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresosOperativos - $egresosOperativos, 2);
-            $diferencia = round($saldoDeclarado - $saldoEsperado, 2);
+            $diferencia = round(
+                $saldoDeclarado - $saldoEsperado,
+                2
+            );
 
-            $fondoFijo = (float) ($sesion->caja?->fondo_fijo ?? 0);
-            $montoTransferir = max(0, round($saldoDeclarado - $fondoFijo, 2));
+            $fondoFijo = (float) $sesion->caja->fondo_fijo;
+
+            $montoTransferir = max(
+                0,
+                round($saldoDeclarado - $fondoFijo, 2)
+            );
 
             if ($montoTransferir > 0) {
                 $this->tesoreriaService->registrarIngresoEfectivo([
                     'user_id' => $userCierre?->id,
                     'sesion_caja_id' => $sesion->id,
-                    'origen' => 'CIERRE_CAJA',
+                    'origen' => OrigenMovimientoTesoreria::CIERRE_CAJA,
                     'descripcion' => 'Traslado de efectivo desde cierre de sesión de caja #' . $sesion->id,
                     'monto' => $montoTransferir,
                     'referencia' => null,
@@ -133,7 +147,7 @@ class CajaService
                 'saldo_final_esperado' => $saldoEsperado,
                 'saldo_final_declarado' => $saldoDeclarado,
                 'diferencia' => $diferencia,
-                'estado_sesion' => 'CERRADA',
+                'estado_sesion' => EstadoSesion::CERRADA,
                 'user_cierre_id' => $userCierre?->id,
                 'observacion_cierre' => $observacion,
             ]);
@@ -142,12 +156,11 @@ class CajaService
         });
     }
 
-    public function registrarMovimiento(SesionCaja $sesion, array $data): MovimientoCaja
-    {
+    public function registrarMovimiento(SesionCaja $sesion, array $data ): MovimientoCaja {
         return MovimientoCaja::create([
             'sesion_caja_id' => $sesion->id,
-            'tipo' => strtoupper($data['tipo']),
-            'origen' => strtoupper($data['origen']),
+            'tipo' => $data['tipo'],
+            'origen' => $data['origen'],
             'descripcion' => $data['descripcion'],
             'monto' => $data['monto'],
             'referencia_type' => $data['referencia_type'] ?? null,
@@ -157,21 +170,31 @@ class CajaService
 
     public function recalcularSaldoEsperado(SesionCaja $sesion): float
     {
-        $ingresosOperativos = (float) $sesion->movimientosCaja()
-            ->where('tipo', 'INGRESO')
-            ->where('origen', '!=', 'APERTURA')
-            ->sum('monto');
-
-        $egresosOperativos = (float) $sesion->movimientosCaja()
-            ->where('tipo', 'EGRESO')
-            ->sum('monto');
-
-        $saldoEsperado = round((float) $sesion->saldo_inicial + $ingresosOperativos - $egresosOperativos, 2);
+        $saldoEsperado = $this->calcularSaldoEsperado($sesion);
 
         $sesion->update([
             'saldo_final_esperado' => $saldoEsperado,
         ]);
 
         return $saldoEsperado;
+    }
+
+    private function calcularSaldoEsperado(SesionCaja $sesion): float
+    {
+        $ingresosOperativos = (float) $sesion->movimientosCaja()
+            ->where('tipo', TipoMovimiento::INGRESO)
+            ->where('origen', '!=', OrigenMovimientoCaja::APERTURA)
+            ->sum('monto');
+
+        $egresosOperativos = (float) $sesion->movimientosCaja()
+            ->where('tipo', TipoMovimiento::EGRESO)
+            ->sum('monto');
+
+        return round(
+            (float) $sesion->saldo_inicial
+            + $ingresosOperativos
+            - $egresosOperativos,
+            2
+        );
     }
 }

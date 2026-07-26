@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\OrigenMovimientoTesoreria;
+use App\Enums\TipoCuenta;
+use App\Enums\TipoMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -29,6 +32,9 @@ class MovimientoTesoreria extends Model
     ];
 
     protected $casts = [
+        'tipo' => TipoMovimiento::class,
+        'medio' => TipoCuenta::class,
+        'origen' => OrigenMovimientoTesoreria::class,
         'monto' => 'decimal:2',
         'saldo_anterior' => 'decimal:2',
         'saldo_posterior' => 'decimal:2',

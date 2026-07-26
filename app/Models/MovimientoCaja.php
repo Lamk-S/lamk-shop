@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\OrigenMovimientoCaja;
+use App\Enums\TipoMovimiento;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,6 +24,8 @@ class MovimientoCaja extends Model
     ];
 
     protected $casts = [
+        'tipo' => TipoMovimiento::class,
+        'origen' => OrigenMovimientoCaja::class,
         'monto' => 'decimal:2',
     ];
 

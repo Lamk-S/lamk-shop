@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\TipoCuenta;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ class Tesoreria extends Model
     ];
 
     protected $casts = [
+        'tipo_cuenta' => TipoCuenta::class,
         'saldo_actual' => 'decimal:2',
         'estado' => 'boolean',
     ];

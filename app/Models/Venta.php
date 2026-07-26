@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\EstadoDocumentoVenta;
+use App\Enums\MetodoPago;
+use App\Enums\TipoComprobante;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +50,9 @@ class Venta extends Model
     ];
 
     protected $casts = [
+        'tipo_comprobante' => TipoComprobante::class,
+        'metodo_pago' => MetodoPago::class,
+        'estado_documento' => EstadoDocumentoVenta::class,
         'fecha_emision' => 'datetime',
         'subtotal' => 'decimal:2',
         'descuento_total' => 'decimal:2',
