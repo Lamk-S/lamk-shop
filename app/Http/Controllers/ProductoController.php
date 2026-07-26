@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TipoProducto;
+use App\Enums\TipoTalla;
 use App\Http\Requests\StoreProductoRequest;
 use App\Http\Requests\UpdateProductoRequest;
 use App\Models\Categoria;
@@ -130,25 +131,13 @@ class ProductoController extends Controller implements HasMiddleware
 
         $categorias = Categoria::where('estado', 1)->orderBy('nombre')->get();
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
-        $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();
-        $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', 'ROPA')->orderBy('orden')->get();
+        $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', TipoTalla::CALZADO)->orderBy('orden')->get();
+        $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', TipoTalla::ROPA)->orderBy('orden')->get();
         $tallaUnica = Talla::where('estado', 1)->where('codigo', 'UNICA')->first();
 
-        $optionsTipoProducto = [
-            'ZAPATILLA' => 'Zapatilla',
-            'ROPA' => 'Ropa',
-            'ACCESORIO' => 'Accesorio',
-        ];
+        $optionsTipoProducto = TipoProducto::opciones();
 
-        return view('producto.edit', compact(
-            'producto',
-            'categorias',
-            'marcas',
-            'tallasCalzado',
-            'tallasRopa',
-            'tallaUnica',
-            'optionsTipoProducto'
-        ));
+        return view('producto.edit', compact( 'producto', 'categorias', 'marcas', 'tallasCalzado', 'tallasRopa', 'tallaUnica', 'optionsTipoProducto' ));
     }
 
     public function update(UpdateProductoRequest $request, Producto $producto)

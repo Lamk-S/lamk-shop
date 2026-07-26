@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AmbienteSistema;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class UpdateEmpresaConfiguracionRequest extends FormRequest
             'mensaje_ticket' => ['nullable', 'string', 'max:1000'],
             'moneda' => ['required', 'string', 'max:10'],
             'igv_porcentaje' => ['required', 'numeric', 'min:0', 'max:100'],
-            'modo_emision' => ['required', Rule::in(['SIMULADA', 'REAL'])],
+            'modo_emision' => ['required', Rule::enum(AmbienteSistema::class)],
             'estado' => ['required', 'boolean'],
         ];
     }

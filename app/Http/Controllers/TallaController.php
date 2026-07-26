@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoTalla;
 use App\Http\Requests\StoreTallaRequest;
 use App\Http\Requests\UpdateTallaRequest;
 use App\Models\Talla;
@@ -50,11 +51,7 @@ class TallaController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $optionsTipoTalla = [
-            'CALZADO' => 'Calzado',
-            'ROPA' => 'Ropa',
-            'UNICA' => 'Única',
-        ];
+        $optionsTipoTalla = TipoTalla::opciones();
 
         return view('talla.create', compact('optionsTipoTalla'));
     }
@@ -86,11 +83,7 @@ class TallaController extends Controller implements HasMiddleware
 
     public function edit(Talla $talla)
     {
-        $optionsTipoTalla = [
-            'CALZADO' => 'Calzado',
-            'ROPA' => 'Ropa',
-            'UNICA' => 'Única',
-        ];
+        $optionsTipoTalla = TipoTalla::opciones();
 
         return view('talla.edit', compact('talla', 'optionsTipoTalla'));
     }

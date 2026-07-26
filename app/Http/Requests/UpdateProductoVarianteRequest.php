@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoProducto;
 use App\Models\Producto;
 use App\Models\ProductoVariante;
 use App\Models\Talla;
@@ -40,11 +41,11 @@ class UpdateProductoVarianteRequest extends FormRequest
                 return;
             }
 
-            if (in_array($producto->tipo_producto, ['ZAPATILLA', 'ROPA'], true) && $talla->codigo === 'UNICA') {
+            if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->codigo === Talla::CODIGO_UNICA) {
                 $validator->errors()->add('talla_id', 'Las zapatillas y la ropa deportiva no pueden usar talla única.');
             }
 
-            if ($producto->tipo_producto === 'ACCESORIO' && $talla->codigo !== 'UNICA') {
+            if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->codigo !== Talla::CODIGO_UNICA) {
                 $validator->errors()->add('talla_id', 'Los accesorios deben usar talla única.');
             }
 

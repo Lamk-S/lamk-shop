@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoProducto;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -38,7 +39,7 @@ class UpdateProductoRequest extends FormRequest
             'nombre' => ['required', 'string', 'max:120'],
             'descripcion' => ['nullable', 'string'],
             'img_path' => ['nullable', 'image', 'max:2048'],
-            'tipo_producto' => ['required', Rule::in(['ZAPATILLA', 'ROPA', 'ACCESORIO'])],
+            'tipo_producto' => ['required', Rule::enum(TipoProducto::class)],
             'maneja_tallas' => ['required', 'boolean'],
             'precio_compra' => ['required', 'numeric', 'min:0'],
             'precio_venta' => ['required', 'numeric', 'min:0'],
@@ -64,11 +65,11 @@ class UpdateProductoRequest extends FormRequest
             $tipo = $this->input('tipo_producto');
             $manejaTallas = filter_var($this->input('maneja_tallas'), FILTER_VALIDATE_BOOLEAN);
 
-            if (in_array($tipo, ['ZAPATILLA', 'ROPA'], true) && !$manejaTallas) {
+            if (in_array($tipo, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && !$manejaTallas) {
                 $validator->errors()->add('maneja_tallas', 'Las zapatillas y la ropa deportiva deben manejar tallas.');
             }
 
-            if ($tipo === 'ACCESORIO' && $manejaTallas) {
+            if ($tipo === TipoProducto::ACCESORIO && $manejaTallas) {
                 $validator->errors()->add('maneja_tallas', 'Los accesorios deben manejar talla única.');
             }
         });

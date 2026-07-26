@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\AmbienteSistema;
+use App\Enums\TipoComprobante;
+use App\Enums\UsoComprobante;
 use App\Http\Requests\UpdateComprobanteRequest;
 use App\Models\Comprobante;
 use Illuminate\Http\Request;
@@ -57,23 +60,9 @@ class ComprobanteController extends Controller implements HasMiddleware
 
     public function edit(Comprobante $comprobante)
     {
-        $optionsTipoComprobante = [
-            'TICKET' => 'Ticket',
-            'BOLETA' => 'Boleta',
-            'FACTURA' => 'Factura',
-            'NOTA_CREDITO' => 'Nota de crédito',
-            'NOTA_DEBITO' => 'Nota de débito',
-        ];
-
-        $optionsUsoComprobante = [
-            'VENTA' => 'Venta',
-            'COMPRA' => 'Compra',
-        ];
-
-        $optionsAmbiente = [
-            'SIMULADO' => 'Simulado',
-            'PRODUCCION' => 'Producción',
-        ];
+        $optionsTipoComprobante = TipoComprobante::opciones();
+        $optionsUsoComprobante = UsoComprobante::opciones();
+        $optionsAmbiente = AmbienteSistema::opciones();
 
         return view('comprobante.edit', compact(
             'comprobante',
