@@ -2,6 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\EstadoSesion;
+use App\Enums\OrigenMovimientoCaja;
+use App\Enums\TipoMovimiento;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -19,11 +22,11 @@ class StoreMovimientoCajaRequest extends FormRequest
                 'required',
                 'integer',
                 Rule::exists('sesiones_caja', 'id')->where(function ($query) {
-                    $query->where('estado_sesion', 'ABIERTA');
+                    $query->where('estado_sesion', EstadoSesion::ABIERTA->value);
                 }),
             ],
-            'tipo' => ['required', Rule::in(['INGRESO', 'EGRESO'])],
-            'origen' => ['required', Rule::in(['APERTURA', 'VENTA', 'CIERRE', 'AJUSTE', 'INGRESO_MANUAL', 'EGRESO_MANUAL', 'ANULACION'])],
+            'tipo' => ['required', Rule::enum(TipoMovimiento::class)],
+            'origen' => ['required', Rule::enum(OrigenMovimientoCaja::class)],
             'descripcion' => ['required', 'string', 'max:255'],
             'monto' => ['required', 'numeric', 'min:0.01'],
             'referencia_type' => ['nullable', 'string', 'max:100'],

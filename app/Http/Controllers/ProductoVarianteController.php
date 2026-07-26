@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\TipoProducto;
+use App\Enums\TipoTalla;
 use App\Http\Requests\StoreProductoVarianteRequest;
 use App\Http\Requests\UpdateProductoVarianteRequest;
 use App\Models\Producto;
@@ -245,13 +246,13 @@ class ProductoVarianteController extends Controller implements HasMiddleware
 
     private function validarCompatibilidadProductoTalla(Producto $producto, Talla $talla): void
     {
-        if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->tipo_talla !== Talla::TIPO_UNICA) {
+        if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->tipo_talla !== TipoTalla::UNICA) {
             throw ValidationException::withMessages([
                 'talla_id' => 'Los accesorios deben usar talla única.',
             ]);
         }
 
-        if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->tipo_talla === Talla::TIPO_UNICA) {
+        if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->tipo_talla === TipoTalla::UNICA) {
             throw ValidationException::withMessages([
                 'talla_id' => 'Las zapatillas y la ropa no pueden usar talla única.',
             ]);

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\TipoPersona;
 use App\Models\Documento;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -32,7 +33,7 @@ class StoreQuickClienteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'tipo_persona' => ['required', Rule::in(['natural', 'juridica'])],
+            'tipo_persona' => ['required', Rule::enum(TipoPersona::class)],
             'documento_id' => ['required', 'integer', Rule::exists('documentos', 'id')],
             'numero_documento' => [
                 'required',
@@ -63,7 +64,7 @@ class StoreQuickClienteRequest extends FormRequest
                 return;
             }
 
-            if ($tipo === 'natural') {
+            if ($tipo === TipoPersona::NATURAL->value) {
                 if (! $this->filled('nombres')) {
                     $validator->errors()->add('nombres', 'Para una persona natural debes registrar los nombres.');
                 }
@@ -77,7 +78,7 @@ class StoreQuickClienteRequest extends FormRequest
                 }
             }
 
-            if ($tipo === 'juridica') {
+            if ($tipo === TipoPersona::JURIDICA->value) {
                 if (! $this->filled('razon_social')) {
                     $validator->errors()->add('razon_social', 'Para una persona jurídica debes registrar la razón social.');
                 }

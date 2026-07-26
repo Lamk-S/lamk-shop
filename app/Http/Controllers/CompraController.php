@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoDocumentoCompra;
+use App\Enums\EstadoPago;
+use App\Enums\MetodoPago;
 use App\Http\Requests\StoreAnulacionCompraRequest;
 use App\Http\Requests\StoreCompraRequest;
 use App\Models\Compra;
@@ -54,27 +57,9 @@ class CompraController extends Controller implements HasMiddleware
             ->orderBy('id', 'desc')
             ->get();
 
-        $optionsEstadoDocumento = [
-            'REGISTRADA' => 'Registrada',
-            'RECEPCIONADA' => 'Recepcionada',
-            'ANULADA' => 'Anulada',
-            'PENDIENTE' => 'Pendiente',
-        ];
-
-        $optionsEstadoPago = [
-            'PENDIENTE' => 'Pendiente',
-            'PARCIAL' => 'Parcial',
-            'PAGADA' => 'Pagada',
-            'ANULADA' => 'Anulada',
-        ];
-
-        $optionsMetodoPago = [
-            'EFECTIVO' => 'Efectivo',
-            'TARJETA' => 'Tarjeta',
-            'TRANSFERENCIA' => 'Transferencia',
-            'CREDITO' => 'Crédito',
-            'MIXTO' => 'Mixto',
-        ];
+        $optionsEstadoDocumento = EstadoDocumentoCompra::opciones();
+        $optionsEstadoPago = EstadoPago::opciones();
+        $optionsMetodoPago = MetodoPago::opciones();
 
         return view('compra.index', compact(
             'compras', 'proveedores', 'optionsEstadoDocumento',
@@ -104,21 +89,12 @@ class CompraController extends Controller implements HasMiddleware
             ->orderBy('codigo')
             ->get();
 
-        $optionsMetodosPago = [
-            'EFECTIVO' => 'Efectivo',
-            'TARJETA' => 'Tarjeta',
-            'TRANSFERENCIA' => 'Transferencia',
-            'CREDITO' => 'Crédito',
-            'MIXTO' => 'Mixto',
-        ];
+        $optionsMetodosPago = MetodoPago::opciones();
 
         return view('compra.create', [
-            'proveedores' => $proveedores,
-            'documentos' => $documentos,
-            'comprobantes' => $comprobantes,
-            'variantes' => $variantes,
-            'productos' => $variantes,
-            'optionsMetodosPago' => $optionsMetodosPago,
+            'proveedores' => $proveedores, 'documentos' => $documentos,
+            'comprobantes' => $comprobantes, 'variantes' => $variantes,
+            'productos' => $variantes, 'optionsMetodosPago' => $optionsMetodosPago,
         ]);
     }
 

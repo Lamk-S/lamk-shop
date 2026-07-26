@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\AmbienteSistema;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class StoreEmpresaConfiguracionRequest extends FormRequest
             'igv_porcentaje' => ['required', 'numeric', 'min:0', 'max:100'],
             'modo_emision' => [
                 'required',
-                Rule::in(['SIMULADA', 'REAL']),
+                Rule::enum(AmbienteSistema::class),
             ],
             'estado' => ['required', 'boolean'],
         ];

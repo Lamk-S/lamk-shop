@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoSesion;
 use App\Http\Requests\StoreMovimientoCajaRequest;
 use App\Models\MovimientoCaja;
 use App\Models\SesionCaja;
@@ -42,7 +43,7 @@ class MovimientoCajaController extends Controller implements HasMiddleware
     public function create()
     {
         $sesionesAbiertas = SesionCaja::with(['caja', 'user'])
-            ->where('estado_sesion', 'ABIERTA')
+            ->where('estado_sesion', EstadoSesion::ABIERTA)
             ->latest('id')
             ->get();
 
@@ -56,7 +57,7 @@ class MovimientoCajaController extends Controller implements HasMiddleware
         try {
             $sesion = SesionCaja::query()
                 ->whereKey($data['sesion_caja_id'])
-                ->where('estado_sesion', 'ABIERTA')
+                ->where('estado_sesion', EstadoSesion::ABIERTA)
                 ->lockForUpdate()
                 ->firstOrFail();
 

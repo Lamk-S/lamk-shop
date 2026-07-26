@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\MetodoPago;
+use App\Enums\TipoPersona;
 use App\Models\Proveedor;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -47,7 +49,7 @@ class StoreCompraRequest extends FormRequest
             'comprobante_id' => ['nullable', 'integer', Rule::exists('comprobantes', 'id')],
             'fecha_emision' => ['nullable', 'date'],
             'fecha_vencimiento' => ['nullable', 'date', 'after_or_equal:fecha_emision'],
-            'metodo_pago' => ['required', Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'CREDITO', 'MIXTO'])],
+            'metodo_pago' => ['required', Rule::enum(MetodoPago::class)],
             'moneda' => ['nullable', 'string', 'max:10'],
             'observacion' => ['nullable', 'string', 'max:1000'],
 
@@ -55,7 +57,7 @@ class StoreCompraRequest extends FormRequest
             'precio_venta' => ['nullable', 'numeric', 'min:0'],
 
             'pagos' => ['nullable', 'array'],
-            'pagos.*.metodo_pago' => ['required_with:pagos', Rule::in(['EFECTIVO', 'TARJETA', 'TRANSFERENCIA', 'YAPE', 'PLIN', 'OTRO'])],
+            'pagos.*.metodo_pago' => ['required_with:pagos', Rule::enum(MetodoPago::class)],
             'pagos.*.monto' => ['required_with:pagos', 'numeric', 'min:0.01'],
             'pagos.*.referencia_operacion' => ['nullable', 'string', 'max:100'],
             'pagos.*.observacion' => ['nullable', 'string', 'max:255'],
@@ -89,20 +91,20 @@ class StoreCompraRequest extends FormRequest
                     $validator->errors()->add('proveedor_id', 'El proveedor debe estar correctamente identificado.');
                 }
 
-                if ($proveedor->persona?->tipo_persona === 'juridica' && $proveedor->persona?->documento?->codigo !== 'RUC') {
+                if ($proveedor->persona?->tipo_persona === TipoPersona::JURIDICA->value && $proveedor->persona?->documento?->codigo !== 'RUC') {
                     $validator->errors()->add('proveedor_id', 'El proveedor jurídico debe tener RUC.');
                 }
             }
 
-            if ($metodoPago === 'CREDITO' && ! $this->filled('fecha_vencimiento')) {
+            if ($metodoPago === MetodoPago::CREDITO->value && ! $this->filled('fecha_vencimiento')) {
                 $validator->errors()->add('fecha_vencimiento', 'La fecha de vencimiento es obligatoria para compras a crédito.');
             }
 
-            if ($metodoPago === 'MIXTO' && $pagos->isEmpty()) {
+            if ($metodoPago === MetodoPago::MIXTO->value && $pagos->isEmpty()) {
                 $validator->errors()->add('pagos', 'Para una compra mixta debes registrar al menos un pago.');
             }
 
-            if (in_array($metodoPago, ['EFECTIVO', 'TARJETA', 'TRANSFERENCIA'], true) && $pagos->isNotEmpty()) {
+            if (in_array($metodoPago, [MetodoPago::EFECTIVO->value, MetodoPago::TARJETA->value, MetodoPago::TARJETA->value], true) && $pagos->isNotEmpty()) {
                 $validator->errors()->add('pagos', 'Si eliges un método de pago simple no debes enviar pagos múltiples.');
             }
 

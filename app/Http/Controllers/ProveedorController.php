@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\TipoPersona;
 use App\Http\Requests\StorePersonaRequest;
 use App\Http\Requests\UpdateProveedorRequest;
 use App\Models\Documento;
@@ -55,7 +56,7 @@ class ProveedorController extends Controller implements HasMiddleware
     public function create()
     {
         $documentos = Documento::where('estado', 1)->orderBy('codigo')->get();
-        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
+        $optionsTipoPersona = TipoPersona::opciones();
 
         return view('proveedor.create', compact('documentos', 'optionsTipoPersona'));
     }
@@ -82,7 +83,7 @@ class ProveedorController extends Controller implements HasMiddleware
         ]);
 
         $documentos = Documento::where('estado', 1)->orderBy('codigo')->get();
-        $optionsTipoPersona = ['natural' => 'Natural', 'juridica' => 'Jurídica'];
+        $optionsTipoPersona = TipoPersona::opciones();
 
         return view('proveedor.edit', compact('proveedor', 'documentos', 'optionsTipoPersona'));
     }
