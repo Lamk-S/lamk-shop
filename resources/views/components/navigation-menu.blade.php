@@ -161,15 +161,6 @@
 
         <div class="sb-sidenav-footer border-top border-secondary bg-dark pb-3">
             <div class="small text-muted mb-1 text-uppercase tracking-wide" style="font-size: 0.65rem;">Estado de Terminal</div>
-            
-            @php
-                $sesionAbierta = cache()->remember('sesion_caja_user_' . auth()->id(), 300, function () {
-                    return \App\Models\SesionCaja::with('caja')
-                        ->where('user_id', auth()->id())
-                        ->whereNull('saldo_final_declarado')
-                        ->first();
-                });
-            @endphp
 
             @if($sesionAbierta && $sesionAbierta->caja)
                 <div class="d-flex align-items-center gap-2">
