@@ -49,42 +49,20 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                 };
             });
 
-        $perPage = (int) $request->input('per_page', 15);
-        $perPage = in_array($perPage, [10, 15, 25, 50], true) ? $perPage : 15;
+        $perPage = in_array((int) $request->input('per_page', 15), [10, 15, 25, 50, 100], true) ? (int) $request->input('per_page', 15) : 15;
 
         $variantes = $query->paginate($perPage)->withQueryString();
+        $dependencies = $this->getFormDependencies();
 
-        $productos = Producto::where('estado', 1)
-            ->orderBy('nombre')
-            ->get(['id', 'codigo', 'nombre', 'tipo_producto']);
-
-        $tallas = Talla::where('estado', 1)
-            ->orderBy('tipo_talla')
-            ->orderBy('orden')
-            ->orderBy('codigo')
-            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
-            ->unique('id')
-            ->values();
-
-        return view('producto_variante.index', compact('variantes', 'productos', 'tallas', 'perPage'));
+        return view('producto_variante.index', array_merge(compact('variantes', 'perPage'), $dependencies));
     }
 
     public function create()
     {
-        $productos = Producto::where('estado', 1)
-            ->orderBy('nombre')
-            ->get(['id', 'codigo', 'nombre', 'tipo_producto'])
-            ->values();
+       $productoVariante = new ProductoVariante();
 
-        $tallas = Talla::where('estado', 1)
-            ->orderBy('tipo_talla')
-            ->orderBy('orden')
-            ->orderBy('codigo')
-            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
-            ->unique('id')
-            ->values();
-
-        return view('producto_variante.create', compact('productos', 'tallas'));
+        return view(
+            'producto_variante.create', array_merge(compact('productoVariante'), $this->getFormDependencies()));
     }
 
     public function store(StoreProductoVarianteRequest $request)
@@ -109,7 +87,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                     ]);
                 }
 
-                $variantCode = $producto->codigo . '-' . $talla->codigo;
+                $variantCode = ProductoVariante::generarCodigoVariante($producto, $talla);
 
                 if ($existing && $existing->trashed()) {
                     $existing->restore();
@@ -117,9 +95,6 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                         'codigo_variante' => $variantCode,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
-                        'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
-                        'costo_promedio' => $data['costo_promedio'] ?? 0,
-                        'ultima_compra_at' => $data['ultima_compra_at'] ?? null,
                         'estado' => $data['estado'] ?? 1,
                     ]);
                 } else {
@@ -129,9 +104,6 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                         'codigo_variante' => $variantCode,
                         'stock_actual' => $data['stock_actual'],
                         'stock_minimo' => $data['stock_minimo'],
-                        'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? 0,
-                        'costo_promedio' => $data['costo_promedio'] ?? 0,
-                        'ultima_compra_at' => $data['ultima_compra_at'] ?? null,
                         'estado' => $data['estado'] ?? 1,
                     ]);
                 }
@@ -142,9 +114,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
             throw $e;
         } catch (\Throwable $e) {
             report($e);
-            return back()
-                ->withErrors(['error' => 'Error al registrar la variante.'])
-                ->withInput();
+            return back()->withErrors(['error' => 'Error al registrar la variante.'])->withInput();
         }
     }
 
@@ -157,21 +127,9 @@ class ProductoVarianteController extends Controller implements HasMiddleware
     public function edit(ProductoVariante $producto_variante)
     {
         $productoVariante = $producto_variante->load(['producto.marca', 'talla']);
+        $dependencies = $this->getFormDependencies();
 
-        $productos = Producto::where('estado', 1)
-            ->orderBy('nombre')
-            ->get(['id', 'codigo', 'nombre', 'tipo_producto'])
-            ->values();
-
-        $tallas = Talla::where('estado', 1)
-            ->orderBy('tipo_talla')
-            ->orderBy('orden')
-            ->orderBy('codigo')
-            ->get(['id', 'codigo', 'nombre', 'tipo_talla'])
-            ->unique('id')
-            ->values();
-
-        return view('producto_variante.edit', compact('productoVariante', 'productos', 'tallas'));
+        return view('producto_variante.edit', array_merge(compact('productoVariante'), $dependencies));
     }
 
     public function update(UpdateProductoVarianteRequest $request, ProductoVariante $producto_variante)
@@ -207,9 +165,6 @@ class ProductoVarianteController extends Controller implements HasMiddleware
                     'codigo_variante' => ProductoVariante::generarCodigoVariante($producto, $talla),
                     'stock_actual' => $data['stock_actual'],
                     'stock_minimo' => $data['stock_minimo'],
-                    'costo_ultimo_compra' => $data['costo_ultimo_compra'] ?? $producto_variante->costo_ultimo_compra,
-                    'costo_promedio' => $data['costo_promedio'] ?? $producto_variante->costo_promedio,
-                    'ultima_compra_at' => $data['ultima_compra_at'] ?? $producto_variante->ultima_compra_at,
                     'estado' => $data['estado'],
                 ]);
             });
@@ -219,9 +174,7 @@ class ProductoVarianteController extends Controller implements HasMiddleware
             throw $e;
         } catch (\Throwable $e) {
             report($e);
-            return back()
-                ->withErrors(['error' => 'Error al actualizar la variante.'])
-                ->withInput();
+            return back()->withErrors(['error' => 'Error al actualizar la variante.'])->withInput();
         }
     }
 
@@ -247,15 +200,23 @@ class ProductoVarianteController extends Controller implements HasMiddleware
     private function validarCompatibilidadProductoTalla(Producto $producto, Talla $talla): void
     {
         if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->tipo_talla !== TipoTalla::UNICA) {
-            throw ValidationException::withMessages([
-                'talla_id' => 'Los accesorios deben usar talla única.',
-            ]);
+            throw ValidationException::withMessages(['talla_id' => 'Los accesorios deben usar talla única.']);
         }
-
         if (in_array($producto->tipo_producto, [TipoProducto::ZAPATILLA, TipoProducto::ROPA], true) && $talla->tipo_talla === TipoTalla::UNICA) {
-            throw ValidationException::withMessages([
-                'talla_id' => 'Las zapatillas y la ropa no pueden usar talla única.',
-            ]);
+            throw ValidationException::withMessages(['talla_id' => 'Las zapatillas y la ropa no pueden usar talla única.']);
         }
+    }
+
+    private function getFormDependencies(): array
+    {
+        return [
+            'productos' => Producto::where('estado', 1)->orderBy('nombre')->get(['id', 'codigo', 'nombre', 'tipo_producto'])->values(),
+            'tallas' => Talla::where('estado', 1)->orderBy('tipo_talla')->orderBy('orden')->orderBy('codigo')->get(['id', 'codigo', 'nombre', 'tipo_talla'])->unique('id')->values(),
+            'reglasTallas' => json_encode([
+                'ZAPATILLA' => ['CALZADO'],
+                'ROPA'      => ['ROPA'],
+                'ACCESORIO' => ['UNICA'],
+            ])
+        ];
     }
 }

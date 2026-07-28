@@ -46,10 +46,12 @@ class Persona extends Model
 
     public function getNombreCompletoAttribute(): string
     {
-        if ($this->razon_social) {
-            return $this->razon_social;
+        $tipo = $this->tipo_persona->value ?? $this->tipo_persona;
+        
+        if ($tipo === 'juridica') {
+            return $this->razon_social ?? 'Sin razón social';
         }
-
-        return trim(($this->nombres ?? '') . ' ' . ($this->apellidos ?? ''));
+        
+        return trim("{$this->nombres} {$this->apellidos}") ?: 'Sin nombre registrado';
     }
 }

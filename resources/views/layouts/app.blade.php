@@ -10,6 +10,7 @@
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
     <link href="{{ asset('css/styles.css') }}" rel="stylesheet" />
     
     <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous" defer></script>
@@ -37,10 +38,102 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        $(function () {
+            if($.fn.selectpicker) {
+                $('.selectpicker').selectpicker();
+            }
+        });
+    </script>
+    
     <script src="{{ asset('js/scripts.js') }}"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const selectsTipoPersona = document.querySelectorAll('select[name="tipo_persona"]');
+
+            selectsTipoPersona.forEach(select => {
+                const form = select.closest('form');
+                if (!form) return;
+
+                const docSelect = form.querySelector('select[name="documento_id"]');
+                const naturalFields = form.querySelectorAll('.quick-cliente-natural-field, .quick-proveedor-natural-field, .natural-field');
+                const juridicaFields = form.querySelectorAll('.quick-cliente-juridica-field, .quick-proveedor-juridica-field, .juridica-field');
+                
+                const inputRazonSocial = form.querySelector('input[name="razon_social"]');
+                const inputNombres = form.querySelector('input[name="nombres"]');
+                const inputApellidos = form.querySelector('input[name="apellidos"]');
+
+                function setRequired(elements, isRequired) {
+                    elements.forEach((el) => {
+                        const input = el.querySelector('input, select, textarea');
+                        if (input) {
+                            input.required = isRequired;
+                        }
+                    });
+                }
+
+                function autoSeleccionarDocumento(codigoBuscado) {
+                    if (!docSelect) return;
+                    const codigo = String(codigoBuscado || '').toUpperCase();
+                    let found = false;
+
+                    Array.from(docSelect.options).forEach((option) => {
+                        const optionCodigo = String(option.dataset.codigo || '').toUpperCase();
+                        if (optionCodigo === codigo) {
+                            option.selected = true;
+                            found = true;
+                        }
+                    });
+
+                    if (!found && docSelect.options.length > 0 && !docSelect.value) {
+                        docSelect.selectedIndex = 0;
+                    }
+                }
+
+                function handleTipoPersonaChange() {
+                    const tipo = String(select.value || '').toLowerCase();
+
+                    if (tipo === 'natural') {
+                        naturalFields.forEach(el => el.classList.remove('d-none'));
+                        juridicaFields.forEach(el => el.classList.add('d-none'));
+                        
+                        setRequired(naturalFields, true);
+                        setRequired(juridicaFields, false);
+
+                        if (inputRazonSocial) inputRazonSocial.value = '';
+                        autoSeleccionarDocumento('DNI');
+                        
+                    } else if (tipo === 'juridica') {
+                        naturalFields.forEach(el => el.classList.add('d-none'));
+                        juridicaFields.forEach(el => el.classList.remove('d-none'));
+                        
+                        setRequired(naturalFields, false);
+                        setRequired(juridicaFields, true);
+
+                        if (inputNombres) inputNombres.value = '';
+                        if (inputApellidos) inputApellidos.value = '';
+                        autoSeleccionarDocumento('RUC');
+                        
+                    } else {
+                        naturalFields.forEach(el => el.classList.add('d-none'));
+                        juridicaFields.forEach(el => el.classList.add('d-none'));
+                        
+                        setRequired(naturalFields, false);
+                        setRequired(juridicaFields, false);
+                    }
+                }
+
+                handleTipoPersonaChange();
+                select.addEventListener('change', handleTipoPersonaChange);
+            });
+        });
+    </script>
 
     @include('layouts.partials.alert')
     @stack('js')
