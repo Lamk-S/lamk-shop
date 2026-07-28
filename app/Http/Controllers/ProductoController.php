@@ -70,15 +70,50 @@ class ProductoController extends Controller implements HasMiddleware
     {
         $categorias = Categoria::where('estado', 1)->orderBy('nombre')->get();
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
-        $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', 'CALZADO')->orderBy('orden')->get();
-        $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', 'ROPA')->orderBy('orden')->get();
 
-        $tallaUnica = Talla::where('estado', 1)->where('codigo', Talla::CODIGO_UNICA)->first();
+        $tallasCalzado = Talla::where('estado', 1)
+            ->where('tipo_talla', TipoTalla::CALZADO)
+            ->orderBy('orden')
+            ->get();
+
+        $tallasRopa = Talla::where('estado', 1)
+            ->where('tipo_talla', TipoTalla::ROPA)
+            ->orderBy('orden')
+            ->get();
+
+        $tallaUnica = Talla::where('estado', 1)
+            ->where('codigo', Talla::CODIGO_UNICA)
+            ->first();
 
         $optionsTipoProducto = TipoProducto::opciones();
 
+        $editing = false;
+
+        $tipoProductoActual = old('tipo_producto', '');
+        $afectoIgvActual = old('afecto_igv', '1');
+        $manejaTallasActual = old('maneja_tallas', '0');
+        $selectedCategorias = old('categoria_id', []);
+
+        $variantRows = [[
+            'id' => null,
+            'talla_id' => '',
+            'codigo_variante' => '',
+            'stock_actual' => 0,
+            'stock_minimo' => 0,
+            'estado' => 1,
+        ]];
+
+        $reglasTallas = json_encode([
+            'ZAPATILLA' => ['CALZADO'],
+            'ROPA'      => ['ROPA'],
+            'ACCESORIO' => ['UNICA'],
+        ]);
+
         return view('producto.create', compact(
-            'categorias', 'marcas', 'tallasCalzado', 'tallasRopa', 'tallaUnica', 'optionsTipoProducto'
+            'categorias', 'marcas', 'tallasCalzado', 'tallasRopa',
+            'tallaUnica', 'optionsTipoProducto', 'editing', 'tipoProductoActual',
+            'afectoIgvActual', 'manejaTallasActual', 'selectedCategorias',
+            'variantRows', 'reglasTallas'
         ));
     }
 
@@ -133,11 +168,51 @@ class ProductoController extends Controller implements HasMiddleware
         $marcas = Marca::where('estado', 1)->orderBy('nombre')->get();
         $tallasCalzado = Talla::where('estado', 1)->where('tipo_talla', TipoTalla::CALZADO)->orderBy('orden')->get();
         $tallasRopa = Talla::where('estado', 1)->where('tipo_talla', TipoTalla::ROPA)->orderBy('orden')->get();
-        $tallaUnica = Talla::where('estado', 1)->where('codigo', 'UNICA')->first();
+        $tallaUnica = Talla::where('estado', 1)->where('codigo', Talla::CODIGO_UNICA)->first();
 
         $optionsTipoProducto = TipoProducto::opciones();
 
-        return view('producto.edit', compact( 'producto', 'categorias', 'marcas', 'tallasCalzado', 'tallasRopa', 'tallaUnica', 'optionsTipoProducto' ));
+        $editing = true;
+        $tipoProductoActual = old('tipo_producto', $producto->tipo_producto?->value ?? $producto->tipo_producto);
+        $afectoIgvActual = old('afecto_igv', $producto->afecto_igv ? '1' : '0');
+        $manejaTallasActual = old('maneja_tallas', $producto->maneja_tallas ? '1' : '0');
+        $selectedCategorias = old('categoria_id', $producto->categorias->pluck('id')->toArray());
+
+        $variantRows = $producto->variantes->map(function ($v) {
+            return [
+                'id' => $v->id,
+                'talla_id' => $v->talla_id,
+                'codigo_barra' => $v->codigo_barra ?? '',
+                'stock_actual' => $v->stock_actual,
+                'stock_minimo' => $v->stock_minimo,
+                'estado' => $v->estado,
+            ];
+        })->toArray();
+
+        if (empty($variantRows)) {
+            $variantRows = [[
+                'id' => null,
+                'talla_id' => '',
+                'codigo_barra' => '',
+                'stock_actual' => 0,
+                'stock_minimo' => 0,
+                'estado' => 1,
+            ]];
+        }
+
+        $reglasTallas = json_encode([
+            'ZAPATILLA' => ['CALZADO'],
+            'ROPA'      => ['ROPA'],
+            'ACCESORIO' => ['UNICA'],
+        ]);
+
+        return view('producto.edit', compact(
+            'producto', 'categorias', 'marcas', 
+            'tallasCalzado', 'tallasRopa', 'tallaUnica', 
+            'optionsTipoProducto', 'editing', 'tipoProductoActual', 
+            'afectoIgvActual', 'manejaTallasActual', 'selectedCategorias', 
+            'variantRows', 'reglasTallas'
+        ));
     }
 
     public function update(UpdateProductoRequest $request, Producto $producto)
@@ -189,18 +264,35 @@ class ProductoController extends Controller implements HasMiddleware
     public function destroy(Producto $producto)
     {
         try {
-            if ($producto->trashed()) {
-                $producto->restore();
-                $message = 'Producto restaurado correctamente';
-            } else {
-                $producto->delete();
-                $message = 'Producto eliminado correctamente';
-            }
-
-            return redirect()->route('productos.index')->with('success', $message);
+            $producto->update([
+                'estado' => 0
+            ]);
+            $producto->delete();
+            return redirect()
+                ->route('productos.index')
+                ->with('success', 'Producto eliminado correctamente');
         } catch (\Exception $e) {
             return back()->withErrors([
-                'error' => 'Error al modificar el producto: ' . $e->getMessage(),
+                'error' => 'Error al eliminar producto: '.$e->getMessage(),
+            ]);
+        }
+    }
+
+    public function restore(int $id)
+    {
+        try {
+            $producto = Producto::withTrashed()
+                ->findOrFail($id);
+            $producto->restore();
+            $producto->update([
+                'estado' => 1
+            ]);
+            return redirect()
+                ->route('productos.index')
+                ->with('success', 'Producto restaurado correctamente');
+        } catch (\Exception $e) {
+            return back()->withErrors([
+                'error' => 'Error al restaurar producto: '.$e->getMessage(),
             ]);
         }
     }
