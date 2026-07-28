@@ -1,6 +1,5 @@
 import { defineConfig } from 'vite';
 import laravel from 'laravel-vite-plugin';
-import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
     server: {
@@ -8,14 +7,17 @@ export default defineConfig({
         port: 5173,
         cors: true,
         hmr: {
-            host: '10.246.240.25',
+            host: '10.153.210.25',
         },
     },
 
     plugins: [
         laravel({
-            input: ['resources/js/app.js'],
+            input: [
+                'resources/css/app.css',
+                'resources/js/app.js',
+            ],
             refresh: true,
-        }),
+        })
     ],
 });

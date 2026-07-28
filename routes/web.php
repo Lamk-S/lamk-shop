@@ -62,27 +62,28 @@ Route::middleware('auth')->group(function () {
     Route::resource('tallas', TallaController::class)->except(['show']);
 
     // --- DIVISIÓN DE PRODUCTOS Y VARIANTES (Lectura vs Escritura) ---
-    // 1. Solo Lectura (Vendedores, Cajeros, Almacén, Admin)
-    Route::middleware(['permission:gestionar_productos|ver_productos'])->group(function () {
-        Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
-        
-        Route::get('producto-variantes', [ProductoVarianteController::class, 'index'])->name('producto-variantes.index');
-        Route::get('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'show'])->name('producto-variantes.show');
-    });
-
-    // 2. Mutaciones (Solo Almacén y Admin)
+    // 1. Mutaciones (Solo Almacén y Admin)
     Route::middleware(['permission:gestionar_productos'])->group(function () {
         Route::get('productos/create', [ProductoController::class, 'create'])->name('productos.create');
         Route::post('productos', [ProductoController::class, 'store'])->name('productos.store');
         Route::get('productos/{producto}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
-        Route::put('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::patch('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
+        Route::patch('/productos/{producto}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
         Route::delete('productos/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         Route::get('producto-variantes/create', [ProductoVarianteController::class, 'create'])->name('producto-variantes.create');
         Route::post('producto-variantes', [ProductoVarianteController::class, 'store'])->name('producto-variantes.store');
         Route::get('producto-variantes/{producto_variante}/edit', [ProductoVarianteController::class, 'edit'])->name('producto-variantes.edit');
-        Route::put('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'update'])->name('producto-variantes.update');
+        Route::patch('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'update'])->name('producto-variantes.update');
         Route::delete('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'destroy'])->name('producto-variantes.destroy');
+    });
+
+    // 2. Solo Lectura (Vendedores, Cajeros, Almacén, Admin)
+    Route::middleware(['permission:gestionar_productos|ver_productos'])->group(function () {
+        Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
+        
+        Route::get('producto-variantes', [ProductoVarianteController::class, 'index'])->name('producto-variantes.index');
+        Route::get('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'show'])->name('producto-variantes.show');
     });
 
     Route::resource('kardex', KardexController::class)->only(['index', 'show']);
@@ -132,12 +133,3 @@ Route::middleware('auth')->group(function () {
     Route::resource('users', UserController::class)->except(['show']);
     Route::resource('roles', RoleController::class)->except(['show']);
 });
-
-/*
-|--------------------------------------------------------------------------
-| Páginas de Error Personalizadas
-|--------------------------------------------------------------------------
-*/
-Route::view('/401', 'pages.401')->name('error.401');
-Route::view('/404', 'pages.404')->name('error.404');
-Route::view('/500', 'pages.500')->name('error.500');
