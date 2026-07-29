@@ -10,6 +10,7 @@ use App\Http\Requests\StoreCompraRequest;
 use App\Models\Compra;
 use App\Models\Comprobante;
 use App\Models\Documento;
+use App\Models\EmpresaConfiguracion;
 use App\Models\ProductoVariante;
 use App\Models\Proveedor;
 use App\Services\CompraService;
@@ -91,10 +92,14 @@ class CompraController extends Controller implements HasMiddleware
 
         $optionsMetodosPago = MetodoPago::opciones();
 
+        $empresa = EmpresaConfiguracion::first();
+        $igvPorcentaje = (float) ($empresa?->igv_porcentaje ?? 18.00);
+
         return view('compra.create', [
             'proveedores' => $proveedores, 'documentos' => $documentos,
             'comprobantes' => $comprobantes, 'variantes' => $variantes,
             'productos' => $variantes, 'optionsMetodosPago' => $optionsMetodosPago,
+            'igvPorcentaje' => $igvPorcentaje,
         ]);
     }
 
