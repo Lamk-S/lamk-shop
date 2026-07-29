@@ -119,7 +119,7 @@
                     <tbody>
                         @forelse($sesiones as $item)
                             @php
-                                $esAbierta = $item->estado_sesion === 'ABIERTA';
+                                $esAbierta = $item->estado_sesion->value === 'ABIERTA';
                                 $diferencia = (float) ($item->diferencia ?? 0);
                             @endphp
                             <tr>
@@ -165,7 +165,7 @@
                                 </td>
                                 <td class="text-center">
                                     @if($esAbierta)
-                                        <span class="badge bg-success text-white px-3 py-1 rounded-pill shadow-sm"><i class="fas fa-circle ms-n1 me-1" style="font-size: 0.5rem; vertical-align: middle;"></i> Abierta</span>
+                                        <span class="badge bg-success text-white px-3 py-1 rounded-pill shadow-sm"><i class="fas fa-circle ms-n1 me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>Abierta</span>
                                     @elseif($item->estado_sesion === 'CERRADA')
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-1 rounded-pill">Cerrada</span>
                                     @else
@@ -180,8 +180,15 @@
 
                                         @can('cerrar_caja')
                                             @if($esAbierta)
-                                                <button type="button" class="btn btn-sm btn-warning text-dark border-warning shadow-sm" data-bs-toggle="modal" data-bs-target="#confirmModal-{{ $item->id }}" title="Realizar corte/cierre">
-                                                    <i class="fas fa-lock"></i>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-dark shadow-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalCierreCaja" 
+                                                        data-id="{{ $item->id }}"
+                                                        data-caja="{{ $item->caja?->nombre }}"
+                                                        data-cajero="{{ explode(' ', $item->user?->name ?? '')[0] }}"
+                                                        title="Realizar corte/cierre">
+                                                    <i class="fas fa-lock"></i> Cierre
                                                 </button>
                                             @else
                                                 <span class="btn btn-sm btn-light border text-muted disabled"><i class="fas fa-lock"></i></span>
@@ -230,51 +237,39 @@
     </div>
 </div>
 
-@foreach($sesiones as $item)
-    @if($item->estado_sesion === 'ABIERTA')
-        <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-4">
-                    <div class="modal-header border-0 pb-0 bg-warning bg-opacity-10 rounded-top-4">
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <form action="{{ route('sesiones-caja.destroy', $item) }}" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <div class="modal-body p-4 bg-warning bg-opacity-10 pb-5">
-                            <div class="text-center mb-3 text-warning">
-                                <i class="fas fa-lock fa-4x text-opacity-75"></i>
-                            </div>
-                            <h4 class="fw-bold text-dark text-center">Corte de Caja Diario</h4>
-                            <p class="text-muted text-center mb-4 small">
-                                Vas a finalizar el turno de <strong>{{ $item->caja?->nombre }}</strong> operada por <strong>{{ explode(' ', $item->user?->name ?? '')[0] }}</strong>.
-                            </p>
-                            
-                            <div class="bg-white p-4 rounded-4 shadow-sm border mb-2">
-                                <label for="saldo_final_declarado_{{ $item->id }}" class="form-label fw-bold text-dark text-uppercase fs-7">Efectivo total en gaveta</label>
-                                <div class="input-group input-group-lg">
-                                    <span class="input-group-text bg-light border-end-0 text-muted fw-bold">S/</span>
-                                    <input type="number"
-                                           step="0.01" min="0" required
-                                           name="saldo_final_declarado"
-                                           id="saldo_final_declarado_{{ $item->id }}"
-                                           class="form-control border-start-0 fw-bold text-dark font-monospace"
-                                           placeholder="0.00"
-                                           value="{{ old('saldo_final_declarado') }}">
-                                </div>
-                                <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Suma el fondo fijo más las ventas en efectivo cobradas.</div>
-                            </div>
-                        </div>
-                        <div class="modal-footer border-0 pt-3 justify-content-center pb-4">
-                            <button type="button" class="btn btn-light fw-bold px-4 rounded-pill border shadow-sm" data-bs-dismiss="modal">Seguir operando</button>
-                            <button type="submit" class="btn btn-warning text-dark fw-bold px-4 rounded-pill shadow-sm"><i class="fas fa-check-circle me-2"></i>Ejecutar Cierre</button>
-                        </div>
-                    </form>
-                </div>
+<div class="modal fade" id="modalCierreCaja" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-3">
+            <div class="modal-header bg-light border-bottom-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form id="formCierreCaja" action="" method="post">
+                @method('DELETE')
+                @csrf
+                <div class="modal-body p-4 text-center">
+                    <i class="fas fa-lock fa-3x text-secondary mb-3"></i>
+                    <h4 class="fw-bold text-dark">Corte de Caja Diario</h4>
+                    <p class="text-muted mb-4 small">
+                        Vas a finalizar el turno de <strong id="modalCajaNombre"></strong> operada por <strong id="modalCajeroNombre"></strong>.
+                    </p>
+                    
+                    <div class="bg-light p-3 rounded-3 border text-start">
+                        <label for="saldo_final_declarado" class="form-label fw-bold text-dark text-uppercase fs-7">Efectivo total en gaveta</label>
+                        <div class="input-group input-group-lg">
+                            <span class="input-group-text bg-white border-end-0 fw-bold">S/</span>
+                            <input type="number" step="0.01" min="0" required name="saldo_final_declarado" id="saldo_final_declarado" class="form-control border-start-0 fw-bold font-monospace" placeholder="0.00">
+                        </div>
+                        <div class="form-text"><i class="fas fa-info-circle me-1"></i>Suma el fondo fijo más las ventas en efectivo cobradas.</div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-top-0 justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark px-4"><i class="fas fa-check-circle me-2"></i>Ejecutar Cierre</button>
+                </div>
+            </form>
         </div>
-    @endif
-@endforeach
+    </div>
+</div>
 @endsection
 
 @push('js')
@@ -296,6 +291,21 @@
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        const modalCierre = document.getElementById('modalCierreCaja');
+        if (modalCierre) {
+            modalCierre.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const id = button.getAttribute('data-id');
+                const caja = button.getAttribute('data-caja');
+                const cajero = button.getAttribute('data-cajero');
+                const form = document.getElementById('formCierreCaja');
+                form.action = `/sesiones-caja/${id}`;
+                document.getElementById('modalCajaNombre').textContent = caja;
+                document.getElementById('modalCajeroNombre').textContent = cajero;
+                document.getElementById('saldo_final_declarado').value = '';
+            });
+        }
     });
 </script>
 @endpush

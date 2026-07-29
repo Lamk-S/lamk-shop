@@ -1,5 +1,8 @@
 @php
-    $tipoPersona = old('tipo_persona', optional($persona)->tipo_persona);
+    $rawTipo = optional($persona)->tipo_persona;
+    $tipoPersona = old('tipo_persona', $rawTipo->value ?? $rawTipo);
+    $rawEstado = optional($persona)->estado;
+    $estado = old('estado', $rawEstado->value ?? $rawEstado ?? 1);
     $documentoId = old('documento_id', optional($persona)->documento_id);
     $numeroDocumento = old('numero_documento', optional($persona)->numero_documento);
     $nombres = old('nombres', optional($persona)->nombres);
@@ -8,7 +11,6 @@
     $direccion = old('direccion', optional($persona)->direccion);
     $telefono = old('telefono', optional($persona)->telefono);
     $email = old('email', optional($persona)->email);
-    $estado = old('estado', optional($persona)->estado ?? 1);
     $showEstado = $showEstado ?? false;
 @endphp
 
@@ -176,50 +178,49 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const tipoPersona = document.getElementById('tipo_persona');
-        const naturalFields = document.querySelectorAll('.persona-natural-field');
-        const juridicaFields = document.querySelectorAll('.persona-juridica-field');
-        const nombres = document.getElementById('nombres');
-        const apellidos = document.getElementById('apellidos');
-        const razonSocial = document.getElementById('razon_social');
-        const documento = document.getElementById('documento_id');
+        const tipoPersonaSelects = document.querySelectorAll('select[name="tipo_persona"]');
 
-        function toggleFields() {
-            const value = tipoPersona ? tipoPersona.value : '';
+        tipoPersonaSelects.forEach(select => {
+            const form = select.closest('form');
+            if (!form) return;
 
-            if (value === 'natural') {
-                naturalFields.forEach(el => el.style.display = 'block');
-                juridicaFields.forEach(el => el.style.display = 'none');
+            const inputsNatural = form.querySelectorAll('input[name="nombres"], input[name="apellidos"]');
+            const inputJuridica = form.querySelector('input[name="razon_social"]');
+            const docSelect = form.querySelector('select[name="documento_id"]');
 
-                if (nombres) nombres.required = true;
-                if (apellidos) apellidos.required = true;
-                if (razonSocial) razonSocial.required = false;
+            function toggleFields() {
+                const isNatural = select.value === 'natural';
+                const isJuridica = select.value === 'juridica';
 
-                if (razonSocial) razonSocial.value = razonSocial.value || '';
-            } else if (value === 'juridica') {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'block');
+                inputsNatural.forEach(el => {
+                    const wrapper = el.closest('[class*="col-"]');
+                    wrapper.style.display = isNatural ? 'block' : 'none';
+                    el.required = isNatural;
+                    if(!isNatural) el.value = '';
+                });
 
-                if (nombres) nombres.required = false;
-                if (apellidos) apellidos.required = false;
-                if (razonSocial) razonSocial.required = true;
-            } else {
-                naturalFields.forEach(el => el.style.display = 'none');
-                juridicaFields.forEach(el => el.style.display = 'none');
+                if (inputJuridica) {
+                    const wrapper = inputJuridica.closest('[class*="col-"]');
+                    wrapper.style.display = isJuridica ? 'block' : 'none';
+                    inputJuridica.required = isJuridica;
+                    if(!isJuridica) inputJuridica.value = '';
+                }
+
+                if (docSelect) {
+                    const options = Array.from(docSelect.options);
+                    if (isJuridica) {
+                        const rucOption = options.find(o => o.text.includes('RUC') || (o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'RUC'));
+                        if (rucOption) docSelect.value = rucOption.value;
+                    } else if (isNatural) {
+                        const dniOption = options.find(o => o.text.includes('DNI') || (o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'DNI'));
+                        if (dniOption) docSelect.value = dniOption.value;
+                    }
+                }
             }
 
-            if (documento && value === 'juridica') {
-                const options = Array.from(documento.options);
-                const rucOption = options.find(opt => (opt.textContent || '').includes('RUC'));
-                if (rucOption) documento.value = rucOption.value;
-            }
-        }
-
-        toggleFields();
-
-        if (tipoPersona) {
-            tipoPersona.addEventListener('change', toggleFields);
-        }
+            toggleFields();
+            select.addEventListener('change', toggleFields);
+        });
     });
 </script>
 @endpush

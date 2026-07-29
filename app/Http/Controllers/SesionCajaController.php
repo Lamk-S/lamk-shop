@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\EstadoSesion;
 use App\Http\Requests\StoreSesionCajaRequest;
 use App\Models\Caja;
 use App\Models\SesionCaja;
@@ -50,7 +51,10 @@ class SesionCajaController extends Controller implements HasMiddleware
 
     public function create()
     {
-        $cajas = Caja::where('estado', 1)->orderBy('id')->get();
+        $cajas = Caja::where('estado', 1)
+            ->whereDoesntHave('sesionesCaja', function ($query) {
+                $query->where('estado_sesion', EstadoSesion::ABIERTA);
+            })->orderBy('nombre')->get();
 
         return view('sesion_caja.create', compact('cajas'));
     }
@@ -90,7 +94,17 @@ class SesionCajaController extends Controller implements HasMiddleware
             'ventas.pagos',
         ]);
 
-        return view('sesion_caja.show', compact('sesionCaja'));
+        $totales = [
+            'ingresos' => $sesionCaja->movimientosCaja()->where('tipo', 'INGRESO')->where('origen', '!=', 'APERTURA')->sum('monto'),
+            'egresos'  => $sesionCaja->movimientosCaja()->where('tipo', 'EGRESO')->sum('monto'),
+            'ventas'   => $sesionCaja->ventas()->where('estado_documento', '!=', 'ANULADA')->sum('total'),
+            'movimientos_count' => $sesionCaja->movimientosCaja()->count(),
+            'ventas_count'      => $sesionCaja->ventas()->where('estado_documento', '!=', 'ANULADA')->count(),
+        ];
+
+        $ventasValidas = $sesionCaja->ventas->where('estado_documento', '!=', 'ANULADA');
+
+        return view('sesion_caja.show', compact('sesionCaja', 'totales', 'ventasValidas'));
     }
 
     public function destroy(Request $request, SesionCaja $sesion_caja)
