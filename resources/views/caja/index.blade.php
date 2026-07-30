@@ -1,99 +1,91 @@
 @extends('layouts.app')
 @section('title', 'Gestión de Cajas')
 
-@push('css')
-<style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
-    .fs-7 { font-size: 0.875rem; }
-    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.82rem; white-space: nowrap; }
-    .table-custom td { vertical-align: middle; color: #495057; }
-</style>
-@endpush
-
 @section('content')
-<div class="container-fluid px-4 py-4">
-    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Encabezado -->
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h2 class="page-title mb-0">Gestión de Cajas</h2>
+            <h2 class="fw-bold text-dark mb-0 fs-3">Gestión de Cajas</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
                 <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
-                <li class="breadcrumb-item active fw-medium text-dark">Cajas</li>
+                <li class="breadcrumb-item active fw-medium text-dark">Terminales Operativas</li>
             </ol>
         </div>
         @can('gestionar_cajas')
-            <div class="mt-3 mt-md-0">
-                <a href="{{ route('cajas.create') }}" class="btn btn-primary shadow-sm rounded-3 px-4">
+            <div>
+                <a href="{{ route('cajas.create') }}" class="btn btn-primary shadow-sm rounded-3 px-4 fw-medium">
                     <i class="fas fa-plus me-2"></i>Nueva Caja
                 </a>
             </div>
         @endcan
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-header bg-white border-bottom border-light p-4 d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                    <i class="fa-solid fa-cash-register"></i>
+    <!-- Tarjeta Principal -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="fa-solid fa-cash-register fs-5"></i>
                 </div>
-                <h5 class="mb-0 fw-semibold text-dark">Cajas registradas</h5>
-            </div>
-            <div class="text-muted small">
-                Mostrando {{ $cajas->firstItem() ?? 0 }} - {{ $cajas->lastItem() ?? 0 }} de {{ $cajas->total() }} registros
+                <div>
+                    <h5 class="mb-0 fw-bold text-dark">Cajas Registradas</h5>
+                    <div class="text-muted small">Puntos de cobro físicos en tienda.</div>
+                </div>
             </div>
         </div>
 
-        <div class="card-body p-4">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover table-custom mb-0">
-                    <thead>
+                <table class="table table-hover align-middle mb-0 text-nowrap">
+                    <thead class="table-light">
                         <tr>
-                            <th>Nombre</th>
-                            <th class="text-end">Fondo fijo</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-end">Creado</th>
+                            <th class="ps-4 text-secondary small text-uppercase">Identificador</th>
+                            <th class="text-end text-secondary small text-uppercase">Fondo Fijo</th>
+                            <th class="text-center text-secondary small text-uppercase">Estado</th>
+                            <th class="text-end text-secondary small text-uppercase">Registro</th>
                             @can('gestionar_cajas')
-                                <th class="text-center" style="width: 120px;">Acciones</th>
+                                <th class="text-center text-secondary small text-uppercase pe-4" style="width: 120px;">Acciones</th>
                             @endcan
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($cajas as $item)
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-light rounded-circle d-flex justify-content-center align-items-center text-secondary me-3" style="width: 35px; height: 35px;">
-                                            <i class="fas fa-cash-register"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold text-dark">{{ $item->nombre }}</div>
-                                            <div class="small text-muted">ID: {{ $item->id }}</div>
-                                        </div>
-                                    </div>
+                                <td class="ps-4">
+                                    <div class="fw-bold text-dark">{{ $item->nombre }}</div>
+                                    <div class="small text-muted font-monospace">Código / ID: {{ str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</div>
                                 </td>
-                                <td class="text-end fw-medium">S/ {{ number_format($item->fondo_fijo, 2) }}</td>
+                                <td class="text-end fw-bold font-monospace fs-6">
+                                    S/ {{ number_format((float) $item->fondo_fijo, 2) }}
+                                </td>
                                 <td class="text-center">
                                     @if($item->trashed())
-                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill">Eliminada</span>
+                                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-1 rounded-pill">Inhabilitada</span>
                                     @elseif((int) $item->estado === 1)
-                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-1 rounded-pill">Activa</span>
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-1 rounded-pill">Operativa</span>
                                     @else
-                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-3 py-1 rounded-pill">Inactiva</span>
+                                        <span class="badge bg-warning bg-opacity-10 text-warning border border-warning px-3 py-1 rounded-pill">Suspendida</span>
                                     @endif
                                 </td>
-                                <td class="text-end">
-                                    <div class="text-muted small">{{ optional($item->created_at)->format('d/m/Y H:i') }}</div>
+                                <td class="text-end text-muted">
+                                    <div class="small fw-bold text-dark">{{ optional($item->created_at)->format('d/m/Y') }}</div>
+                                    <div class="small" style="font-size: 0.75rem;">{{ optional($item->created_at)->format('H:i') }}</div>
                                 </td>
                                 @can('gestionar_cajas')
-                                    <td class="text-center">
-                                        <div class="btn-group shadow-sm" role="group">
-                                            <a href="{{ route('cajas.edit', $item) }}" class="btn btn-sm btn-outline-secondary text-primary border-light" title="Editar">
+                                    <td class="text-center pe-4">
+                                        <div class="btn-group shadow-sm">
+                                            <a href="{{ route('cajas.edit', $item) }}" class="btn btn-sm btn-light border text-primary" title="Editar datos">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button"
-                                                    class="btn btn-sm btn-outline-secondary {{ $item->trashed() ? 'text-success' : 'text-danger' }} border-light"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#confirmModal-{{ $item->id }}"
-                                                    title="{{ $item->trashed() ? 'Restaurar' : 'Eliminar' }}">
+                                                class="btn btn-sm btn-light border {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#dinamicConfirmModal"
+                                                data-action="{{ route('cajas.destroy', $item) }}"
+                                                data-nombre="{{ $item->nombre }}"
+                                                data-trashed="{{ $item->trashed() ? 1 : 0 }}"
+                                                title="{{ $item->trashed() ? 'Restaurar' : 'Eliminar' }}">
                                                 <i class="fas {{ $item->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                             </button>
                                         </div>
@@ -102,14 +94,10 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ auth()->user()->can('gestionar_cajas') ? 5 : 4 }}" class="py-5">
-                                    <div class="d-flex flex-column align-items-center justify-content-center text-center">
-                                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 90px; height: 90px;">
-                                            <i class="fas fa-cash-register text-success fs-1"></i>
-                                        </div>
-                                        <h5 class="fw-semibold text-dark mb-1">No hay cajas registradas</h5>
-                                        <p class="text-muted mb-0">Actualmente no existen cajas disponibles en el sistema.</p>
-                                    </div>
+                                <td colspan="{{ auth()->user()->can('gestionar_cajas') ? 5 : 4 }}" class="py-5 text-center text-muted">
+                                    <i class="fas fa-cash-register fs-1 text-light mb-3"></i>
+                                    <h5 class="fw-semibold text-dark">No hay cajas registradas</h5>
+                                    <p class="mb-0">Agrega terminales de caja para comenzar a registrar ventas.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -117,43 +105,82 @@
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $cajas->links() }}
+            <div class="card-footer bg-white border-top p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="text-muted small fw-medium">
+                    Mostrando <strong>{{ $cajas->firstItem() ?? 0 }}</strong> a <strong>{{ $cajas->lastItem() ?? 0 }}</strong> de <strong>{{ $cajas->total() }}</strong>
+                </div>
+                <div class="pagination-custom">
+                    {{ $cajas->links('pagination::bootstrap-5') }}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-@foreach($cajas as $item)
-    <div class="modal fade" id="confirmModal-{{ $item->id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header border-0 pb-0">
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+<!-- Modal Dinámico -->
+@can('gestionar_cajas')
+<div class="modal fade" id="dinamicConfirmModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center pb-4">
+                <div class="mb-3" id="modalIconContainer">
+                    <!-- Icono inyectado por JS -->
                 </div>
-                <div class="modal-body text-center pb-4">
-                    @if($item->trashed())
-                        <div class="text-success mb-3"><i class="fas fa-trash-restore-alt fa-4x opacity-75"></i></div>
-                        <h4 class="fw-bold text-dark">¿Restaurar caja?</h4>
-                        <p class="text-muted">La caja "<span class="fw-bold">{{ $item->nombre }}</span>" volverá a estar activa en el sistema.</p>
-                    @else
-                        <div class="text-danger mb-3"><i class="fas fa-exclamation-triangle fa-4x opacity-75"></i></div>
-                        <h4 class="fw-bold text-dark">¿Eliminar caja?</h4>
-                        <p class="text-muted">La caja "<span class="fw-bold">{{ $item->nombre }}</span>" pasará a estado eliminado.</p>
-                    @endif
-                </div>
-                <div class="modal-footer border-0 pt-0 justify-content-center">
-                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <form action="{{ route('cajas.destroy', $item) }}" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <button type="submit" class="btn {{ $item->trashed() ? 'btn-success' : 'btn-danger' }} px-4">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
+                <h4 class="fw-bold text-dark" id="modalTitle">¿Cambiar estado?</h4>
+                <p class="text-muted mb-0">La caja "<span class="fw-bold text-dark" id="modalBoxName"></span>" cambiará su estado en el sistema.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0 justify-content-center">
+                <button type="button" class="btn btn-light px-4 border" data-bs-dismiss="modal">Cancelar</button>
+                <form id="deleteForm" action="" method="post">
+                    @method('DELETE')
+                    @csrf
+                    <button type="submit" id="modalSubmitBtn" class="btn px-4 shadow-sm">
+                        Confirmar
+                    </button>
+                </form>
             </div>
         </div>
     </div>
-@endforeach
+</div>
+@endcan
 @endsection
+
+@push('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const confirmModal = document.getElementById('dinamicConfirmModal');
+        if (confirmModal) {
+            confirmModal.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const actionUrl = button.getAttribute('data-action');
+                const nombre = button.getAttribute('data-nombre');
+                const isTrashed = button.getAttribute('data-trashed') === '1';
+
+                const form = document.getElementById('deleteForm');
+                const title = document.getElementById('modalTitle');
+                const nameSpan = document.getElementById('modalBoxName');
+                const iconContainer = document.getElementById('modalIconContainer');
+                const submitBtn = document.getElementById('modalSubmitBtn');
+
+                form.action = actionUrl;
+                nameSpan.textContent = nombre;
+
+                if (isTrashed) {
+                    title.textContent = '¿Restaurar terminal de caja?';
+                    iconContainer.innerHTML = '<i class="fas fa-trash-restore-alt fa-4x text-success opacity-75"></i>';
+                    submitBtn.className = 'btn btn-success px-4 shadow-sm';
+                    submitBtn.textContent = 'Sí, restaurar caja';
+                } else {
+                    title.textContent = '¿Eliminar terminal de caja?';
+                    iconContainer.innerHTML = '<i class="fas fa-exclamation-triangle fa-4x text-danger opacity-75"></i>';
+                    submitBtn.className = 'btn btn-danger px-4 shadow-sm';
+                    submitBtn.textContent = 'Sí, inhabilitar caja';
+                }
+            });
+        }
+    });
+</script>
+@endpush
