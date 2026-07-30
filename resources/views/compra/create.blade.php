@@ -2,19 +2,6 @@
 
 @section('title', 'Realizar Compra')
 
-@push('css')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/css/bootstrap-select.min.css">
-<style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
-    .fs-7 { font-size: 0.875rem; }
-    .help-text-soft { font-size: 0.8rem; color: #6c757d; }
-    .purchase-alert { border-left: 4px solid #198754; }
-    .table-custom th { background-color: #f8f9fa; color: #495057; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; white-space: nowrap; }
-    .table-custom td { vertical-align: middle; }
-    .compact-note { font-size: 0.8rem; color: #6c757d; line-height: 1.35; }
-</style>
-@endpush
-
 @section('content')
 @php
     $defaultComprobanteId = old('comprobante_id', optional($comprobantes->first())->id);
@@ -44,7 +31,6 @@
 
     @include('layouts.partials.alert')
 
-    {{-- BLOQUE DE ERRORES DEL BACKEND --}}
     @if ($errors->any())
         <div class="alert alert-danger shadow-sm rounded-4 mb-4 border-0" style="border-left: 4px solid #dc3545 !important;">
             <div class="d-flex align-items-start gap-3">
@@ -61,13 +47,13 @@
         </div>
     @endif
 
-    <div class="alert alert-success purchase-alert rounded-4 border-0 shadow-sm mb-4">
+    <div class="alert alert-success bg-success bg-opacity-10 rounded-4 shadow-sm mb-4">
         <div class="d-flex align-items-start gap-3">
             <div class="fs-4 text-success"><i class="fa-solid fa-circle-info"></i></div>
             <div>
-                <div class="fw-semibold mb-1">Ingreso de mercadería</div>
-                <div class="small mb-0">
-                    El costo unitario puede variar por proveedor, lote, descuento, tipo de cambio o reposición. Ese valor se captura por línea, no como dogma sagrado.
+                <div class="fw-bold text-success mb-1">Ingreso de mercadería</div>
+                <div class="small text-dark opacity-75 mb-0">
+                    El costo unitario puede variar por proveedor, lote, descuento, tipo de cambio o reposición. Ese valor se captura por línea, no es definitivo para todo el catálogo.
                 </div>
             </div>
         </div>
@@ -113,15 +99,12 @@
 @endsection
 
 @push('js')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
     const variantData = @json($variantData, JSON_UNESCAPED_UNICODE);
     const oldDetails = @json(old('detalles', []), JSON_UNESCAPED_UNICODE);
     const oldPayments = @json(old('pagos', []), JSON_UNESCAPED_UNICODE);
     const initialMetodoPago = @json(old('metodo_pago', 'EFECTIVO'));
+    const IGV_PORCENTAJE = {{ $igvPorcentaje ?? 18 }} / 100;
 
     let lineItems = [];
     let paymentItems = [];
@@ -408,8 +391,9 @@
             return;
         }
         lineItems.forEach((item, index) => {
-            const base = round((item.cantidad * item.costo_unitario) - item.descuento);
-            const igv = item.afecto_igv ? round(base * 0.18) : 0;
+            const importeLinea = item.cantidad * item.costo_unitario;
+            const base = Math.max(0, round(importeLinea - item.descuento));
+            const igv = item.afecto_igv ? round(base * IGV_PORCENTAJE) : 0;
             const totalLinea = round(base + igv);
             const row = `
                 <tr>
@@ -465,7 +449,7 @@
         const baseImponible = Math.max(0, subtotalBruto - descuentoTotal);
         const igv = lineItems.reduce((acc, item) => {
             const base = Math.max(0, (Number(item.cantidad) * Number(item.costo_unitario)) - Number(item.descuento));
-            return acc + (item.afecto_igv ? (base * 0.18) : 0);
+            return acc + (item.afecto_igv ? (base * IGV_PORCENTAJE) : 0);
         }, 0);
         const total = round(baseImponible + igv);
         $('#subtotal_bruto').text(subtotalBruto.toFixed(2));
