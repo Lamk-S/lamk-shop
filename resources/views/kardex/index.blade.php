@@ -192,7 +192,7 @@
                         Viendo <strong>{{ $kardex->firstItem() ?? 0 }}</strong> al <strong>{{ $kardex->lastItem() ?? 0 }}</strong> de <strong>{{ $kardex->total() }}</strong>
                     </div>
                 </div>
-                <div>
+                <div class="pagination-custom">
                     {{ $kardex->links('pagination::bootstrap-5') }}
                 </div>
             </div>
