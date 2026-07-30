@@ -14,29 +14,35 @@
                 @endcanany
 
                 @can('registrar_ventas')
-                    <a class="nav-link {{ request()->routeIs('ventas.*') ? 'active text-info' : 'collapsed' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseVentas" aria-expanded="{{ request()->routeIs('ventas.*') ? 'true' : 'false' }}">
+                    <a class="nav-link {{ request()->routeIs('ventas.*') || request()->routeIs('pagos-venta.*') ? 'active text-info' : 'collapsed' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseVentas" aria-expanded="{{ request()->routeIs('ventas.*') ? 'true' : 'false' }}">
                         <div class="sb-nav-link-icon"><i class="fa-solid fa-bag-shopping"></i></div>
                         Punto de Venta
                         <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                     </a>
-                    <div class="collapse {{ request()->routeIs('ventas.*') ? 'show' : '' }}" id="collapseVentas" data-bs-parent="#sidenavAccordion">
+                    <div class="collapse {{ request()->routeIs('ventas.*') || request()->routeIs('pagos-venta.*') ? 'show' : '' }}" id="collapseVentas" data-bs-parent="#sidenavAccordion">
                         <nav class="sb-sidenav-menu-nested nav">
                             <a class="nav-link {{ request()->routeIs('ventas.create') ? 'active' : '' }}" href="{{ route('ventas.create') }}">Nueva Venta</a>
                             <a class="nav-link {{ request()->routeIs('ventas.index') ? 'active' : '' }}" href="{{ route('ventas.index') }}">Historial de Ventas</a>
+                            @can('gestionar_tesoreria')
+                                <a class="nav-link {{ request()->routeIs('pagos-venta.index') ? 'active' : '' }}" href="{{ route('pagos-venta.index') }}">Ingresos (Pagos)</a>
+                            @endcan
                         </nav>
                     </div>
                 @endcan
 
                 @can('registrar_compras')
-                    <a class="nav-link {{ request()->routeIs('compras.*') ? 'active text-info' : 'collapsed' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="{{ request()->routeIs('compras.*') ? 'true' : 'false' }}">
+                    <a class="nav-link {{ request()->routeIs('compras.*') || request()->routeIs('cuentas-por-pagar.*') ? 'active text-info' : 'collapsed' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseCompras" aria-expanded="{{ request()->routeIs('compras.*') ? 'true' : 'false' }}">
                         <div class="sb-nav-link-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
                         Abastecimiento
                         <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                     </a>
-                    <div class="collapse {{ request()->routeIs('compras.*') ? 'show' : '' }}" id="collapseCompras" data-bs-parent="#sidenavAccordion">
+                    <div class="collapse {{ request()->routeIs('compras.*') || request()->routeIs('cuentas-por-pagar.*') ? 'show' : '' }}" id="collapseCompras" data-bs-parent="#sidenavAccordion">
                         <nav class="sb-sidenav-menu-nested nav">
                             <a class="nav-link {{ request()->routeIs('compras.create') ? 'active' : '' }}" href="{{ route('compras.create') }}">Registrar Compra</a>
                             <a class="nav-link {{ request()->routeIs('compras.index') ? 'active' : '' }}" href="{{ route('compras.index') }}">Historial de Compras</a>
+                            @can('gestionar_tesoreria')
+                                <a class="nav-link {{ request()->routeIs('cuentas-por-pagar.index') ? 'active' : '' }}" href="{{ route('cuentas-por-pagar.index') }}">Cuentas por Pagar</a>
+                            @endcan
                         </nav>
                     </div>
                 @endcan
@@ -160,9 +166,9 @@
         </div>
 
         <div class="sb-sidenav-footer border-top border-secondary bg-dark pb-3">
-            <div class="small text-muted mb-1 text-uppercase tracking-wide" style="font-size: 0.65rem;">Estado de Terminal</div>
+            <div class="small text-muted mb-1 text-uppercase" style="font-size: 0.65rem; letter-spacing: 0.05em;">Estado de Terminal</div>
 
-            @if($sesionAbierta && $sesionAbierta->caja)
+            @if(isset($sesionAbierta) && $sesionAbierta->caja)
                 <div class="d-flex align-items-center gap-2">
                     <span class="position-relative d-flex" style="width: 10px; height: 10px;">
                         <span class="animate-ping position-absolute h-100 w-100 rounded-circle bg-success opacity-75"></span>
@@ -190,20 +196,3 @@
         </div>
     </nav>
 </div>
-
-<style>
-    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.1); border-radius: 10px; }
-    .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.2); }
-    .sb-sidenav-menu-heading { font-size: 0.70rem !important; letter-spacing: 0.08em; text-transform: uppercase; color: #6c757d !important; font-weight: 700; margin-top: 1rem; }
-    .sb-sidenav .nav-link { transition: all 0.2s ease; font-weight: 500; font-size: 0.9rem; padding-top: 0.6rem; padding-bottom: 0.6rem; }
-    .sb-sidenav .nav-link:hover { color: #fff !important; background-color: rgba(255,255,255,0.05); }
-    .sb-sidenav .nav-link.active { font-weight: 700; background-color: rgba(13, 202, 240, 0.1); border-right: 3px solid #0dcaf0; }
-    .sb-sidenav .nav-link .sb-nav-link-icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
-    @keyframes ping {
-        0% { transform: scale(1); opacity: 1; }
-        75%, 100% { transform: scale(2.5); opacity: 0; }
-    }
-    .animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }
-</style>
