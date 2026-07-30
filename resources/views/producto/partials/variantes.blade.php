@@ -1,5 +1,4 @@
 @php
-    $editing = isset($producto) && $producto->exists;
     $variantRows = $variantRows ?? [
         [
             'id' => null,
@@ -14,46 +13,47 @@
 @endphp
 
 <div class="card border-0 shadow-sm rounded-4 mt-2">
-    <div class="card-header bg-white border-bottom border-light p-4">
+    <div class="card-header bg-white border-bottom p-4">
         <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center gap-3">
             <div>
                 <h5 class="mb-1 fw-bold text-dark d-flex align-items-center">
-                    <i class="fa-solid fa-boxes-packing text-primary me-2"></i>Estructura de Variantes y Stock Inicial
+                    <i class="fa-solid fa-boxes-packing text-primary me-2"></i>Control de Variantes y Stock Inicial
                 </h5>
                 <p class="text-muted mb-0 small">
-                    Defina la curva física de mercadería. El sistema exige asociar al menos una variante de almacenamiento.
+                    Defina la curva física de mercadería. El sistema exige asociar al menos una variante (Talla/Color).
                 </p>
             </div>
             <div>
-                <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-3" id="add-variant-row">Añadir Variante de Talla
+                <button type="button" class="btn btn-outline-primary btn-sm px-3 rounded-3 fw-medium shadow-sm" id="add-variant-row">
+                    <i class="fas fa-plus me-1"></i>Añadir Talla
                 </button>
             </div>
         </div>
     </div>
     
-    <div class="card-body p-4">
+    <div class="card-body p-4 bg-light bg-opacity-50">
         @error('variantes')
             <div class="alert alert-danger border-0 shadow-sm rounded-3 py-2 mb-3 small d-flex align-items-center">
                 <i class="fas fa-triangle-exclamation me-2"></i>{{ $message }}
             </div>
         @enderror
 
-        <div class="table-responsive">
-            <table class="table table-hover table-bordered align-middle mb-0" id="variant-table">
+        <div class="table-responsive bg-white shadow-sm rounded-3 border">
+            <table class="table table-hover align-middle mb-0" id="variant-table">
                 <thead class="table-light text-secondary small text-uppercase">
                     <tr>
-                        <th style="min-width: 250px;">Talla Asignada <span class="text-danger">*</span></th>
-                        <th style="width: 150px;" class="text-center">Stock Físico Inicial</th>
-                        <th style="width: 150px;" class="text-center">Mínimo Alerta</th>
-                        <th style="width: 80px;" class="text-center text-danger"><i class="fa-solid fa-trash-can"></i></th>
+                        <th class="ps-4 fw-bold" style="min-width: 250px;">Talla Asignada <span class="text-danger">*</span></th>
+                        <th style="width: 150px;" class="text-center fw-bold">Stock Inicial</th>
+                        <th style="width: 150px;" class="text-center fw-bold">Mínimo Alerta</th>
+                        <th style="width: 80px;" class="text-center text-danger pe-4"><i class="fa-solid fa-trash-can"></i></th>
                     </tr>
                 </thead>
                 <tbody id="variant-rows">
                     @foreach($variantRows as $index => $row)
                         <tr class="variant-row">
-                            <td>
-                                <select name="variantes[{{ $index }}][talla_id]" class="form-select form-select-sm variant-talla @error("variantes.$index.talla_id") is-invalid @enderror">
-                                    <option value="">Seleccione una dimensión...</option>
+                            <td class="ps-4">
+                                <select name="variantes[{{ $index }}][talla_id]" class="form-select shadow-sm variant-talla @error("variantes.$index.talla_id") is-invalid @enderror" required>
+                                    <option value="">Seleccione dimensión...</option>
                                     <optgroup label="Calzados Comerciales">
                                         @foreach($tallasCalzado as $talla)
                                             <option value="{{ $talla->id }}" @selected((string)($row['talla_id'] ?? '') === (string)$talla->id)>
@@ -76,24 +76,15 @@
                                         </optgroup>
                                     @endif
                                 </select>
-                                @error("variantes.$index.talla_id")
-                                    <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
-                                @enderror
                             </td>
                             <td>
-                                <input type="number" min="0" name="variantes[{{ $index }}][stock_actual]" class="form-control form-control-sm text-center variant-stock-qty @error("variantes.$index.stock_actual") is-invalid @enderror" value="{{ old("variantes.$index.stock_actual", $row['stock_actual'] ?? 0) }}">
-                                @error("variantes.$index.stock_actual")
-                                    <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
-                                @enderror
+                                <input type="number" min="0" name="variantes[{{ $index }}][stock_actual]" class="form-control shadow-sm text-center variant-stock-qty @error("variantes.$index.stock_actual") is-invalid @enderror" value="{{ old("variantes.$index.stock_actual", $row['stock_actual'] ?? 0) }}" required>
                             </td>
                             <td>
-                                <input type="number" min="0" name="variantes[{{ $index }}][stock_minimo]" class="form-control form-control-sm text-center @error("variantes.$index.stock_minimo") is-invalid @enderror" value="{{ old("variantes.$index.stock_minimo", $row['stock_minimo'] ?? 0) }}">
-                                @error("variantes.$index.stock_minimo")
-                                    <div class="text-danger mt-1 small" style="font-size:0.75rem;">{{ $message }}</div>
-                                @enderror
+                                <input type="number" min="0" name="variantes[{{ $index }}][stock_minimo]" class="form-control shadow-sm text-center @error("variantes.$index.stock_minimo") is-invalid @enderror" value="{{ old("variantes.$index.stock_minimo", $row['stock_minimo'] ?? 0) }}" required>
                             </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-variant-row border-0">
+                            <td class="text-center pe-4">
+                                <button type="button" class="btn btn-sm btn-light border text-danger remove-variant-row shadow-sm">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </td>
@@ -102,9 +93,9 @@
                 </tbody>
                 <tfoot class="table-light border-top fw-bold text-dark">
                     <tr>
-                        <td colspan="2" class="text-end py-3 text-secondary small text-uppercase">Carga Total de Inventario Registrada:</td>
+                        <td colspan="2" class="text-end py-3 text-secondary small text-uppercase">Total Inventario:</td>
                         <td class="text-center py-3 text-primary fs-6" id="total-stock-preview">0 unid.</td>
-                        <td colspan="3" class="bg-white"></td>
+                        <td class="bg-light"></td>
                     </tr>
                 </tfoot>
             </table>
@@ -112,12 +103,11 @@
     </div>
 </div>
 
-{{-- COMPONENTE TEMPLATE PARA INCORPORACIÓN DE FILAS DINÁMICAS --}}
 <template id="variant-row-template">
     <tr class="variant-row">
-        <td>
-            <select name="variantes[__INDEX__][talla_id]" class="form-select form-select-sm variant-talla">
-                <option value="">Seleccione una dimensión...</option>
+        <td class="ps-4">
+            <select name="variantes[__INDEX__][talla_id]" class="form-select shadow-sm variant-talla" required>
+                <option value="">Seleccione dimensión...</option>
                 <optgroup label="Calzados Comerciales">
                     @foreach($tallasCalzado as $talla)
                         <option value="{{ $talla->id }}">{{ $talla->codigo }} — Talla {{ $talla->nombre }}</option>
@@ -136,22 +126,13 @@
             </select>
         </td>
         <td>
-            <input type="text" name="variantes[__INDEX__][codigo_variante]" class="form-control form-control-sm variant-barcode" placeholder="Código de variante">
+            <input type="number" min="0" name="variantes[__INDEX__][stock_actual]" class="form-control shadow-sm text-center variant-stock-qty" value="0" required>
         </td>
         <td>
-            <input type="number" min="0" name="variantes[__INDEX__][stock_actual]" class="form-control form-control-sm text-center variant-stock-qty" value="0">
+            <input type="number" min="0" name="variantes[__INDEX__][stock_minimo]" class="form-control shadow-sm text-center" value="0" required>
         </td>
-        <td>
-            <input type="number" min="0" name="variantes[__INDEX__][stock_minimo]" class="form-control form-control-sm text-center" value="0">
-        </td>
-        <td>
-            <select name="variantes[__INDEX__][estado]" class="form-select form-select-sm">
-                <option value="1" selected>Activo</option>
-                <option value="0">Inactivo</option>
-            </select>
-        </td>
-        <td class="text-center">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-variant-row border-0">
+        <td class="text-center pe-4">
+            <button type="button" class="btn btn-sm btn-light border text-danger remove-variant-row shadow-sm">
                 <i class="fas fa-times"></i>
             </button>
         </td>
@@ -159,9 +140,6 @@
 </template>
 
 @push('js')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap-select@1.14.0-beta3/dist/js/bootstrap-select.min.js"></script>
-
 <script>
     (function () {
         const tipoProducto = document.getElementById('tipo_producto');
@@ -171,6 +149,8 @@
         const template = document.getElementById('variant-row-template');
         const totalStockPreview = document.getElementById('total-stock-preview');
         const tallaUnicaId = @json($tallaUnicaId);
+        
+        const reglasTallas = {!! $reglasTallas ?? '{}' !!};
 
         if (!tipoProducto || !manejaTallas || !addBtn || !rowsContainer || !template) return;
 
@@ -178,18 +158,19 @@
 
         function syncUI() {
             const tipo = tipoProducto.value;
+            const reglasDelTipo = reglasTallas[tipo] || [];
 
-            if (tipo === 'ZAPATILLA' || tipo === 'ROPA') {
-                manejaTallas.checked = true;
+            if (reglasDelTipo.length > 0) {
+                if (reglasDelTipo.includes('UNICA')) {
+                    manejaTallas.checked = false;
+                } else {
+                    manejaTallas.checked = true;
+                }
                 manejaTallas.style.opacity = '0.65';
-                manejaTallas.style.cursor = 'not-allowed';
-            } else if (tipo === 'ACCESORIO') {
-                manejaTallas.checked = false;
-                manejaTallas.style.opacity = '0.65';
-                manejaTallas.style.cursor = 'not-allowed';
+                manejaTallas.style.pointerEvents = 'none';
             } else {
                 manejaTallas.style.opacity = '1';
-                manejaTallas.style.cursor = 'pointer';
+                manejaTallas.style.pointerEvents = 'auto';
             }
 
             const isTallaUnica = !manejaTallas.checked;
@@ -239,7 +220,7 @@
                 const selectTalla = row.querySelector('.variant-talla');
                 if (selectTalla) {
                     selectTalla.removeAttribute('disabled');
-                    if (selectTalla.value === tallaUnicaId && rowsContainer.querySelectorAll('.variant-row').length > 1) {
+                    if (selectTalla.value == tallaUnicaId && rowsContainer.querySelectorAll('.variant-row').length > 1) {
                         selectTalla.value = '';
                     }
                 }
@@ -273,7 +254,7 @@
             rowsContainer.querySelectorAll('.variant-stock-qty').forEach(input => {
                 total += parseInt(input.value || 0, 10);
             });
-            totalStockPreview.textContent = `${total.toLocaleString('es-PE')} unidades`;
+            totalStockPreview.textContent = `${total.toLocaleString('es-PE')} unid.`;
         }
 
         addBtn.addEventListener('click', function () {
@@ -317,7 +298,9 @@
 
         manejaTallas.addEventListener('click', function (e) {
             const tipo = tipoProducto.value;
-            if (tipo === 'ZAPATILLA' || tipo === 'ROPA' || tipo === 'ACCESORIO') {
+            const reglasDelTipo = reglasTallas[tipo] || [];
+            
+            if (reglasDelTipo.length > 0) {
                 e.preventDefault();
             }
         });
