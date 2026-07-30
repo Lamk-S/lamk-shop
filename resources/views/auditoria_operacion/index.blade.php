@@ -155,7 +155,7 @@
                         Mostrando <strong>{{ $auditorias->firstItem() ?? 0 }}</strong> - <strong>{{ $auditorias->lastItem() ?? 0 }}</strong> de <strong>{{ $auditorias->total() }}</strong>
                     </span>
                 </div>
-                <div>
+                <div class="pagination-custom">
                     {{ $auditorias->links('pagination::bootstrap-5') }}
                 </div>
             </div>
