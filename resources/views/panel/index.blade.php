@@ -1,27 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Comando de Tienda')
 
-@push('css')
-<style>
-    .dashboard-title { font-weight: 900; letter-spacing: -.03em; color: #0f172a; }
-    .dashboard-card { border: 0; border-radius: 1.5rem; box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05); transition: transform 0.2s ease, box-shadow 0.2s ease; overflow: hidden; }
-    .dashboard-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.1); }
-    .kpi-title { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: #64748b; font-weight: 700; margin-bottom: 0.5rem; }
-    .kpi-value { font-size: 1.8rem; font-weight: 900; color: #1e293b; font-family: ui-monospace, monospace; letter-spacing: -0.05em; }
-    .icon-wrapper { width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 1.25rem; }
-    .section-header { font-weight: 800; color: #0f172a; font-size: 1.1rem; }
-    .table-stock th { font-size: 0.75rem; text-transform: uppercase; color: #64748b; font-weight: 700; border-bottom: 2px solid #e2e8f0; }
-    .table-stock td { font-weight: 600; color: #334155; vertical-align: middle; }
-    .pos-shortcut { background: linear-gradient(135deg, #0dcaf0 0%, #0d6efd 100%); color: white; }
-    .pos-shortcut:hover { opacity: 0.95; transform: translateY(-4px); }
-</style>
-@endpush
-
 @section('content')
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid px-3 px-md-4 py-4">
+    <!-- Encabezado -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h2 class="dashboard-title mb-0">
+            <h2 class="fw-bold text-dark mb-0 fs-3">
                 @hasrole('administrador') Comando Central @else ¡Hola, {{ auth()->user()->name }}! @endhasrole
             </h2>
             <p class="text-muted mb-0 fs-6">
@@ -30,7 +15,7 @@
         </div>
         <div>
             <span class="badge bg-white text-dark border shadow-sm px-4 py-2 fs-6 rounded-pill fw-medium">
-                <i class="fas fa-calendar-day text-info me-2"></i> {{ now()->translatedFormat('l d \d\e F, Y') }}
+                <i class="fas fa-calendar-day text-primary me-2"></i> {{ now()->translatedFormat('l d \d\e F, Y') }}
             </span>
         </div>
     </div>
@@ -39,78 +24,72 @@
          VISTA: ADMINISTRADOR (Visión Total)
     =========================================== -->
     @hasrole('administrador')
-        <div class="row g-4 mb-4">
+        <div class="row g-3 mb-4">
+            <!-- KPIs -->
             <div class="col-xl-3 col-sm-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4 position-relative">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title">Ingresos de Hoy</div>
-                                <div class="kpi-value text-success">S/ {{ number_format((float) ($kpis['ventas_hoy'] ?? 0), 2) }}</div>
-                            </div>
-                            <div class="icon-wrapper bg-success bg-opacity-10 text-success">
-                                <i class="fas fa-hand-holding-dollar"></i>
-                            </div>
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase small fw-bold text-muted mb-1 tracking-wide">Ingresos de Hoy</div>
+                            <div class="fs-3 fw-bold text-dark font-monospace">S/ {{ number_format((float) ($kpis['ventas_hoy'] ?? 0), 2) }}</div>
+                        </div>
+                        <div class="bg-success bg-opacity-10 text-success rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-hand-holding-dollar fs-4"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-sm-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title">Terminales Activas</div>
-                                <div class="kpi-value text-dark">{{ $kpis['sesiones_activas'] ?? 0 }} <span class="fs-6 text-muted fw-normal">en curso</span></div>
-                            </div>
-                            <div class="icon-wrapper bg-info bg-opacity-10 text-info">
-                                <i class="fas fa-cash-register"></i>
-                            </div>
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase small fw-bold text-muted mb-1 tracking-wide">Terminales Activas</div>
+                            <div class="fs-3 fw-bold text-dark font-monospace">{{ $kpis['sesiones_activas'] ?? 0 }}</div>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-cash-register fs-4"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-sm-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title text-warning">Alertas de Stock</div>
-                                <div class="kpi-value text-warning">{{ $kpis['productos_stock_bajo'] ?? 0 }} <span class="fs-6 text-muted fw-normal">artículos</span></div>
-                            </div>
-                            <div class="icon-wrapper bg-warning bg-opacity-10 text-warning">
-                                <i class="fas fa-triangle-exclamation"></i>
-                            </div>
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase small fw-bold text-warning mb-1 tracking-wide">Alertas de Stock</div>
+                            <div class="fs-3 fw-bold text-dark font-monospace">{{ $kpis['productos_stock_bajo'] ?? 0 }}</div>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 text-warning rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-triangle-exclamation fs-4"></i>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="col-xl-3 col-sm-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title">Gastos del Día</div>
-                                <div class="kpi-value text-danger">S/ {{ number_format((float) ($kpis['compras_hoy'] ?? 0), 2) }}</div>
-                            </div>
-                            <div class="icon-wrapper bg-danger bg-opacity-10 text-danger">
-                                <i class="fas fa-truck-loading"></i>
-                            </div>
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-body p-4 d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-uppercase small fw-bold text-muted mb-1 tracking-wide">Gastos del Día</div>
+                            <div class="fs-3 fw-bold text-dark font-monospace">S/ {{ number_format((float) ($kpis['compras_hoy'] ?? 0), 2) }}</div>
+                        </div>
+                        <div class="bg-danger bg-opacity-10 text-danger rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                            <i class="fas fa-truck-loading fs-4"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4 mb-4">
+        <div class="row g-3 mb-4">
+            <!-- Gráfico de Fluctuación -->
             <div class="col-lg-8">
-                <div class="card dashboard-card h-100">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-header bg-white border-0 pt-4 px-4">
-                        <div class="section-header">Fluctuación Comercial (7 Días)</div>
-                        <div class="text-muted small">Comparativa de prendas/artículos vendidos vs reabastecimiento.</div>
+                        <h5 class="fw-bold text-dark mb-0">Fluctuación Comercial (7 Días)</h5>
+                        <p class="text-muted small mb-0">Comparativa de prendas vendidas vs reabastecimiento.</p>
                     </div>
                     <div class="card-body p-4">
                         <canvas id="ventasComprasChart" height="100"></canvas>
@@ -118,70 +97,63 @@
                 </div>
             </div>
 
+            <!-- Bóveda Tesorería -->
             <div class="col-lg-4">
-                <div class="card dashboard-card bg-dark text-white h-100 relative overflow-hidden">
-                    <div class="position-absolute opacity-10 end-0 bottom-0 mb-n4 me-n4">
-                        <i class="fas fa-vault fa-10x"></i>
-                    </div>
-                    <div class="card-body p-4 position-relative z-1 d-flex flex-column justify-content-center">
-                        <h4 class="fw-bold mb-4">Bóveda de Tesorería</h4>
+                <div class="card border-0 shadow-sm rounded-4 bg-dark text-white h-100 overflow-hidden position-relative">
+                    <i class="fas fa-vault position-absolute bottom-0 end-0 mb-n3 me-n3 text-white opacity-10" style="font-size: 8rem;"></i>
+                    <div class="card-body p-4 d-flex flex-column justify-content-center position-relative z-1">
+                        <h5 class="fw-bold mb-4">Bóveda de Tesorería</h5>
                         
                         <div class="mb-4">
-                            <div class="text-uppercase tracking-wider small text-white-50 fw-bold mb-1"><i class="fas fa-money-bill-wave me-2"></i>Efectivo en Caja Fuerte</div>
-                            <h2 class="fw-black mb-0 font-monospace">S/ {{ number_format((float) ($tesoreriaEfectivo?->saldo_actual ?? 0), 2) }}</h2>
+                            <div class="text-uppercase small text-white-50 fw-bold mb-1"><i class="fas fa-money-bill-wave me-2"></i>Efectivo (Caja Fuerte)</div>
+                            <h2 class="fw-bold mb-0 font-monospace">S/ {{ number_format((float) ($tesoreriaEfectivo?->saldo_actual ?? 0), 2) }}</h2>
                         </div>
 
                         <div>
-                            <div class="text-uppercase tracking-wider small text-white-50 fw-bold mb-1"><i class="fas fa-building-columns me-2"></i>Cuentas Bancarias</div>
-                            <h2 class="fw-black mb-0 font-monospace text-info">S/ {{ number_format((float) ($tesoreriaBanco?->saldo_actual ?? 0), 2) }}</h2>
+                            <div class="text-uppercase small text-white-50 fw-bold mb-1"><i class="fas fa-building-columns me-2"></i>Cuentas Bancarias</div>
+                            <h2 class="fw-bold mb-0 font-monospace text-info">S/ {{ number_format((float) ($tesoreriaBanco?->saldo_actual ?? 0), 2) }}</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="row g-4">
+        <div class="row g-3">
+            <!-- Artículos por Agotarse -->
             <div class="col-lg-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom pt-4 px-4 pb-3 d-flex justify-content-between align-items-center">
                         <div>
-                            <div class="section-header"><i class="fas fa-box-open text-warning me-2"></i>Artículos por Agotarse</div>
-                            <div class="text-muted small">Zapatillas y accesorios con stock crítico (≤ 10 uds).</div>
+                            <h5 class="fw-bold text-dark mb-0"><i class="fas fa-box-open text-warning me-2"></i>Artículos Críticos</h5>
+                            <p class="text-muted small mb-0">Zapatillas y accesorios con stock ≤ 10 uds.</p>
                         </div>
-                        <a href="{{ route('kardex.index') }}" class="btn btn-sm btn-light fw-bold text-primary">Ver Kardex</a>
+                        <a href="{{ route('kardex.index') }}" class="btn btn-sm btn-light border fw-medium text-dark shadow-sm">Ver Kardex</a>
                     </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover table-stock mb-0">
-                                <thead>
+                            <table class="table table-hover align-middle mb-0 text-nowrap">
+                                <thead class="table-light">
                                     <tr>
-                                        <th class="ps-4">Prenda / Modelo</th>
-                                        <th class="text-end pe-4">Stock Restante</th>
+                                        <th class="ps-4 text-muted small text-uppercase fw-bold">Prenda / Modelo</th>
+                                        <th class="text-end pe-4 text-muted small text-uppercase fw-bold">Stock</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @forelse($stockBajo as $producto)
                                         <tr>
-                                            <td class="ps-4">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="bg-secondary bg-opacity-10 rounded d-flex align-items-center justify-content-center text-secondary" style="width: 32px; height: 32px;">
-                                                        <i class="fas fa-tag"></i>
-                                                    </div>
-                                                    {{ Str::limit($producto->nombre, 45) }}
-                                                </div>
-                                            </td>
+                                            <td class="ps-4 text-dark fw-medium">{{ Str::limit($producto->nombre, 45) }}</td>
                                             <td class="text-end pe-4">
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill fs-6 tabular-nums shadow-sm">
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-2 py-1 rounded-pill">
                                                     {{ (int) ($producto->stock_total_calc ?? 0) }} Unds.
                                                 </span>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="2" class="text-center py-5">
-                                                <div class="text-success mb-2"><i class="fas fa-check-circle fa-2x"></i></div>
-                                                <div class="fw-bold">Almacén Abastecido</div>
-                                                <div class="text-muted small">No hay productos en riesgo de quiebre de stock.</div>
+                                            <td colspan="2" class="text-center py-4 text-muted">
+                                                <i class="fas fa-check-circle text-success fs-3 mb-2"></i>
+                                                <div class="fw-bold text-dark">Almacén Abastecido</div>
+                                                <div class="small">No hay productos en riesgo.</div>
                                             </td>
                                         </tr>
                                     @endforelse
@@ -192,215 +164,15 @@
                 </div>
             </div>
 
+            <!-- Preferencia de Pago -->
             <div class="col-lg-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-header bg-white border-0 pt-4 px-4">
-                        <div class="section-header">Preferencia de Pago (Ventas)</div>
-                        <div class="text-muted small">Cómo están pagando tus clientes.</div>
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom pt-4 px-4 pb-3">
+                        <h5 class="fw-bold text-dark mb-0">Métodos de Pago</h5>
+                        <p class="text-muted small mb-0">Distribución de ingresos por ventas.</p>
                     </div>
-                    <div class="card-body d-flex justify-content-center align-items-center pb-4">
+                    <div class="card-body d-flex justify-content-center align-items-center p-4">
                         <canvas id="metodosPagoVentasChart" style="max-height: 250px;"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endhasrole
-
-    <!-- ==========================================
-         VISTA: VENDEDOR (Enfoque Comercial)
-    =========================================== -->
-    @hasrole('vendedor')
-        <div class="row g-4 mb-4">
-            <div class="col-lg-8">
-                <div class="card dashboard-card pos-shortcut h-100 border-0">
-                    <div class="card-body p-5 d-flex flex-column justify-content-center align-items-center text-center">
-                        <div class="bg-white bg-opacity-25 rounded-circle mb-4 d-flex justify-content-center align-items-center shadow-sm" style="width: 80px; height: 80px;">
-                            <i class="fas fa-shopping-bag fa-3x text-white"></i>
-                        </div>
-                        <h2 class="fw-bold text-white mb-3">Punto de Venta Activo</h2>
-                        <p class="text-white-50 mb-4 fs-5">Accede rápidamente al catálogo y registra las compras de los clientes.</p>
-                        <a href="{{ route('ventas.create') }}" class="btn btn-light btn-lg px-5 shadow rounded-pill fw-bold text-primary">
-                            <i class="fas fa-plus me-2"></i> Iniciar Nueva Venta
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-4">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4 d-flex flex-column">
-                        <div class="kpi-title text-success mb-3">Mis Indicadores de Hoy</div>
-                        
-                        <div class="p-3 bg-success bg-opacity-10 rounded-3 mb-3 border border-success border-opacity-25 flex-grow-1 d-flex flex-column justify-content-center">
-                            <div class="small text-success text-uppercase fw-bold mb-1">Total Ingresado</div>
-                            <h3 class="fw-bold text-success mb-0">S/ {{ number_format((float) ($kpis['ventas_hoy'] ?? 0), 2) }}</h3>
-                        </div>
-
-                        <div class="p-3 bg-light rounded-3 border">
-                            <a href="{{ route('ventas.index') }}" class="text-decoration-none text-secondary d-flex justify-content-between align-items-center">
-                                <span class="fw-medium"><i class="fas fa-history me-2"></i>Ver mi historial de ventas</span>
-                                <i class="fas fa-arrow-right"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endhasrole
-
-    <!-- ==========================================
-         VISTA: CAJERO (Enfoque Financiero)
-    =========================================== -->
-    @hasrole('cajero')
-        <div class="row g-4 mb-4">
-            <div class="col-lg-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <h4 class="fw-bold text-dark mb-4">Estado de tu Terminal</h4>
-                        
-                        @if(($kpis['sesiones_activas'] ?? 0) > 0)
-                            <div class="alert alert-success d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
-                                <i class="fas fa-check-circle fa-3x me-3 opacity-75"></i>
-                                <div>
-                                    <div class="fw-bold fs-5">Caja Operativa</div>
-                                    <div class="small opacity-75">Tu turno está activo y listo para procesar pagos y operaciones.</div>
-                                </div>
-                            </div>
-                            <div class="d-grid gap-3">
-                                <a href="{{ route('ventas.index') }}" class="btn btn-success btn-lg fw-medium shadow-sm"><i class="fas fa-file-invoice-dollar me-2"></i>Ir a Cobranzas</a>
-                                <a href="{{ route('movimientos-caja.create') }}" class="btn btn-outline-secondary fw-medium"><i class="fas fa-exchange-alt me-2"></i>Registrar Movimiento Extra</a>
-                            </div>
-                        @else
-                            <div class="alert alert-danger d-flex align-items-center mb-4 border-0 shadow-sm" role="alert">
-                                <i class="fas fa-lock fa-3x me-3 opacity-75"></i>
-                                <div>
-                                    <div class="fw-bold fs-5">Caja Cerrada</div>
-                                    <div class="small opacity-75">Debes aperturar una sesión para comenzar a operar.</div>
-                                </div>
-                            </div>
-                            <div class="d-grid gap-3">
-                                <a href="{{ route('sesiones-caja.create') }}" class="btn btn-primary btn-lg fw-medium shadow-sm"><i class="fas fa-key me-2"></i>Abrir Turno de Caja</a>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between mb-4">
-                            <div>
-                                <div class="kpi-title text-info">Terminales Generales Activas</div>
-                                <div class="kpi-value text-dark">{{ $kpis['sesiones_activas'] ?? 0 }} <span class="fs-6 text-muted fw-normal">en tienda</span></div>
-                            </div>
-                            <div class="icon-wrapper bg-info bg-opacity-10 text-info">
-                                <i class="fas fa-desktop"></i>
-                            </div>
-                        </div>
-                        <hr class="text-muted">
-                        <div class="text-muted small">
-                            <i class="fas fa-info-circle me-1"></i> Recuerda declarar el saldo exacto al finalizar tu turno en la opción de Cierre de Caja.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    @endhasrole
-
-    <!-- ==========================================
-         VISTA: ENCARGADO DE ALMACÉN (Logística)
-    =========================================== -->
-    @hasrole('encargado_almacen')
-        <div class="row g-4 mb-4">
-            <div class="col-md-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4 position-relative">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title text-danger">Gastos en Abastecimiento (Hoy)</div>
-                                <div class="kpi-value text-danger">S/ {{ number_format((float) ($kpis['compras_hoy'] ?? 0), 2) }}</div>
-                            </div>
-                            <div class="icon-wrapper bg-danger bg-opacity-10 text-danger">
-                                <i class="fas fa-boxes-packing"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <a href="{{ route('compras.create') }}" class="btn btn-outline-danger w-100 fw-medium">
-                                <i class="fas fa-plus me-2"></i>Registrar Nueva Compra
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card dashboard-card h-100">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <div class="kpi-title text-warning">Alertas Críticas de Stock</div>
-                                <div class="kpi-value text-warning">{{ $kpis['productos_stock_bajo'] ?? 0 }} <span class="fs-6 text-muted fw-normal">artículos</span></div>
-                            </div>
-                            <div class="icon-wrapper bg-warning bg-opacity-10 text-warning">
-                                <i class="fas fa-triangle-exclamation"></i>
-                            </div>
-                        </div>
-                        <div class="mt-4">
-                            <a href="{{ route('kardex.index') }}" class="btn btn-outline-warning w-100 fw-medium text-dark">
-                                <i class="fas fa-clipboard-list me-2"></i>Revisar Kardex
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4">
-            <div class="col-12">
-                <div class="card dashboard-card h-100">
-                    <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="section-header"><i class="fas fa-box-open text-warning me-2"></i>Artículos que requieren reabastecimiento</div>
-                        </div>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover table-stock mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-4">Código / Prenda</th>
-                                        <th class="text-end pe-4">Stock Restante</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($stockBajo as $producto)
-                                        <tr>
-                                            <td class="ps-4">
-                                                <div class="d-flex align-items-center gap-3">
-                                                    <div class="bg-secondary bg-opacity-10 rounded d-flex align-items-center justify-content-center text-secondary fw-bold" style="padding: 0.5rem; font-size: 0.75rem;">
-                                                        {{ $producto->codigo }}
-                                                    </div>
-                                                    <span class="fw-bold text-dark">{{ $producto->nombre }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-end pe-4">
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2 rounded-pill fs-6 tabular-nums shadow-sm">
-                                                    {{ (int) ($producto->stock_total_calc ?? 0) }} Unds.
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="2" class="text-center py-5">
-                                                <div class="text-success mb-2"><i class="fas fa-check-circle fa-2x"></i></div>
-                                                <div class="fw-bold">Almacén Abastecido</div>
-                                                <div class="text-muted small">No hay productos en riesgo de quiebre de stock.</div>
-                                            </td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -412,85 +184,88 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- Solo cargamos los datos de los gráficos si existen para evitar errores en la consola -->
 @if(isset($ventasCompras) && isset($metodosPagoVentas))
-    <script id="ventas-compras-data" type="application/json">
-    {!! json_encode($ventasCompras, JSON_UNESCAPED_UNICODE) !!}
-    </script>
-    <script id="metodos-ventas-data" type="application/json">
-    {!! json_encode($metodosPagoVentas, JSON_UNESCAPED_UNICODE) !!}
-    </script>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            Chart.defaults.font.family = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-            Chart.defaults.color = '#64748b';
+            const ventasCompras = {{ Illuminate\Support\Js::from($ventasCompras) }};
+            const metodosPagoVentas = {{ Illuminate\Support\Js::from($metodosPagoVentas) }};
+
+            Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+            Chart.defaults.color = '#6c757d';
 
             const ventasChartEl = document.getElementById('ventasComprasChart');
             const metodosChartEl = document.getElementById('metodosPagoVentasChart');
 
-            if (ventasChartEl) {
-                const ventasCompras = JSON.parse(document.getElementById('ventas-compras-data').textContent);
+            if (ventasChartEl && ventasCompras.length > 0) {
                 new Chart(ventasChartEl, {
                     type: 'line',
                     data: {
                         labels: ventasCompras.map(x => x.fecha),
                         datasets: [
                             { 
-                                label: 'Ingresos por Ventas (S/)', 
+                                label: 'Ventas (S/)', 
                                 data: ventasCompras.map(x => x.ventas),
-                                borderColor: '#0dcaf0',
-                                backgroundColor: 'rgba(13, 202, 240, 0.1)',
-                                borderWidth: 3,
-                                tension: 0.4,
+                                borderColor: '#0d6efd',
+                                backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                                borderWidth: 2,
+                                tension: 0.3,
                                 fill: true
                             },
                             { 
-                                label: 'Inversión en Compras (S/)', 
+                                label: 'Compras (S/)', 
                                 data: ventasCompras.map(x => x.compras),
                                 borderColor: '#dc3545',
                                 backgroundColor: 'transparent',
                                 borderWidth: 2,
                                 borderDash: [5, 5],
-                                tension: 0.4
+                                tension: 0.3
                             }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } }
-                        },
+                        plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8 } } },
                         scales: {
-                            y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#e2e8f0' } },
+                            y: { beginAtZero: true, grid: { borderDash: [2, 4], color: '#f8f9fa' } },
                             x: { grid: { display: false } }
                         }
                     }
                 });
             }
 
-            if (metodosChartEl) {
-                const metodosPagoVentas = JSON.parse(document.getElementById('metodos-ventas-data').textContent);
+            if (metodosChartEl && metodosPagoVentas.length > 0) {
+                const colorMap = {
+                    'Efectivo': '#198754',
+                    'Tarjeta (Débito/Crédito)': '#0d6efd',
+                    'Yape': '#6f42c1',
+                    'Plin': '#0dcaf0',
+                    'Transferencia Bancaria': '#fd7e14',
+                    'Crédito': '#ffc107',
+                    'Otro Método': '#adb5bd'
+                };
+                
+                const bgColors = metodosPagoVentas.map(m => colorMap[m.name] || '#6c757d');
+
                 new Chart(metodosChartEl, {
                     type: 'doughnut',
                     data: {
                         labels: metodosPagoVentas.map(x => x.name),
                         datasets: [{
                             data: metodosPagoVentas.map(x => x.value),
-                            backgroundColor: ['#0dcaf0', '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#6c757d'],
+                            backgroundColor: bgColors,
                             borderWidth: 0,
-                            hoverOffset: 10
+                            hoverOffset: 5
                         }]
                     },
                     options: {
                         responsive: true,
                         cutout: '75%',
-                        plugins: {
-                            legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 10, padding: 20 } }
-                        }
+                        plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 15 } } }
                     }
                 });
+            } else if(metodosChartEl) {
+                metodosChartEl.parentElement.innerHTML = '<div class="text-muted small text-center w-100 py-4"><i class="fas fa-chart-pie fs-3 mb-2 opacity-50"></i><br>Aún no hay transacciones para analizar.</div>';
             }
         });
     </script>

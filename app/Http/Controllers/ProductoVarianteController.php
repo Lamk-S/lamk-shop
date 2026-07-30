@@ -178,22 +178,24 @@ class ProductoVarianteController extends Controller implements HasMiddleware
         }
     }
 
-    public function destroy(ProductoVariante $producto_variante)
+    public function destroy(int $id)
     {
         try {
+            $producto_variante = ProductoVariante::withTrashed()->findOrFail($id);
+
             if ($producto_variante->trashed()) {
                 $producto_variante->restore();
                 $producto_variante->update(['estado' => 1]);
-                $message = 'Variante restaurada correctamente';
+                $message = 'Variante restaurada y activada correctamente';
             } else {
                 $producto_variante->delete();
-                $message = 'Variante eliminada correctamente';
+                $message = 'Variante desactivada correctamente';
             }
 
             return redirect()->route('producto-variantes.index')->with('success', $message);
         } catch (\Throwable $e) {
             report($e);
-            return back()->withErrors(['error' => 'Error al modificar la variante.']);
+            return back()->withErrors(['error' => 'Error al modificar el estado de la variante.']);
         }
     }
 

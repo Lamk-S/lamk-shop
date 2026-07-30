@@ -3,24 +3,19 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateProfileRequest;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ProfileController extends Controller
 {
     public function index()
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
+        $user = request()->user();
         return view('profile.index', compact('user'));
     }
 
-    public function update(UpdateProfileRequest $request, User $user)
+    public function update(UpdateProfileRequest $request)
     {
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
+        $user = $request->user();
         $data = $request->validated();
 
         try {
@@ -42,7 +37,7 @@ class ProfileController extends Controller
                 ->with('success', 'Tu perfil y credenciales han sido actualizados con éxito.');
         } catch (\Exception $e) {
             return back()
-                ->withErrors(['error' => 'Error al actualizar el perfil' . $e->getMessage()])
+                ->withErrors(['error' => 'Error al actualizar el perfil: ' . $e->getMessage()])
                 ->withInput();
         }
     }

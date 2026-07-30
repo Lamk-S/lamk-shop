@@ -94,7 +94,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('ventas/{venta}', [VentaController::class, 'destroy'])
         ->name('ventas.destroy')
         ->middleware('permission:anular_ventas');
-        
+    // Rutas de Pagos de Ventas
+    Route::get('/pagos-venta', [PagoVentaController::class, 'index'])->name('pagos-venta.index');
     Route::post('/ventas/{venta}/pagos', [PagoVentaController::class, 'store'])->name('ventas.pagos.store');
 
     // MÓDULO: Abastecimiento y Compras
@@ -103,7 +104,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('compras/{compra}', [CompraController::class, 'destroy'])
         ->name('compras.destroy')
         ->middleware('permission:anular_compras');
-
+    // Rutas de Pagos de Compras
     Route::get('/cuentas-por-pagar', [PagoCompraController::class, 'index'])->name('cuentas-por-pagar.index');
     Route::post('/cuentas-por-pagar/{cuenta_por_pagar}/pagos', [PagoCompraController::class, 'store'])->name('cuentas-por-pagar.pagos.store');
 

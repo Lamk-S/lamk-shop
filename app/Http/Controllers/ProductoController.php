@@ -313,23 +313,21 @@ class ProductoController extends Controller implements HasMiddleware
                     'variantes' => 'Debes registrar al menos una variante de talla para este producto.',
                 ]);
             }
-
             $this->syncProvidedVariants($producto, $variantes, $isUpdate);
             return;
         }
 
-        $stockTotal = (int) $request->input('stock_total', 0);
+        $stockActual = (int) ($variantes->first()['stock_actual'] ?? 0);
+        $stockMinimo = (int) ($variantes->first()['stock_minimo'] ?? 0);
 
-        $variantesFinales = $variantes->isNotEmpty()
-            ? $variantes
-            : collect([
-                [
-                    'talla_id' => $tallaUnica->id,
-                    'codigo_variante' => ProductoVariante::generarCodigoVariante($producto, $tallaUnica),
-                    'stock_actual' => $stockTotal,
-                    'stock_minimo' => $request->input('stock_minimo', 0),
-                ],
-            ]);
+        $variantesFinales = collect([
+            [
+                'talla_id' => $tallaUnica->id,
+                'codigo_variante' => ProductoVariante::generarCodigoVariante($producto, $tallaUnica),
+                'stock_actual' => $stockActual,
+                'stock_minimo' => $stockMinimo,
+            ],
+        ]);
 
         $this->syncProvidedVariants($producto, $variantesFinales, $isUpdate);
     }

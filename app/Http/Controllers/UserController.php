@@ -26,7 +26,6 @@ class UserController extends Controller implements HasMiddleware
         $query = User::query()
             ->with(['roles:id,name'])
             ->withTrashed()
-            ->withCount('roles')
             ->orderBy('name');
 
         if ($request->filled('q')) {

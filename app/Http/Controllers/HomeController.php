@@ -12,7 +12,6 @@ use App\Models\SesionCaja;
 use App\Models\Tesoreria;
 use App\Models\Venta;
 use Carbon\Carbon;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -38,64 +37,84 @@ class HomeController extends Controller
             $tesoreriaBanco = $tesorerias->get('TES-BANCO');
         }
 
+        $hoy = today();
+        $inicioMes = now()->startOfMonth();
+
+        $stockBajoQuery = Producto::query()
+            ->select('productos.id', 'productos.nombre', 'productos.codigo')
+            ->selectRaw("
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN producto_variantes.estado = 1
+                            AND producto_variantes.deleted_at IS NULL
+                            THEN producto_variantes.stock_actual
+                            ELSE 0
+                        END
+                    ),0
+                ) as stock_total_calc
+            ")
+            ->leftJoin('producto_variantes', 'producto_variantes.producto_id', '=', 'productos.id')
+            ->where('productos.estado', 1)
+            ->whereNull('productos.deleted_at')
+            ->groupBy('productos.id', 'productos.nombre', 'productos.codigo')
+            ->having('stock_total_calc', '<=', 10);
+
+        $conteoStockBajo = (clone $stockBajoQuery)->count();
+
         $kpis = [
-            'ventas_hoy' => Venta::whereDate('fecha_emision', today())
-                ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
-                ->sum('total'),
-
-            'compras_hoy' => Compra::whereDate('fecha_emision', today())
-                ->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
-                ->sum('total'),
-
-            'ventas_mes' => Venta::whereMonth('fecha_emision', now()->month)
-                ->whereYear('fecha_emision', now()->year)
-                ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
-                ->sum('total'),
-
-            'compras_mes' => Compra::whereMonth('fecha_emision', now()->month)
-                ->whereYear('fecha_emision', now()->year)
-                ->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
-                ->sum('total'),
-
+            'ventas_hoy' => Venta::whereDate('fecha_emision', $hoy)->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)->sum('total'),
+            'compras_hoy' => Compra::whereDate('fecha_emision', $hoy)->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)->sum('total'),
+            'ventas_mes' => Venta::where('fecha_emision', '>=', $inicioMes)->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)->sum('total'),
+            'compras_mes' => Compra::where('fecha_emision', '>=', $inicioMes)->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)->sum('total'),
             'sesiones_activas' => SesionCaja::where('estado_sesion', EstadoSesion::ABIERTA)->count(),
-
-            'productos_stock_bajo' => Producto::where('estado', 1)
-                ->whereHas('variantes', function($q) {
-                    $q->where('estado', 1)
-                      ->havingRaw('SUM(stock_actual) <= 10');
-                })->count(),
+            'productos_stock_bajo' => $conteoStockBajo,
         ];
+
+        $hace7Dias = Carbon::today()->subDays(6);
+        
+        $ventas7Dias = Venta::selectRaw('DATE(fecha_emision) as fecha, SUM(total) as total')
+            ->where('fecha_emision', '>=', $hace7Dias)
+            ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
+            ->groupBy('fecha')->pluck('total', 'fecha');
+
+        $compras7Dias = Compra::selectRaw('DATE(fecha_emision) as fecha, SUM(total) as total')
+            ->where('fecha_emision', '>=', $hace7Dias)
+            ->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)
+            ->groupBy('fecha')->pluck('total', 'fecha');
 
         $ventasCompras = [];
         for ($i = 6; $i >= 0; $i--) {
-            $fecha = Carbon::today()->subDays($i);
+            $dateObj = Carbon::today()->subDays($i);
+            $dateString = $dateObj->toDateString();
             $ventasCompras[] = [
-                'fecha' => $fecha->format('d/m'),
-                'ventas' => Venta::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)->sum('total'),
-                'compras' => Compra::whereDate('fecha_emision', $fecha)->where('estado_documento', '!=', EstadoDocumentoCompra::ANULADA)->sum('total'),
+                'fecha' => $dateObj->format('d/m'),
+                'ventas' => round($ventas7Dias[$dateString] ?? 0, 2),
+                'compras' => round($compras7Dias[$dateString] ?? 0, 2),
             ];
         }
 
-        $metodosVentas = array_keys(MetodoPago::opciones());
-        $metodosCompras = array_keys(MetodoPago::opciones());
+        $metodos = collect(MetodoPago::opciones())
+            ->keys()
+            ->reject(fn($m) => $m === MetodoPago::MIXTO->value)
+            ->toArray();
 
-        $ventasMetodo = Venta::select(['id', 'total', 'vuelto_entregado'])
-            ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
-            ->with(['pagos' => fn ($q) => $q->select('id', 'venta_id', 'metodo_pago', 'monto', 'estado')->where('estado', 1)])
-            ->get();
+        $ventasPorMetodoRaw = $this->calcularVentasPorMetodoRaw($metodos);
+        $comprasPorMetodoRaw = $this->calcularComprasPorMetodo($metodos);
 
-        $ventasPorMetodoRaw = $this->calcularVentasPorMetodo($ventasMetodo, $metodosVentas);
-        $comprasPorMetodoRaw = $this->calcularComprasPorMetodo($metodosCompras);
+        $metodosPagoVentas = collect($metodos)
+            ->map(fn($m) => ['name' => MetodoPago::opciones()[$m] ?? $m, 'value' => (float)($ventasPorMetodoRaw[$m] ?? 0)])
+            ->filter(fn($item) => $item['value'] > 0)
+            ->values()
+            ->all();
 
-        $metodosPagoVentas = collect($metodosVentas)->map(fn($m) => ['name' => ucfirst(strtolower($m)), 'value' => (float)($ventasPorMetodoRaw[$m] ?? 0)])->values()->all();
-        $metodosPagoCompras = collect($metodosCompras)->map(fn($m) => ['name' => ucfirst(strtolower($m)), 'value' => (float)($comprasPorMetodoRaw[$m] ?? 0)])->values()->all();
+        $metodosPagoCompras = collect($metodos)
+            ->map(fn($m) => ['name' => MetodoPago::opciones()[$m] ?? $m, 'value' => (float)($comprasPorMetodoRaw[$m] ?? 0)])
+            ->filter(fn($item) => $item['value'] > 0)
+            ->values()
+            ->all();
 
-        $stockBajo = Producto::select('productos.id', 'productos.nombre')
-            ->selectRaw('COALESCE(SUM(CASE WHEN producto_variantes.estado = 1 AND producto_variantes.deleted_at IS NULL THEN producto_variantes.stock_actual ELSE 0 END), 0) as stock_total_calc')
-            ->leftJoin('producto_variantes', 'producto_variantes.producto_id', '=', 'productos.id')
-            ->where('productos.estado', 1)
-            ->groupBy('productos.id', 'productos.nombre')
-            ->havingRaw('COALESCE(SUM(CASE WHEN producto_variantes.estado = 1 AND producto_variantes.deleted_at IS NULL THEN producto_variantes.stock_actual ELSE 0 END), 0) <= ?', [10])
+        $stockBajo = (clone $stockBajoQuery)
             ->orderBy('stock_total_calc')
             ->limit(10)
             ->get();
@@ -106,37 +125,30 @@ class HomeController extends Controller
         ));
     }
 
-    private function calcularVentasPorMetodo(Collection $ventas, array $metodos): array
+    private function calcularVentasPorMetodoRaw(array $metodos): array
     {
         $totales = array_fill_keys($metodos, 0.0);
+        
+        $raw = DB::table('pagos_venta')
+            ->join('ventas', 'pagos_venta.venta_id', '=', 'ventas.id')
+            ->where('pagos_venta.estado', 1)
+            ->where('ventas.estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
+            ->selectRaw('pagos_venta.metodo_pago, SUM(pagos_venta.monto) as total')
+            ->groupBy('pagos_venta.metodo_pago')
+            ->pluck('total', 'metodo_pago');
 
-        foreach ($ventas as $venta) {
-            $ventaTotal = round((float) ($venta->total ?? 0), 2);
-            if ($ventaTotal <= 0) continue;
+        $totalVueltos = DB::table('ventas')
+            ->where('estado_documento', '!=', EstadoDocumentoVenta::ANULADA)
+            ->sum('vuelto_entregado');
 
-            // 1. Accedemos a ->value en lugar de usar (string) y strtoupper()
-            $pagos = $venta->pagos->filter(fn($pago) => in_array($pago->metodo_pago->value, $metodos, true) && (float) $pago->monto > 0)->values();
-
-            if ($pagos->isEmpty()) continue;
-
-            // 2. Comparamos directamente el objeto Enum con nuestro Enum, sin strings quemados
-            $esEfectivoConVuelto = $pagos->count() === 1 
-                && $pagos->first()->metodo_pago === MetodoPago::EFECTIVO 
-                && (float) ($venta->vuelto_entregado ?? 0) > 0;
-
-            if ($esEfectivoConVuelto) {
-                $totales[MetodoPago::EFECTIVO->value] = round($totales[MetodoPago::EFECTIVO->value] + $ventaTotal, 2);
-                continue;
+        foreach ($metodos as $metodo) {
+            $monto = (float) ($raw[$metodo] ?? 0);
+            if ($metodo === MetodoPago::EFECTIVO->value) {
+                $monto -= (float) $totalVueltos;
             }
-
-            foreach ($pagos as $pago) {
-                // 3. Obtenemos el valor limpio del Enum
-                $metodo = $pago->metodo_pago->value;
-                if (array_key_exists($metodo, $totales)) {
-                    $totales[$metodo] = round($totales[$metodo] + (float) $pago->monto, 2);
-                }
-            }
+            $totales[$metodo] = round(max($monto, 0), 2);
         }
+        
         return $totales;
     }
 

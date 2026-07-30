@@ -11280,3 +11280,44 @@ body {
   background-color: #0061f2 !important;
   color: #fff !important;
 }
+
+/* Paginación */
+.pagination-custom nav > div.d-none.d-sm-flex > div:first-child { 
+  display: none !important; 
+}
+.pagination-custom nav > div.d-flex.justify-content-between.d-sm-none { 
+  display: none !important; 
+}
+.pagination-custom .pagination { 
+  margin-bottom: 0; gap: .25rem; 
+}
+.pagination-custom .page-link { 
+  border-radius: .5rem; 
+  padding: .45rem .75rem; 
+  font-size: .875rem; 
+  border: 1px solid #e2e8f0; 
+  color: #475569; 
+}
+.pagination-custom .page-item.active .page-link {
+  background-color: #0d6efd;
+  border-color: #0d6efd; 
+  color: #fff;
+  font-weight: 600; 
+}
+
+.custom-scrollbar::-webkit-scrollbar { width: 5px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.15); border-radius: 10px; }
+.custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: rgba(255, 255, 255, 0.3); }
+
+.sb-sidenav-menu-heading { font-size: 0.70rem; letter-spacing: 0.08em; text-transform: uppercase; color: #6c757d; font-weight: 700; margin-top: 1rem; }
+.sb-sidenav .nav-link { transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out; font-weight: 500; font-size: 0.9rem; padding: 0.6rem 1rem; }
+.sb-sidenav .nav-link:hover { color: #fff !important; background-color: rgba(255,255,255,0.05); }
+.sb-sidenav .nav-link.active { font-weight: 700; background-color: rgba(13, 202, 240, 0.1); border-right: 3px solid #0dcaf0; }
+.sb-sidenav .nav-link .sb-nav-link-icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
+
+@keyframes ping {
+    0% { transform: scale(1); opacity: 1; }
+    75%, 100% { transform: scale(2.5); opacity: 0; }
+}
+.animate-ping { animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite; }

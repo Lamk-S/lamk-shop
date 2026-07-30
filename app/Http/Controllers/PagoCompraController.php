@@ -24,12 +24,8 @@ class PagoCompraController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = CuentaPorPagar::with([
-                'compra.comprobante',
-                'compra.detalles.productoVariante.producto.marca',
-                'compra.detalles.productoVariante.talla',
-                'proveedor.persona.documento',
-                'user',
-                'pagos.user',
+                'compra:id,serie,correlativo',
+                'proveedor.persona.documento:id,codigo'
             ])
             ->latest('id');
 
@@ -46,8 +42,9 @@ class PagoCompraController extends Controller implements HasMiddleware
                 ->whereDate('fecha_vencimiento', '<', today());
         }
 
-        $cuentas = $query->get();
-        $proveedores = Proveedor::with('persona.documento')
+        $cuentas = $query->paginate(15)->withQueryString();
+        
+        $proveedores = Proveedor::with('persona.documento:id,codigo')
             ->whereHas('persona', fn ($q) => $q->where('estado', 1))
             ->orderBy('id')
             ->get();
@@ -76,9 +73,7 @@ class PagoCompraController extends Controller implements HasMiddleware
                 ->with('success', 'Pago de compra registrado correctamente');
         } catch (\Exception $e) {
             return back()
-                ->withErrors([
-                    'error' => 'Error al registrar el pago: ' . $e->getMessage(),
-                ])
+                ->withErrors(['error' => 'Error al registrar el pago: ' . $e->getMessage()])
                 ->withInput();
         }
     }
