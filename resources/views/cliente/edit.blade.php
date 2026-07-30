@@ -2,17 +2,10 @@
 
 @section('title', 'Editar Cliente')
 
-@push('css')
-<style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
-    .fs-7 { font-size: 0.875rem; }
-</style>
-@endpush
-
 @section('content')
 <div class="container-fluid px-4 py-4">
     <div class="mb-4">
-        <h2 class="page-title mb-0">Modificar Cliente</h2>
+        <h2 class="fw-bolder text-dark mb-0 fs-3">Modificar Cliente</h2>
         <ol class="breadcrumb mb-0 mt-1 fs-7">
             <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
             <li class="breadcrumb-item"><a href="{{ route('clientes.index') }}" class="text-decoration-none text-muted">Clientes</a></li>

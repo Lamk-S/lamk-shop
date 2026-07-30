@@ -1,14 +1,7 @@
 @php
     $shouldOpenQuickClienteModal = session('quickClienteError') || $errors->hasAny([
-        'tipo_persona',
-        'documento_id',
-        'numero_documento',
-        'nombres',
-        'apellidos',
-        'razon_social',
-        'direccion',
-        'telefono',
-        'email',
+        'tipo_persona', 'documento_id', 'numero_documento', 'nombres',
+        'apellidos', 'razon_social', 'direccion', 'telefono', 'email',
     ]);
 @endphp
 
@@ -219,76 +212,6 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const tipoPersona = document.getElementById('modal_tipo_persona');
-        const documentoSelect = document.getElementById('modal_documento_id');
-        const naturalFields = document.querySelectorAll('.quick-cliente-natural-field');
-        const juridicaFields = document.querySelectorAll('.quick-cliente-juridica-field');
-        const nombres = document.getElementById('modal_nombres');
-        const apellidos = document.getElementById('modal_apellidos');
-        const razonSocial = document.getElementById('modal_razon_social');
-
-        function setRequired(elements, required) {
-            elements.forEach((el) => {
-                const input = el.querySelector('input, select, textarea');
-                if (input) {
-                    input.required = required;
-                }
-            });
-        }
-
-        function selectDocumentoPorCodigo(codigoBuscado) {
-            if (!documentoSelect) return;
-
-            const codigo = String(codigoBuscado || '').toUpperCase();
-            let found = false;
-
-            Array.from(documentoSelect.options).forEach((option) => {
-                const optionCodigo = String(option.dataset.codigo || '').toUpperCase();
-                if (optionCodigo === codigo) {
-                    option.selected = true;
-                    found = true;
-                }
-            });
-
-            if (!found && documentoSelect.options.length > 0 && !documentoSelect.value) {
-                documentoSelect.selectedIndex = 0;
-            }
-        }
-
-        function toggleFields() {
-            const tipo = String(tipoPersona?.value || '').toLowerCase();
-
-            if (tipo === 'natural') {
-                naturalFields.forEach((el) => el.classList.remove('d-none'));
-                juridicaFields.forEach((el) => el.classList.add('d-none'));
-                setRequired(naturalFields, true);
-                setRequired(juridicaFields, false);
-
-                if (razonSocial) razonSocial.value = '';
-                selectDocumentoPorCodigo('DNI');
-            } else if (tipo === 'juridica') {
-                naturalFields.forEach((el) => el.classList.add('d-none'));
-                juridicaFields.forEach((el) => el.classList.remove('d-none'));
-                setRequired(naturalFields, false);
-                setRequired(juridicaFields, true);
-
-                if (nombres) nombres.value = '';
-                if (apellidos) apellidos.value = '';
-                selectDocumentoPorCodigo('RUC');
-            } else {
-                naturalFields.forEach((el) => el.classList.add('d-none'));
-                juridicaFields.forEach((el) => el.classList.add('d-none'));
-                setRequired(naturalFields, false);
-                setRequired(juridicaFields, false);
-            }
-        }
-
-        if (tipoPersona) {
-            tipoPersona.addEventListener('change', toggleFields);
-        }
-
-        toggleFields();
-
         @if ($shouldOpenQuickClienteModal)
             const modalEl = document.getElementById('quickClienteModal');
             if (modalEl && window.bootstrap) {

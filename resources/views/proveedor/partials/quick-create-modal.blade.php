@@ -1,195 +1,97 @@
 <div class="modal fade" id="quickProveedorModal" tabindex="-1" aria-labelledby="quickProveedorModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
-            <form action="{{ route('proveedores.quick-store') }}" method="POST" novalidate>
+            <form action="{{ route('proveedores.quick-store') }}" method="POST" id="formQuickProveedor" novalidate>
                 @csrf
-
-                <div class="modal-header">
+                <div class="modal-header border-0 pb-0">
                     <div>
-                        <h5 class="modal-title fw-semibold" id="quickProveedorModalLabel">Crear proveedor rápido</h5>
+                        <h5 class="modal-title fw-bold text-dark" id="quickProveedorModalLabel">Crear proveedor rápido</h5>
                         <small class="text-muted">Registro mínimo para compras y cuentas por pagar.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
 
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="modal_tipo_persona" class="form-label fw-medium text-secondary">
+                            <label for="modal_tipo_persona" class="form-label fw-bold text-secondary small text-uppercase">
                                 Tipo de persona <span class="text-danger">*</span>
                             </label>
-                            <select name="tipo_persona" id="modal_tipo_persona" class="form-select" required>
+                            <select name="tipo_persona" id="modal_tipo_persona" class="form-select shadow-sm" required>
                                 <option value="">Seleccione...</option>
-                                <option value="natural" @selected(old('tipo_persona') === 'natural')>Natural</option>
-                                <option value="juridica" @selected(old('tipo_persona') === 'juridica')>Jurídica</option>
+                                @foreach(\App\Enums\TipoPersona::opciones() as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('tipo_persona') === $value)>{{ $label }}</option>
+                                @endforeach
                             </select>
-                            @error('tipo_persona')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            @error('tipo_persona') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="modal_documento_id" class="form-label fw-medium text-secondary">
-                                Tipo de documento <span class="text-danger">*</span>
+                            <label for="modal_documento_id" class="form-label fw-bold text-secondary small text-uppercase">
+                                Tipo documento <span class="text-danger">*</span>
                             </label>
-                            <select name="documento_id" id="modal_documento_id" class="form-select" required>
+                            <select name="documento_id" id="modal_documento_id" class="form-select shadow-sm" required>
                                 <option value="">Seleccione...</option>
                                 @isset($documentos)
                                     @foreach ($documentos as $documento)
-                                        <option
-                                            value="{{ $documento->id }}"
-                                            data-codigo="{{ strtoupper($documento->codigo) }}"
-                                            @selected((string) old('documento_id') === (string) $documento->id)
-                                        >
+                                        <option value="{{ $documento->id }}" data-codigo="{{ strtoupper($documento->codigo) }}" @selected((string) old('documento_id') === (string) $documento->id)>
                                             {{ $documento->tipo_documento }}
                                         </option>
                                     @endforeach
                                 @endisset
                             </select>
-                            @error('documento_id')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            @error('documento_id') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="modal_numero_documento" class="form-label fw-medium text-secondary">
-                                Número de documento <span class="text-danger">*</span>
+                            <label for="modal_numero_documento" class="form-label fw-bold text-secondary small text-uppercase">
+                                Número documento <span class="text-danger">*</span>
                             </label>
-                            <div class="input-group">
-                                <input
-                                    type="text"
-                                    name="numero_documento"
-                                    id="modal_numero_documento"
-                                    class="form-control"
-                                    value="{{ old('numero_documento') }}"
-                                    placeholder="Ej. 20123456789"
-                                    autocomplete="off"
-                                    maxlength="11"
-                                    required
-                                >
-                                <button type="button" class="btn btn-info text-white" id="btnBuscarDoc">
+                            <div class="input-group shadow-sm">
+                                <input type="text" name="numero_documento" id="modal_numero_documento" class="form-control" value="{{ old('numero_documento') }}" placeholder="Ej. 20123456789" autocomplete="off" maxlength="11" required>
+                                <button type="button" class="btn btn-info text-white fw-bold" id="btnBuscarDocProv">
                                     <i class="fas fa-search"></i> Buscar
                                 </button>
                             </div>
-                            @error('numero_documento')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            @error('numero_documento') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
 
                         <div class="col-md-6">
-                            <label for="modal_telefono" class="form-label fw-medium text-secondary">
-                                Teléfono
-                            </label>
-                            <input
-                                type="text"
-                                name="telefono"
-                                id="modal_telefono"
-                                class="form-control"
-                                value="{{ old('telefono') }}"
-                                placeholder="Ej. 987654321"
-                                autocomplete="off"
-                            >
-                            @error('telefono')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_telefono" class="form-label fw-bold text-secondary small text-uppercase">Teléfono</label>
+                            <input type="text" name="telefono" id="modal_telefono" class="form-control shadow-sm" value="{{ old('telefono') }}" placeholder="Ej. 987654321" autocomplete="off">
                         </div>
 
                         <div class="col-md-12">
-                            <label for="modal_email" class="form-label fw-medium text-secondary">
-                                Correo electrónico
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                id="modal_email"
-                                class="form-control"
-                                value="{{ old('email') }}"
-                                placeholder="Ej. compras@empresa.com"
-                                autocomplete="off"
-                            >
-                            @error('email')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_email" class="form-label fw-bold text-secondary small text-uppercase">Correo electrónico</label>
+                            <input type="email" name="email" id="modal_email" class="form-control shadow-sm" value="{{ old('email') }}" placeholder="Ej. ventas@empresa.com" autocomplete="off">
                         </div>
 
                         <div class="col-md-6 quick-proveedor-natural-field d-none">
-                            <label for="modal_nombres" class="form-label fw-medium text-secondary">
-                                Nombres <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="nombres"
-                                id="modal_nombres"
-                                class="form-control"
-                                value="{{ old('nombres') }}"
-                                placeholder="Ej. Juan"
-                                autocomplete="off"
-                            >
-                            @error('nombres')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_nombres" class="form-label fw-bold text-secondary small text-uppercase">Nombres <span class="text-danger">*</span></label>
+                            <input type="text" name="nombres" id="modal_nombres" class="form-control shadow-sm" value="{{ old('nombres') }}" autocomplete="off">
                         </div>
 
                         <div class="col-md-6 quick-proveedor-natural-field d-none">
-                            <label for="modal_apellidos" class="form-label fw-medium text-secondary">
-                                Apellidos <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="apellidos"
-                                id="modal_apellidos"
-                                class="form-control"
-                                value="{{ old('apellidos') }}"
-                                placeholder="Ej. Pérez"
-                                autocomplete="off"
-                            >
-                            @error('apellidos')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_apellidos" class="form-label fw-bold text-secondary small text-uppercase">Apellidos <span class="text-danger">*</span></label>
+                            <input type="text" name="apellidos" id="modal_apellidos" class="form-control shadow-sm" value="{{ old('apellidos') }}" autocomplete="off">
                         </div>
 
                         <div class="col-md-12 quick-proveedor-juridica-field d-none">
-                            <label for="modal_razon_social" class="form-label fw-medium text-secondary">
-                                Razón social <span class="text-danger">*</span>
-                            </label>
-                            <input
-                                type="text"
-                                name="razon_social"
-                                id="modal_razon_social"
-                                class="form-control"
-                                value="{{ old('razon_social') }}"
-                                placeholder="Ej. Lamk Sports S.A.C."
-                                autocomplete="off"
-                            >
-                            @error('razon_social')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_razon_social" class="form-label fw-bold text-secondary small text-uppercase">Razón social <span class="text-danger">*</span></label>
+                            <input type="text" name="razon_social" id="modal_razon_social" class="form-control shadow-sm fw-bold" value="{{ old('razon_social') }}" autocomplete="off">
                         </div>
 
                         <div class="col-md-12">
-                            <label for="modal_direccion" class="form-label fw-medium text-secondary">
-                                Dirección
-                            </label>
-                            <input
-                                type="text"
-                                name="direccion"
-                                id="modal_direccion"
-                                class="form-control"
-                                value="{{ old('direccion') }}"
-                                placeholder="Ej. Av. Principal 123"
-                                autocomplete="off"
-                            >
-                            @error('direccion')
-                                <div class="text-danger small mt-1">{{ $message }}</div>
-                            @enderror
+                            <label for="modal_direccion" class="form-label fw-bold text-secondary small text-uppercase">Dirección</label>
+                            <input type="text" name="direccion" id="modal_direccion" class="form-control shadow-sm" value="{{ old('direccion') }}" placeholder="Av. Principal 123" autocomplete="off">
                         </div>
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i>Guardar proveedor
+                <div class="modal-footer border-0 p-4 pt-0">
+                    <button type="button" class="btn btn-light fw-bold rounded-pill px-4 border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary fw-bold rounded-pill px-4 shadow-sm">
+                        <i class="fas fa-save me-2"></i>Registrar
                     </button>
                 </div>
             </form>
@@ -197,78 +99,47 @@
     </div>
 </div>
 
-@push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const tipoPersona = document.getElementById('modal_tipo_persona');
-        const documentoSelect = document.getElementById('modal_documento_id');
+        const modalTipoSelect = document.getElementById('modal_tipo_persona');
+        const modalForm = document.getElementById('formQuickProveedor');
+        
+        if (modalTipoSelect && modalForm) {
+            const inputsNatural = modalForm.querySelectorAll('.quick-proveedor-natural-field');
+            const inputsJuridica = modalForm.querySelectorAll('.quick-proveedor-juridica-field');
+            const docSelect = document.getElementById('modal_documento_id');
 
-        const naturalFields = document.querySelectorAll('.quick-proveedor-natural-field');
-        const juridicaFields = document.querySelectorAll('.quick-proveedor-juridica-field');
+            function toggleModalFields() {
+                const isNatural = modalTipoSelect.value === 'natural';
+                const isJuridica = modalTipoSelect.value === 'juridica';
 
-        const nombres = document.getElementById('modal_nombres');
-        const apellidos = document.getElementById('modal_apellidos');
-        const razonSocial = document.getElementById('modal_razon_social');
+                inputsNatural.forEach(el => {
+                    el.classList.toggle('d-none', !isNatural);
+                    const input = el.querySelector('input');
+                    if (input) input.required = isNatural;
+                });
 
-        function setRequired(elements, required) {
-            elements.forEach((el) => {
-                const input = el.querySelector('input, select, textarea');
-                if (input) {
-                    input.required = required;
+                inputsJuridica.forEach(el => {
+                    el.classList.toggle('d-none', !isJuridica);
+                    const input = el.querySelector('input');
+                    if (input) input.required = isJuridica;
+                });
+
+                if (docSelect) {
+                    const options = Array.from(docSelect.options);
+                    if (isJuridica) {
+                        const rucOption = options.find(o => o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'RUC');
+                        if (rucOption) docSelect.value = rucOption.value;
+                    } else if (isNatural) {
+                        const dniOption = options.find(o => o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'DNI');
+                        if (dniOption) docSelect.value = dniOption.value;
+                    }
                 }
-            });
-        }
-
-        function selectDocumentoPorCodigo(codigoBuscado) {
-            if (!documentoSelect) return;
-
-            const codigo = String(codigoBuscado || '').toUpperCase();
-            let found = false;
-
-            Array.from(documentoSelect.options).forEach((option) => {
-                const optionCodigo = String(option.dataset.codigo || '').toUpperCase();
-                if (optionCodigo === codigo) {
-                    option.selected = true;
-                    found = true;
-                }
-            });
-
-            if (!found && documentoSelect.options.length > 0 && !documentoSelect.value) {
-                documentoSelect.selectedIndex = 0;
             }
+
+            modalTipoSelect.addEventListener('change', toggleModalFields);
+            
+            if (modalTipoSelect.value) toggleModalFields(); 
         }
-
-        function toggleFields() {
-            const tipo = String(tipoPersona?.value || '').toLowerCase();
-
-            if (tipo === 'natural') {
-                naturalFields.forEach((el) => el.classList.remove('d-none'));
-                juridicaFields.forEach((el) => el.classList.add('d-none'));
-                setRequired(naturalFields, true);
-                setRequired(juridicaFields, false);
-                if (razonSocial) razonSocial.value = '';
-                selectDocumentoPorCodigo('DNI');
-            } else if (tipo === 'juridica') {
-                naturalFields.forEach((el) => el.classList.add('d-none'));
-                juridicaFields.forEach((el) => el.classList.remove('d-none'));
-                setRequired(naturalFields, false);
-                setRequired(juridicaFields, true);
-                if (nombres) nombres.value = '';
-                if (apellidos) apellidos.value = '';
-                selectDocumentoPorCodigo('RUC');
-            } else {
-                naturalFields.forEach((el) => el.classList.add('d-none'));
-                juridicaFields.forEach((el) => el.classList.add('d-none'));
-                setRequired(naturalFields, false);
-                setRequired(juridicaFields, false);
-            }
-        }
-
-        if (tipoPersona) {
-            tipoPersona.addEventListener('change', toggleFields);
-        }
-
-        toggleFields();
     });
 </script>
-@endpush
