@@ -94,15 +94,16 @@ class SesionCajaController extends Controller implements HasMiddleware
             'ventas.pagos',
         ]);
 
-        $totales = [
-            'ingresos' => $sesionCaja->movimientosCaja()->where('tipo', 'INGRESO')->where('origen', '!=', 'APERTURA')->sum('monto'),
-            'egresos'  => $sesionCaja->movimientosCaja()->where('tipo', 'EGRESO')->sum('monto'),
-            'ventas'   => $sesionCaja->ventas()->where('estado_documento', '!=', 'ANULADA')->sum('total'),
-            'movimientos_count' => $sesionCaja->movimientosCaja()->count(),
-            'ventas_count'      => $sesionCaja->ventas()->where('estado_documento', '!=', 'ANULADA')->count(),
-        ];
-
+        $movimientos = $sesionCaja->movimientosCaja;
         $ventasValidas = $sesionCaja->ventas->where('estado_documento', '!=', 'ANULADA');
+
+        $totales = [
+            'ingresos' => $movimientos->filter(fn($m) => ($m->tipo->value ?? $m->tipo) === 'INGRESO' && ($m->origen->value ?? $m->origen) !== 'APERTURA')->sum('monto'),
+            'egresos'  => $movimientos->filter(fn($m) => ($m->tipo->value ?? $m->tipo) === 'EGRESO')->sum('monto'),
+            'ventas'   => $ventasValidas->sum('total'),
+            'movimientos_count' => $movimientos->count(),
+            'ventas_count'      => $ventasValidas->count(),
+        ];
 
         return view('sesion_caja.show', compact('sesionCaja', 'totales', 'ventasValidas'));
     }

@@ -31,10 +31,9 @@ class PagoVentaController extends Controller implements HasMiddleware
     public function index(Request $request)
     {
         $query = PagoVenta::with([
-                'venta.comprobante',
-                'venta.cliente.persona.documento',
-                'venta.user',
-                'venta.sesionCaja.caja',
+                'venta:id,serie,correlativo,total,user_id,sesion_caja_id',
+                'venta.user:id,name',
+                'venta.sesionCaja.caja:id,nombre',
             ])
             ->latest('id');
 
@@ -46,7 +45,7 @@ class PagoVentaController extends Controller implements HasMiddleware
             $query->where('venta_id', $request->venta_id);
         }
 
-        $pagos = $query->get();
+        $pagos = $query->paginate(20)->withQueryString();
 
         return view('pago_venta.index', compact('pagos'));
     }
