@@ -1,29 +1,11 @@
 @extends('layouts.app')
 @section('title', 'Auditoría de Cajas')
 
-@push('css')
-<style>
-    .page-title { font-weight: 800; letter-spacing: -.02em; color: #0f172a; }
-    .fs-7 { font-size: 0.875rem; }
-    .table-soft thead th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: .75rem; letter-spacing: .04em; white-space: nowrap; border-bottom: 2px solid #e2e8f0; }
-    .table-soft td { vertical-align: middle; color: #334155; }
-    .card-soft { border: 0; border-radius: 1.25rem; box-shadow: 0 .5rem 1.5rem rgba(15, 23, 42, .08); overflow: hidden; }
-    .soft-header { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); border-bottom: 1px solid rgba(148, 163, 184, .14); }
-    .empty-state { padding: 3rem 1rem; }
-    .filters-row .form-label { font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #64748b; margin-bottom: 0.3rem; }
-    .pagination-custom nav > div.d-none.d-sm-flex > div:first-child { display: none !important; }
-    .pagination-custom nav > div.d-flex.justify-content-between.d-sm-none { display: none !important; }
-    .pagination-custom .pagination { margin-bottom: 0; gap: .25rem; }
-    .pagination-custom .page-link { border-radius: .5rem; padding: .45rem .75rem; font-size: .875rem; border: 1px solid #e2e8f0; color: #475569; }
-    .pagination-custom .page-item.active .page-link { background-color: #0d6efd; border-color: #0d6efd; color: #fff; font-weight: 600; }
-</style>
-@endpush
-
 @section('content')
-<div class="container-fluid px-4 py-4">
+<div class="container-fluid px-3 px-md-4 py-4">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h2 class="page-title mb-0">Auditoría de Cajas</h2>
+            <h2 class="fw-bolder text-dark mb-0 fs-3">Auditoría de Cajas</h2>
             <ol class="breadcrumb mb-0 mt-1 fs-7">
                 <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
                 <li class="breadcrumb-item active fw-medium text-dark">Turnos y Sesiones</li>
@@ -46,16 +28,16 @@
         <div>
             <div class="fw-bold text-primary">Auditoría de Efectivo Operativo</div>
             <div class="small text-dark text-opacity-75">
-                Vigila los cuadres y descuadres diarios. Recuerda que el cierre de sesión transfiere el efectivo producto de las ventas hacia la <strong>Tesorería Principal</strong>.
+                Vigila los cuadres y descuadres diarios. El cierre transfiere el efectivo producto de las ventas hacia la <strong>Tesorería Principal</strong>.
             </div>
         </div>
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4 bg-light bg-opacity-50">
-            <form method="GET" action="{{ route('sesiones-caja.index') }}" id="filtro-sesiones-form" class="row g-3 filters-row">
+        <div class="card-body p-4 bg-light bg-opacity-50 border-bottom">
+            <form method="GET" action="{{ route('sesiones-caja.index') }}" id="filtro-sesiones-form" class="row g-3">
                 <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Cajero / Operador</label>
+                    <label class="form-label text-muted small fw-bold text-uppercase">Cajero / Operador</label>
                     <select name="user_id" class="form-select shadow-sm">
                         <option value="">Todos los cajeros</option>
                         @foreach ($cajeros as $cajero)
@@ -67,7 +49,7 @@
                 </div>
 
                 <div class="col-lg-3 col-md-6">
-                    <label class="form-label">Estado de la Sesión</label>
+                    <label class="form-label text-muted small fw-bold text-uppercase">Estado de la Sesión</label>
                     <select name="estado_sesion" class="form-select shadow-sm">
                         <option value="">Cualquier estado</option>
                         <option value="ABIERTA" @selected(request('estado_sesion') === 'ABIERTA')>En Curso (Abierta)</option>
@@ -79,41 +61,39 @@
                 <div class="col-lg-4 col-md-8">
                     <div class="d-flex gap-2">
                         <div class="w-50">
-                            <label class="form-label">Desde</label>
-                            <input type="date" name="fecha_desde" class="form-control shadow-sm fs-7 p-2" value="{{ request('fecha_desde') }}">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Desde</label>
+                            <input type="date" name="fecha_desde" class="form-control shadow-sm fs-7" value="{{ request('fecha_desde') }}">
                         </div>
                         <div class="w-50">
-                            <label class="form-label">Hasta</label>
-                            <input type="date" name="fecha_hasta" class="form-control shadow-sm fs-7 p-2" value="{{ request('fecha_hasta') }}">
+                            <label class="form-label text-muted small fw-bold text-uppercase">Hasta</label>
+                            <input type="date" name="fecha_hasta" class="form-control shadow-sm fs-7" value="{{ request('fecha_hasta') }}">
                         </div>
                     </div>
                 </div>
 
                 <div class="col-lg-2 col-md-4 d-flex justify-content-end align-items-end">
-                    <a href="{{ route('sesiones-caja.index') }}" class="btn btn-outline-secondary w-100 fw-medium bg-white" title="Limpiar filtros">
+                    <a href="{{ route('sesiones-caja.index') }}" class="btn btn-outline-secondary w-100 fw-medium bg-white shadow-sm" title="Limpiar filtros">
                         <i class="fas fa-eraser me-2"></i>Limpiar
                     </a>
                 </div>
             </form>
         </div>
-    </div>
 
-    <div class="card card-soft mb-4">
         <div class="card-body p-0">
-            <div class="table-responsive bg-white border-0">
-                <table class="table table-hover table-soft mb-0">
-                    <thead>
+            <div class="table-responsive bg-white">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light text-secondary text-uppercase small fw-bold">
                         <tr>
-                            <th class="ps-4">Terminal</th>
-                            <th>Operador</th>
-                            <th class="text-center">Apertura</th>
-                            <th class="text-center">Cierre</th>
-                            <th class="text-end">Base / Sencillo</th>
-                            <th class="text-end" title="Saldo que el sistema calculó">Sistema (S/)</th>
-                            <th class="text-end" title="Saldo que el cajero contó y declaró">Declarado (S/)</th>
-                            <th class="text-center">Cuadre</th>
-                            <th class="text-center">Estado</th>
-                            <th class="text-center pe-4">Acciones</th>
+                            <th class="ps-4 py-3 border-bottom-0">Terminal</th>
+                            <th class="border-bottom-0">Operador</th>
+                            <th class="text-center border-bottom-0">Apertura</th>
+                            <th class="text-center border-bottom-0">Cierre</th>
+                            <th class="text-end border-bottom-0">Base / Sencillo</th>
+                            <th class="text-end border-bottom-0" title="Saldo que el sistema calculó">Sistema (S/)</th>
+                            <th class="text-end border-bottom-0" title="Saldo que el cajero contó y declaró">Declarado (S/)</th>
+                            <th class="text-center border-bottom-0">Cuadre</th>
+                            <th class="text-center border-bottom-0">Estado</th>
+                            <th class="text-center pe-4 border-bottom-0">Acciones</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,7 +103,7 @@
                                 $diferencia = (float) ($item->diferencia ?? 0);
                             @endphp
                             <tr>
-                                <td class="ps-4">
+                                <td class="ps-4 py-3">
                                     <div class="fw-bold text-dark">{{ $item->caja?->nombre ?? 'N/A' }}</div>
                                     <div class="small text-muted font-monospace">Sesión #{{ str_pad($item->id, 5, '0', STR_PAD_LEFT) }}</div>
                                 </td>
@@ -166,29 +146,28 @@
                                 <td class="text-center">
                                     @if($esAbierta)
                                         <span class="badge bg-success text-white px-3 py-1 rounded-pill shadow-sm"><i class="fas fa-circle ms-n1 me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>Abierta</span>
-                                    @elseif($item->estado_sesion === 'CERRADA')
+                                    @elseif($item->estado_sesion->value === 'CERRADA')
                                         <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-1 rounded-pill">Cerrada</span>
                                     @else
                                         <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-3 py-1 rounded-pill">Anulada</span>
                                     @endif
                                 </td>
                                 <td class="text-center pe-4">
-                                    <div class="btn-group shadow-sm" role="group">
+                                    <div class="btn-group shadow-sm rounded-2" role="group">
                                         <a href="{{ route('sesiones-caja.show', $item) }}" class="btn btn-sm btn-light border text-primary" data-bs-toggle="tooltip" title="Ver auditoría de caja">
                                             <i class="fas fa-file-invoice-dollar"></i>
                                         </a>
-
                                         @can('cerrar_caja')
                                             @if($esAbierta)
                                                 <button type="button" 
-                                                        class="btn btn-sm btn-dark shadow-sm" 
+                                                        class="btn btn-sm btn-dark" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#modalCierreCaja" 
                                                         data-id="{{ $item->id }}"
                                                         data-caja="{{ $item->caja?->nombre }}"
                                                         data-cajero="{{ explode(' ', $item->user?->name ?? '')[0] }}"
                                                         title="Realizar corte/cierre">
-                                                    <i class="fas fa-lock"></i> Cierre
+                                                    <i class="fas fa-lock"></i>
                                                 </button>
                                             @else
                                                 <span class="btn btn-sm btn-light border text-muted disabled"><i class="fas fa-lock"></i></span>
@@ -199,7 +178,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="empty-state">
+                                <td colspan="10" class="py-5">
                                     <div class="d-flex flex-column align-items-center justify-content-center text-center">
                                         <div class="bg-light rounded-circle d-flex align-items-center justify-content-center shadow-sm mb-3" style="width: 80px; height: 80px;">
                                             <i class="fas fa-cash-register text-muted fs-1 opacity-50"></i>
@@ -213,58 +192,61 @@
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <div class="card-footer bg-white border-top border-light p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                <form method="GET" action="{{ route('sesiones-caja.index') }}" id="pagination-form" class="d-flex align-items-center gap-2">
-                    @foreach(request()->except('per_page', 'page') as $key => $value)
-                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+        <div class="card-footer bg-white border-top p-3 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <form method="GET" action="{{ route('sesiones-caja.index') }}" id="pagination-form" class="d-flex align-items-center gap-2">
+                @foreach(request()->except('per_page', 'page') as $key => $value)
+                    <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+                @endforeach
+                <label class="form-label mb-0 small fw-bold text-muted text-uppercase">Filas:</label>
+                <select name="per_page" id="per_page" class="form-select form-select-sm shadow-sm" style="width: auto;">
+                    @foreach([5, 10, 15, 25, 50] as $size)
+                        <option value="{{ $size }}" @selected((int) request('per_page', $perPage ?? 10) === $size)>{{ $size }}</option>
                     @endforeach
-                    <label class="form-label mb-0 small fw-bold text-muted text-uppercase">Filas:</label>
-                    <select name="per_page" id="per_page" class="form-select form-select-sm shadow-sm" style="width: auto;">
-                        @foreach([5, 10, 15, 25, 50] as $size)
-                            <option value="{{ $size }}" @selected((int) request('per_page', $perPage ?? 10) === $size)>{{ $size }}</option>
-                        @endforeach
-                    </select>
-                    <span class="text-muted small fw-medium ms-2">
-                        Viendo {{ $sesiones->firstItem() ?? 0 }} a {{ $sesiones->lastItem() ?? 0 }} de {{ $sesiones->total() }}
-                    </span>
-                </form>
-                <div class="pagination-custom">
-                    {{ $sesiones->links('pagination::bootstrap-5') }}
-                </div>
+                </select>
+                <span class="text-muted small fw-medium ms-2">
+                    Viendo {{ $sesiones->firstItem() ?? 0 }} a {{ $sesiones->lastItem() ?? 0 }} de {{ $sesiones->total() }}
+                </span>
+            </form>
+            <div>
+                {{ $sesiones->links('pagination::bootstrap-5') }}
             </div>
         </div>
     </div>
 </div>
 
+<!-- Modal Unificado de Cierre -->
 <div class="modal fade" id="modalCierreCaja" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow rounded-3">
-            <div class="modal-header bg-light border-bottom-0 pb-0">
+        <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-header bg-light border-bottom-0 pb-0 rounded-top-4">
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form id="formCierreCaja" action="" method="post">
                 @method('DELETE')
                 @csrf
                 <div class="modal-body p-4 text-center">
-                    <i class="fas fa-lock fa-3x text-secondary mb-3"></i>
+                    <div class="bg-secondary bg-opacity-10 text-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                        <i class="fas fa-lock fa-3x"></i>
+                    </div>
                     <h4 class="fw-bold text-dark">Corte de Caja Diario</h4>
                     <p class="text-muted mb-4 small">
-                        Vas a finalizar el turno de <strong id="modalCajaNombre"></strong> operada por <strong id="modalCajeroNombre"></strong>.
+                        Vas a finalizar el turno de <strong id="modalCajaNombre" class="text-dark"></strong> operada por <strong id="modalCajeroNombre" class="text-dark"></strong>.
                     </p>
                     
-                    <div class="bg-light p-3 rounded-3 border text-start">
+                    <div class="bg-light p-3 rounded-4 border text-start">
                         <label for="saldo_final_declarado" class="form-label fw-bold text-dark text-uppercase fs-7">Efectivo total en gaveta</label>
-                        <div class="input-group input-group-lg">
-                            <span class="input-group-text bg-white border-end-0 fw-bold">S/</span>
+                        <div class="input-group input-group-lg shadow-sm">
+                            <span class="input-group-text bg-white border-end-0 fw-bold text-muted">S/</span>
                             <input type="number" step="0.01" min="0" required name="saldo_final_declarado" id="saldo_final_declarado" class="form-control border-start-0 fw-bold font-monospace" placeholder="0.00">
                         </div>
-                        <div class="form-text"><i class="fas fa-info-circle me-1"></i>Suma el fondo fijo más las ventas en efectivo cobradas.</div>
+                        <div class="form-text mt-2"><i class="fas fa-info-circle me-1"></i>Suma el fondo fijo más las ventas en efectivo cobradas.</div>
                     </div>
                 </div>
-                <div class="modal-footer bg-light border-top-0 justify-content-center">
-                    <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-dark px-4"><i class="fas fa-check-circle me-2"></i>Ejecutar Cierre</button>
+                <div class="modal-footer bg-light border-top-0 justify-content-center rounded-bottom-4">
+                    <button type="button" class="btn btn-outline-secondary px-4 rounded-pill fw-medium shadow-sm" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-dark px-4 rounded-pill fw-medium shadow-sm"><i class="fas fa-check-circle me-2"></i>Ejecutar Cierre</button>
                 </div>
             </form>
         </div>
@@ -299,8 +281,8 @@
                 const id = button.getAttribute('data-id');
                 const caja = button.getAttribute('data-caja');
                 const cajero = button.getAttribute('data-cajero');
-                const form = document.getElementById('formCierreCaja');
-                form.action = `/sesiones-caja/${id}`;
+                
+                document.getElementById('formCierreCaja').action = `/sesiones-caja/${id}`;
                 document.getElementById('modalCajaNombre').textContent = caja;
                 document.getElementById('modalCajeroNombre').textContent = cajero;
                 document.getElementById('saldo_final_declarado').value = '';

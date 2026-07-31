@@ -1,19 +1,12 @@
 @extends('layouts.app')
 @section('title', 'Abrir Sesión de Caja')
 
-@push('css')
-<style>
-    .page-title { font-weight: 700; color: #212529; }
-    .fs-7 { font-size: 0.875rem; }
-</style>
-@endpush
-
 @section('content')
 <div class="container-fluid px-3 px-md-4 py-4">
     <!-- Encabezado -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
         <div>
-            <h2 class="page-title mb-0 fs-3">Abrir Sesión de Caja</h2>
+            <h2 class="fw-bolder text-dark mb-0 fs-3">Abrir Sesión de Caja</h2>
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mb-0 mt-1 fs-7">
                     <li class="breadcrumb-item"><a href="{{ route('panel') }}" class="text-decoration-none text-muted">Inicio</a></li>
@@ -32,7 +25,7 @@
     <div class="row g-4">
         <!-- Formulario Principal -->
         <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-3">
+            <div class="card border-0 shadow-sm rounded-4">
                 <div class="card-header bg-white border-bottom p-3 p-md-4 d-flex align-items-center">
                     <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                         <i class="fa-solid fa-lock-open"></i>
@@ -127,7 +120,7 @@
 
         <!-- Panel Lateral Informativo -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
                 <div class="card-header bg-light border-bottom p-3">
                     <h6 class="mb-0 fw-semibold text-dark"><i class="fas fa-cash-register text-muted me-2"></i>Resumen de Apertura</h6>
                 </div>
@@ -141,7 +134,7 @@
                         <span class="fw-bold text-primary font-monospace" id="resumen-fondo">S/ 0.00</span>
                     </div>
                     <div class="d-flex justify-content-between">
-                        <span class="text-muted small fw-medium text-uppercase">Estado operativo</span>
+                        <span class="text-muted small fw-medium text-uppercase">Estado</span>
                         <span class="badge bg-secondary" id="resumen-estado">Esperando selección</span>
                     </div>
                 </div>

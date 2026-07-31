@@ -12,7 +12,7 @@
         </ol>
     </div>
 
-    <!-- Panel de Indicadores (KPIs ERP Style) -->
+    <!-- Panel de Indicadores -->
     <div class="row g-3 mb-4">
         <!-- Caja Fuerte / Efectivo -->
         <div class="col-lg-4 col-md-6">
@@ -199,7 +199,7 @@
                         Viendo <strong>{{ $movimientos->firstItem() ?? 0 }}</strong> a <strong>{{ $movimientos->lastItem() ?? 0 }}</strong> de <strong>{{ $movimientos->total() }}</strong>
                     </span>
                 </div>
-                <div>
+                <div class="pagination-custom">
                     {{ $movimientos->links('pagination::bootstrap-5') }}
                 </div>
             </div>
