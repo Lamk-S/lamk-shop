@@ -156,7 +156,7 @@
                         Viendo <strong>{{ $movimientos->firstItem() ?? 0 }}</strong> a <strong>{{ $movimientos->lastItem() ?? 0 }}</strong> de <strong>{{ $movimientos->total() }}</strong>
                     </span>
                 </div>
-                <div>
+                <div class="pagination-custom">
                     {{ $movimientos->links('pagination::bootstrap-5') }}
                 </div>
             </div>
