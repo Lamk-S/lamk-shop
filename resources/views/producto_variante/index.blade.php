@@ -155,14 +155,14 @@
                                                 <a href="{{ route('producto-variantes.edit', $item) }}" class="btn btn-sm btn-light border text-primary" title="Editar variante">
                                                     <i class="fas fa-edit"></i>
                                                 </a>
-                                                <button type="button"
-                                                    class="btn btn-sm btn-light border btn-confirmar {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }}"
-                                                    data-id="{{ $item->id }}"
-                                                    data-sku="{{ $item->codigo_variante }}"
-                                                    data-talla="{{ optional($item->talla)->nombre }}"
-                                                    data-accion="{{ !$item->trashed() && (int) $item->estado === 1 ? 'desactivar' : 'restaurar' }}"
-                                                    title="{{ !$item->trashed() && (int) $item->estado === 1 ? 'Desactivar SKU' : 'Restaurar SKU' }}">
-                                                    <i class="fas {{ !$item->trashed() && (int) $item->estado === 1 ? 'fa-ban' : 'fa-trash-restore-alt' }}"></i>
+                                                <button type="button" 
+                                                    class="btn btn-sm btn-light border btn-confirmar {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
+                                                    data-nombre="{{ $item->sku ?? 'Variante seleccionada' }}"
+                                                    data-accion="{{ $item->trashed() ? 'restaurar' : 'desactivar' }}"
+                                                    data-url="{{ $item->trashed() ? route('producto-variantes.restore', $item) : route('producto-variantes.destroy', $item) }}"
+                                                    data-metodo="{{ $item->trashed() ? 'PATCH' : 'DELETE' }}"
+                                                    title="{{ $item->trashed() ? 'Restaurar' : 'Desactivar' }}">
+                                                    <i class="fas {{ $item->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                                 </button>
                                             @endcan
                                         </div>
@@ -209,35 +209,6 @@
         </div>
     </div>
 </div>
-
-@can('gestionar_productos')
-<!-- Modal Confirmación Global -->
-<div class="modal fade" id="modalConfirmacionGlobal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center p-4 pb-5">
-                <div class="mb-3" id="modalIcon"></div>
-                <h4 class="fw-bold text-dark" id="modalTitle">¿Desactivar variante?</h4>
-                <p class="text-muted mb-4" id="modalDesc"></p>
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light fw-medium px-4 border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="formConfirmacionGlobal" action="" method="post">
-                        <!-- El método siempre es DELETE hacia la ruta resource. El backend evalúa si restaura o elimina de verdad -->
-                        @method('DELETE') 
-                        @csrf
-                        <button type="submit" class="btn fw-medium px-4 shadow-sm" id="modalBtnConfirm">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endcan
 @endsection
 
 @push('js')
@@ -248,37 +219,6 @@
         if(filterForm && window.jQuery) {
             $('.selectpicker').on('changed.bs.select', () => filterForm.submit());
         }
-
-        const modalConfirmObj = document.getElementById('modalConfirmacionGlobal');
-        const modalConfirm = modalConfirmObj ? new bootstrap.Modal(modalConfirmObj) : null;
-        
-        document.body.addEventListener('click', function(e) {
-            const btn = e.target.closest('.btn-confirmar');
-            if (btn && modalConfirm) {
-                const { id, sku, talla, accion } = btn.dataset;
-                const form = document.getElementById('formConfirmacionGlobal');
-                form.action = `/producto-variantes/${id}`;
-
-                const icon = document.getElementById('modalIcon');
-                const title = document.getElementById('modalTitle');
-                const desc = document.getElementById('modalDesc');
-                const btnSubmit = document.getElementById('modalBtnConfirm');
-
-                if (accion === 'desactivar') {
-                    icon.innerHTML = '<i class="fas fa-ban fa-4x opacity-75 text-danger"></i>';
-                    title.textContent = '¿Desactivar variante?';
-                    desc.innerHTML = `El SKU <strong>${sku}</strong> (Talla ${talla}) no podrá ser seleccionado.`;
-                    btnSubmit.className = 'btn btn-danger fw-bold px-4 shadow-sm';
-                } else {
-                    icon.innerHTML = '<i class="fas fa-check-circle fa-4x opacity-75 text-success"></i>';
-                    title.textContent = '¿Activar variante?';
-                    desc.innerHTML = `El SKU <strong>${sku}</strong> volverá a estar disponible en el inventario.`;
-                    btnSubmit.className = 'btn btn-success fw-bold px-4 shadow-sm';
-                }
-
-                modalConfirm.show();
-            }
-        });
     });
 </script>
 @endpush

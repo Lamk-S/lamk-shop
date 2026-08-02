@@ -107,13 +107,13 @@
                                             <a href="{{ route('marcas.edit', $item) }}" class="btn btn-sm btn-light border text-primary" title="Actualizar datos">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <!-- Botón unificado que lanza el Modal Global -->
-                                            <button type="button"
+                                            <button type="button" 
                                                 class="btn btn-sm btn-light border btn-confirmar {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
-                                                data-id="{{ $item->id }}"
                                                 data-nombre="{{ $item->nombre }}"
-                                                data-eliminado="{{ $item->trashed() ? 'true' : 'false' }}"
-                                                title="{{ $item->trashed() ? 'Habilitar Marca' : 'Retirar Marca' }}">
+                                                data-accion="{{ $item->trashed() ? 'restaurar' : 'desactivar' }}"
+                                                data-url="{{ $item->trashed() ? route('marcas.restore', $item) : route('marcas.destroy', $item) }}"
+                                                data-metodo="{{ $item->trashed() ? 'PATCH' : 'DELETE' }}"
+                                                title="{{ $item->trashed() ? 'Restaurar' : 'Desactivar' }}">
                                                 <i class="fas {{ $item->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                             </button>
                                         </div>
@@ -148,37 +148,6 @@
         </div>
     </div>
 </div>
-
-@can('gestionar_marcas')
-<!-- MODAL GLOBAL -->
-<div class="modal fade" id="modalConfirmacionGlobal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body text-center p-4 pb-5">
-                <div id="modalIconContainer" class="mb-4">
-                    <i id="modalIcon" class="fas fa-ban fa-4x opacity-75"></i>
-                </div>
-                <h4 class="fw-bold text-dark" id="modalTitle">¿Cambiar estado?</h4>
-                <p class="text-muted mb-4" id="modalDesc"></p>
-                
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="formConfirmacionGlobal" action="" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <button type="submit" id="modalBtnConfirm" class="btn fw-bold px-4 rounded-pill shadow-sm">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endcan
 @endsection
 
 @push('js')
@@ -196,50 +165,6 @@
             clearTimeout(typingTimer);
             typingTimer = setTimeout(() => { form.submit(); }, 500);
         });
-
-        const modalConfirmObj = document.getElementById('modalConfirmacionGlobal');
-        if (modalConfirmObj) {
-            const modalConfirm = new bootstrap.Modal(modalConfirmObj);
-            
-            document.body.addEventListener('click', function(e) {
-                const btn = e.target.closest('.btn-confirmar');
-                if (btn) {
-                    const { id, nombre, eliminado } = btn.dataset;
-                    
-                    const escapeHtml = (text) => text.replace(/[&<>"']/g, match => ({
-                        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
-                    })[match]);
-                    const safeNombre = escapeHtml(nombre || 'la marca');
-
-                    document.getElementById('formConfirmacionGlobal').action = `/marcas/${id}`; 
-                    
-                    const icon = document.getElementById('modalIcon');
-                    const iconContainer = document.getElementById('modalIconContainer');
-                    const title = document.getElementById('modalTitle');
-                    const desc = document.getElementById('modalDesc');
-                    const btnSubmit = document.getElementById('modalBtnConfirm');
-
-                    if (eliminado === 'false') {
-                        icon.className = 'fas fa-ban fa-3x text-danger';
-                        iconContainer.className = 'bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                        title.textContent = '¿Archivar la marca?';
-                        desc.innerHTML = `La firma comercial <strong>${safeNombre}</strong> dejará de mostrarse en los inventarios activos.`;
-                        btnSubmit.className = 'btn btn-danger fw-bold px-4 rounded-pill shadow-sm';
-                    } else {
-                        icon.className = 'fas fa-check-circle fa-3x text-success';
-                        iconContainer.className = 'bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                        title.textContent = '¿Habilitar marca?';
-                        desc.innerHTML = `La firma <strong>${safeNombre}</strong> volverá a estar operativa para asociar productos.`;
-                        btnSubmit.className = 'btn btn-success fw-bold px-4 rounded-pill shadow-sm';
-                    }
-                    
-                    iconContainer.style.width = '80px';
-                    iconContainer.style.height = '80px';
-
-                    modalConfirm.show();
-                }
-            });
-        }
     });
 </script>
 @endpush

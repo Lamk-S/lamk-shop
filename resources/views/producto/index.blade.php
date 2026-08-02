@@ -188,10 +188,12 @@
                                             <a href="{{ route('productos.edit', $item) }}" class="btn btn-sm btn-light border text-primary" title="Editar">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button" class="btn btn-sm btn-light border 
-                                                {{ !$item->trashed() && (int) $item->estado === 1 ? 'text-danger' : 'text-success' }} 
-                                                btn-confirmar" data-id="{{ $item->id }}" data-nombre="{{ $item->nombre }}"
-                                                data-restaurar="{{ $item->trashed() ? '1' : '0' }}" data-accion="{{ $item->trashed() ? 'restaurar' : 'desactivar' }}"
+                                            <button type="button" 
+                                                class="btn btn-sm btn-light border btn-confirmar {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
+                                                data-nombre="{{ $item->nombre }}"
+                                                data-accion="{{ $item->trashed() ? 'restaurar' : 'desactivar' }}"
+                                                data-url="{{ $item->trashed() ? route('productos.restore', $item) : route('productos.destroy', $item) }}"
+                                                data-metodo="{{ $item->trashed() ? 'PATCH' : 'DELETE' }}"
                                                 title="{{ $item->trashed() ? 'Restaurar' : 'Desactivar' }}">
                                                 <i class="fas {{ $item->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                             </button>
@@ -238,34 +240,6 @@
         </div>
     </div>
 </div>
-
-@can('gestionar_productos')
-<!-- Modal Confirmación Global -->
-<div class="modal fade" id="modalConfirmacionGlobal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header border-bottom-0" id="modalConfirmHeader">
-                <h5 class="modal-title fw-bold" id="modalConfirmTitle">Confirmar acción</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body p-4 text-center">
-                <p class="mb-0 fs-5">
-                    ¿Estás seguro de que deseas <span id="modalConfirmAccionText"></span> el producto <br>
-                    <strong class="text-dark" id="modalConfirmProductName"></strong>?
-                </p>
-            </div>
-            <div class="modal-footer bg-light border-top-0 justify-content-center">
-                <button type="button" class="btn btn-light border fw-medium px-4" data-bs-dismiss="modal">Cancelar</button>
-                <form id="formConfirmacionGlobal" action="" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn fw-medium px-4 shadow-sm" id="modalConfirmBtnSubmit">Confirmar</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-@endcan
 
 <!-- Modal Ver Detalles Global -->
 <div class="modal fade" id="modalVerGlobal" tabindex="-1" aria-hidden="true">
@@ -356,43 +330,11 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modalConfirmObj = document.getElementById('modalConfirmacionGlobal');
         const modalVerObj = document.getElementById('modalVerGlobal');
         
-        const modalConfirm = modalConfirmObj ? new bootstrap.Modal(modalConfirmObj) : null;
         const modalVer = modalVerObj ? new bootstrap.Modal(modalVerObj) : null;
-        const formGlobal = document.getElementById('formConfirmacionGlobal');
         
         document.body.addEventListener('click', function (e) {
-            
-            // --- CONFIRMACIÓN ---
-            const btnConfirmar = e.target.closest('.btn-confirmar');
-            if (btnConfirmar && modalConfirm) {
-                const { id, nombre, accion, restaurar } = btnConfirmar.dataset;
-
-                document.getElementById('modalConfirmProductName').textContent = nombre;
-                document.getElementById('modalConfirmAccionText').textContent = accion;
-
-                const header = document.getElementById('modalConfirmHeader');
-                const btnSubmit = document.getElementById('modalConfirmBtnSubmit');
-
-                if (restaurar === '1') {
-                    header.className = 'modal-header bg-success bg-opacity-10 text-success border-bottom-0';
-                    btnSubmit.className = 'btn btn-success fw-medium px-4 shadow-sm';
-                    btnSubmit.textContent = 'Sí, Restaurar';
-                    formGlobal.action = `/productos/${id}/restore`;
-                    formGlobal.querySelector('[name="_method"]').value = 'PATCH';
-                } else {
-                    header.className = 'modal-header bg-danger bg-opacity-10 text-danger border-bottom-0';
-                    btnSubmit.className = 'btn btn-danger fw-medium px-4 shadow-sm';
-                    btnSubmit.textContent = 'Sí, Desactivar';
-                    formGlobal.action = `/productos/${id}`;
-                    formGlobal.querySelector('[name="_method"]').value = 'DELETE';
-                }
-                modalConfirm.show();
-                return;
-            }
-
             // --- VER DETALLES ---
             const btnVer = e.target.closest('.btn-ver');
             if (btnVer && modalVer) {

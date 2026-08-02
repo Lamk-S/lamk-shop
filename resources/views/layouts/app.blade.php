@@ -136,6 +136,56 @@
     </script>
 
     @include('layouts.partials.alert')
+
+    <x-modal-confirmacion />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const modalConfirmObj = document.getElementById('modalConfirmacionGlobal');
+            
+            if (modalConfirmObj) {
+                const modalConfirm = new bootstrap.Modal(modalConfirmObj);
+                
+                document.body.addEventListener('click', function(e) {
+                    const btn = e.target.closest('.btn-confirmar');
+                    
+                    if (btn) {
+                        e.preventDefault();
+                        
+                        const { nombre, accion, url, metodo } = btn.dataset;
+                        
+                        document.getElementById('formConfirmacionGlobal').action = url;
+                        document.getElementById('formMethodInput').value = metodo; 
+                        
+                        const iconContainer = document.getElementById('modalIconContainer');
+                        const title = document.getElementById('modalTitle');
+                        const desc = document.getElementById('modalDesc');
+                        const btnSubmit = document.getElementById('modalBtnConfirm');
+
+                        if (accion === 'desactivar' || accion === 'bloquear' || accion === 'suspender') {
+                            iconContainer.className = 'bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
+                            iconContainer.innerHTML = '<i class="fas fa-trash-alt fa-3x"></i>'; 
+                            
+                            title.textContent = '¿Eliminar / Desactivar?';
+                            desc.innerHTML = `El registro de <strong>${nombre}</strong> pasará a la papelera.`;
+                            btnSubmit.className = 'btn btn-danger fw-bold px-4 rounded-pill shadow-sm';
+                        }
+                        else {
+                            iconContainer.className = 'bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
+                            iconContainer.innerHTML = '<i class="fas fa-trash-restore-alt fa-3x"></i>'; 
+                            
+                            title.textContent = '¿Restaurar registro?';
+                            desc.innerHTML = `El registro de <strong>${nombre}</strong> volverá a estar operativo.`;
+                            btnSubmit.className = 'btn btn-success fw-bold px-4 rounded-pill shadow-sm';
+                        }
+                        
+                        modalConfirm.show();
+                    }
+                });
+            }
+        });
+    </script>
+
     @stack('js')
 </body>
 </html>
