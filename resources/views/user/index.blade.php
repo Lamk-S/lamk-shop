@@ -19,6 +19,7 @@
         @endcan
     </div>
 
+    <!-- El alert ya está incluido en app.blade.php, pero si lo necesitas aquí específico, déjalo -->
     @include('layouts.partials.alert')
 
     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -76,8 +77,8 @@
                     <tbody>
                         @forelse($users as $item)
                             @php
-                                $estaEliminado = method_exists($item, 'trashed') ? $item->trashed() : false;
-                                $isActive = !$estaEliminado && (int) $item->estado === 1;
+                                $estaEliminado = $item->trashed(); // Laravel SoftDeletes natively supports this
+                                $isActive = !$estaEliminado;
                                 $rolPrincipal = strtolower($item->roles->first()?->name ?? 'sin rol');
                                 
                                 $badgeColor = match(true) {
@@ -122,18 +123,19 @@
                                 </td>
                                 @can('gestionar_usuarios')
                                     <td class="text-center pe-4">
-                                        <div class="btn-group shadow-sm">
+                                        <div class="btn-group shadow-sm bg-white rounded-2" role="group">
                                             <a href="{{ route('users.edit', $item) }}" class="btn btn-sm btn-light border text-primary" data-bs-toggle="tooltip" title="Editar Credenciales">
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             @if(Auth::id() !== $item->id)
                                                 <button type="button" 
-                                                    class="btn btn-sm btn-light border {{ $isActive ? 'text-danger' : 'text-success' }} btn-toggle-status" 
-                                                    data-id="{{ $item->id }}"
-                                                    data-name="{{ $item->name }}"
-                                                    data-active="{{ $isActive ? '1' : '0' }}"
-                                                    title="{{ $isActive ? 'Desactivar Acceso' : 'Restaurar Cuenta' }}">
-                                                    <i class="fas {{ $isActive ? 'fa-user-slash' : 'fa-user-check' }}"></i>
+                                                    class="btn btn-sm btn-light border btn-confirmar {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
+                                                    data-nombre="{{ $item->name }}"
+                                                    data-accion="{{ $item->trashed() ? 'restaurar' : 'suspender' }}"
+                                                    data-url="{{ $item->trashed() ? route('users.restore', $item) : route('users.destroy', $item) }}"
+                                                    data-metodo="{{ $item->trashed() ? 'PATCH' : 'DELETE' }}"
+                                                    title="{{ $item->trashed() ? 'Restaurar Cuenta' : 'Suspender Acceso' }}">
+                                                    <i class="fas {{ $item->trashed() ? 'fa-user-check' : 'fa-user-slash' }}"></i>
                                                 </button>
                                             @endif
                                         </div>
@@ -166,7 +168,7 @@
                 <label class="form-label mb-0 small fw-bold text-muted text-uppercase">Filas:</label>
                 <select name="per_page" class="form-select form-select-sm shadow-sm w-auto" onchange="this.form.submit()">
                     @foreach ([10, 15, 25, 50] as $size)
-                        <option value="{{ $size }}" @selected((int) request('per_page', $perPage) === $size)>{{ $size }}</option>
+                        <option value="{{ $size }}" @selected((int) request('per_page', $perPage ?? 10) === $size)>{{ $size }}</option>
                     @endforeach
                 </select>
                 <div class="text-muted small border-start ps-3 ms-2">
@@ -175,31 +177,6 @@
             </form>
             <div class="pagination-custom">
                 {{ $users->links('pagination::bootstrap-5') }}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- MODAL GLOBAL PARA DESACTIVAR/ACTIVAR -->
-<div class="modal fade" id="modalConfirmStatus" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-body text-center p-5">
-                <div class="mb-4" id="modalIconContainer">
-                    <!-- Icono inyectado por JS -->
-                </div>
-                <h4 class="fw-bold text-dark mb-2" id="modalTitleStatus"></h4>
-                <p class="text-muted mb-4" id="modalMessageStatus"></p>
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="formToggleStatus" action="" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <button type="submit" id="btnSubmitStatus" class="btn fw-bold px-4 rounded-pill shadow-sm">
-                            Confirmar Acción
-                        </button>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
@@ -213,38 +190,6 @@
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
-
-        const modalStatusEl = document.getElementById('modalConfirmStatus');
-        if(modalStatusEl){
-            const modalStatus = new bootstrap.Modal(modalStatusEl);
-            
-            document.querySelectorAll('.btn-toggle-status').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const isActive = this.dataset.active === '1';
-
-                    document.getElementById('formToggleStatus').action = `/users/${id}`;
-                    
-                    const iconContainer = document.getElementById('modalIconContainer');
-                    const btnSubmit = document.getElementById('btnSubmitStatus');
-                    
-                    if(isActive) {
-                        iconContainer.innerHTML = `<div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;"><i class="fas fa-user-lock fa-2x"></i></div>`;
-                        document.getElementById('modalTitleStatus').textContent = '¿Suspender usuario?';
-                        document.getElementById('modalMessageStatus').innerHTML = `El usuario <strong>${name}</strong> perderá el acceso inmediatamente. Sus operaciones pasadas se conservarán.`;
-                        btnSubmit.className = 'btn btn-danger fw-bold px-4 rounded-pill shadow-sm';
-                    } else {
-                        iconContainer.innerHTML = `<div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;"><i class="fas fa-user-check fa-2x"></i></div>`;
-                        document.getElementById('modalTitleStatus').textContent = '¿Reactivar acceso?';
-                        document.getElementById('modalMessageStatus').innerHTML = `El usuario <strong>${name}</strong> recuperará acceso al sistema con sus permisos previos.`;
-                        btnSubmit.className = 'btn btn-success fw-bold px-4 rounded-pill shadow-sm';
-                    }
-
-                    modalStatus.show();
-                });
-            });
-        }
     });
 </script>
 @endpush

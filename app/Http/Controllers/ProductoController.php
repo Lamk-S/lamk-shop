@@ -264,36 +264,38 @@ class ProductoController extends Controller implements HasMiddleware
     public function destroy(Producto $producto)
     {
         try {
-            $producto->update([
-                'estado' => 0
-            ]);
             $producto->delete();
+            
             return redirect()
                 ->route('productos.index')
-                ->with('success', 'Producto eliminado correctamente');
+                ->with('success', 'Producto eliminado correctamente.');
         } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al eliminar producto: '.$e->getMessage(),
-            ]);
+            return back()->with('error', 'Error al eliminar producto: ' . $e->getMessage());
         }
     }
 
-    public function restore(int $id)
+    public function restore(Producto $producto) 
     {
         try {
-            $producto = Producto::withTrashed()
-                ->findOrFail($id);
             $producto->restore();
-            $producto->update([
-                'estado' => 1
-            ]);
+            
             return redirect()
                 ->route('productos.index')
-                ->with('success', 'Producto restaurado correctamente');
+                ->with('success', 'Producto restaurado correctamente.');
         } catch (\Exception $e) {
-            return back()->withErrors([
-                'error' => 'Error al restaurar producto: '.$e->getMessage(),
-            ]);
+            return back()->with('error', 'Error al restaurar producto: ' . $e->getMessage());
+        }
+    }
+
+    public function forceDelete(Producto $producto)
+    {
+        try {
+            $producto->forceDelete();
+            return redirect()
+                ->route('productos.index')
+                ->with('success', 'Producto eliminado permanentemente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se puede eliminar porque tiene registros asociados: ' . $e->getMessage());
         }
     }
 

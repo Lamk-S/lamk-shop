@@ -91,24 +91,33 @@ class CategoriaController extends Controller implements HasMiddleware
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Categoria $categoria)
     {
         try {
-            $categoria = Categoria::withTrashed()->findOrFail($id);
+            $categoria->delete();
+            return back()->with('success', 'Categoría eliminada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al eliminar la categoría: ' . $e->getMessage());
+        }
+    }
 
-            if ($categoria->trashed()) {
-                $categoria->restore();
-                $message = 'Categoría restaurada correctamente';
-            } else {
-                $categoria->delete();
-                $message = 'Categoría eliminada correctamente';
-            }
+    public function restore(Categoria $categoria)
+    {
+        try {
+            $categoria->restore();
+            return back()->with('success', 'Categoría restaurada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al restaurar la categoría: ' . $e->getMessage());
+        }
+    }
 
-            return redirect()
-                ->route('categorias.index')
-                ->with('success', $message);
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al modificar la categoría: ' . $e->getMessage()]);
+    public function forceDelete(Categoria $categoria)
+    {
+        try {
+            $categoria->forceDelete();
+            return back()->with('success', 'Categoría eliminada permanentemente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar: ' . $e->getMessage());
         }
     }
 }

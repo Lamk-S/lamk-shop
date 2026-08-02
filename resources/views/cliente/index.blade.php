@@ -151,13 +151,14 @@
                                             <a href="{{ route('clientes.edit', $item) }}" class="btn btn-sm btn-light border text-primary" title="Editar ficha">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button"
-                                                class="btn btn-sm btn-light border btn-confirmar {{ $estaEliminado ? 'text-success' : 'text-danger' }}"
-                                                data-id="{{ $item->id }}"
-                                                data-nombre="{{ $persona?->nombre_completo }}"
-                                                data-accion="{{ $estaEliminado ? 'restaurar' : 'bloquear' }}"
-                                                title="{{ $estaEliminado ? 'Restaurar' : 'Bloquear/Eliminar' }}">
-                                                <i class="fas {{ $estaEliminado ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
+                                            <button type="button" 
+                                                class="btn btn-sm btn-light border btn-confirmar {{ $item->trashed() ? 'text-success' : 'text-danger' }}"
+                                                data-nombre="{{ $persona?->nombre_completo ?? 'este cliente' }}"
+                                                data-accion="{{ $item->trashed() ? 'restaurar' : 'bloquear' }}"
+                                                data-url="{{ $item->trashed() ? route('clientes.restore', $item) : route('clientes.destroy', $item) }}"
+                                                data-metodo="{{ $item->trashed() ? 'PATCH' : 'DELETE' }}"
+                                                title="{{ $item->trashed() ? 'Restaurar' : 'Bloquear' }}">
+                                                <i class="fas {{ $item->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                             </button>
                                         </div>
                                     </td>
@@ -190,35 +191,6 @@
         </div>
     </div>
 </div>
-
-@can('gestionar_clientes')
-<div class="modal fade" id="modalConfirmacionGlobal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body text-center p-4 pb-5">
-                <div id="modalIconContainer" class="mb-4">
-                    <i id="modalIcon" class="fas fa-ban fa-4x opacity-75"></i>
-                </div>
-                <h4 class="fw-bold text-dark" id="modalTitle">¿Cambiar estado?</h4>
-                <p class="text-muted mb-4" id="modalDesc"></p>
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="formConfirmacionGlobal" action="" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <button type="submit" class="btn fw-bold px-4 rounded-pill shadow-sm" id="modalBtnConfirm">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endcan
 @endsection
 
 @push('js')
@@ -238,46 +210,6 @@
                 form.submit();
             }, 500);
         });
-
-        const modalConfirmObj = document.getElementById('modalConfirmacionGlobal');
-        if (modalConfirmObj) {
-            const modalConfirm = new bootstrap.Modal(modalConfirmObj);
-            
-            document.body.addEventListener('click', function(e) {
-                const btn = e.target.closest('.btn-confirmar');
-                if (btn) {
-                    const { id, nombre, accion } = btn.dataset;
-                    
-                    const form = document.getElementById('formConfirmacionGlobal');
-                    form.action = `/clientes/${id}`;
-                    
-                    const icon = document.getElementById('modalIcon');
-                    const iconContainer = document.getElementById('modalIconContainer');
-                    const title = document.getElementById('modalTitle');
-                    const desc = document.getElementById('modalDesc');
-                    const btnSubmit = document.getElementById('modalBtnConfirm');
-
-                    if (accion === 'bloquear') {
-                        icon.className = 'fas fa-ban fa-3x text-danger';
-                        iconContainer.className = 'bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                        title.textContent = '¿Bloquear cliente?';
-                        desc.innerHTML = `El registro de <strong>${nombre}</strong> pasará a estar inactivo.`;
-                        btnSubmit.className = 'btn btn-danger fw-bold px-4 rounded-pill shadow-sm';
-                    } else {
-                        icon.className = 'fas fa-check-circle fa-3x text-success';
-                        iconContainer.className = 'bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                        title.textContent = '¿Restaurar acceso comercial?';
-                        desc.innerHTML = `El registro de <strong>${nombre}</strong> volverá a estar operativo.`;
-                        btnSubmit.className = 'btn btn-success fw-bold px-4 rounded-pill shadow-sm';
-                    }
-                    
-                    iconContainer.style.width = '80px';
-                    iconContainer.style.height = '80px';
-
-                    modalConfirm.show();
-                }
-            });
-        }
     });
 </script>
 @endpush

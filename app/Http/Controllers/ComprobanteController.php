@@ -92,30 +92,4 @@ class ComprobanteController extends Controller implements HasMiddleware
                 ->withInput();
         }
     }
-
-    public function destroy(Comprobante $comprobante)
-    {
-        try {
-            DB::transaction(function () use ($comprobante) {
-                if ($comprobante->trashed()) {
-                    $comprobante->restore();
-                    $comprobante->update(['estado' => 1]); 
-                } else {
-                    $comprobante->delete();
-                    $comprobante->update(['estado' => 0]);
-                }
-            });
-
-            $message = $comprobante->trashed()
-                ? 'Comprobante desactivado y enviado a la papelera correctamente'
-                : 'Comprobante restaurado y activado correctamente';
-
-            return redirect()
-                ->route('comprobantes.index')
-                ->with('success', $message);
-        } catch (\Exception $e) {
-            return back()
-                ->withErrors(['error' => 'Error al modificar el comprobante: ' . $e->getMessage()]);
-        }
-    }
 }

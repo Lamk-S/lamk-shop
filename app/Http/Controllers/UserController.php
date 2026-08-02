@@ -182,4 +182,16 @@ class UserController extends Controller implements HasMiddleware
             return back()->withErrors(['error' => 'Error al procesar la solicitud: ' . $e->getMessage()]);
         }
     }
+
+    public function restore(User $user)
+    {
+        $user->restore();
+        return back()->with('success', 'Usuario restaurado y habilitado correctamente.');
+    }
+
+    public function forceDelete(User $user)
+    {
+        $user->forceDelete();
+        return back()->with('success', 'Cuenta de usuario eliminada de forma irreversible.');
+    }
 }

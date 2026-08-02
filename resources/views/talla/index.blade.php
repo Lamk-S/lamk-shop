@@ -128,11 +128,12 @@
                                                 <i class="fas fa-edit"></i>
                                             </a>
                                             <button type="button" 
-                                                    class="btn btn-sm btn-light border btn-toggle-status {{ $talla->trashed() ? 'text-success' : 'text-danger' }}"
-                                                    data-id="{{ $talla->id }}"
-                                                    data-name="{{ $talla->codigo }} - {{ $talla->nombre }}"
-                                                    data-trashed="{{ $talla->trashed() ? '1' : '0' }}"
-                                                    title="{{ $talla->trashed() ? 'Habilitar Talla' : 'Dar de Baja Talla' }}">
+                                                class="btn btn-sm btn-light border btn-confirmar {{ $talla->trashed() ? 'text-success' : 'text-danger' }}"
+                                                data-nombre="{{ $talla->nombre }}"
+                                                data-accion="{{ $talla->trashed() ? 'restaurar' : 'desactivar' }}"
+                                                data-url="{{ $talla->trashed() ? route('tallas.restore', $talla) : route('tallas.destroy', $talla) }}"
+                                                data-metodo="{{ $talla->trashed() ? 'PATCH' : 'DELETE' }}"
+                                                title="{{ $talla->trashed() ? 'Restaurar' : 'Desactivar' }}">
                                                 <i class="fas {{ $talla->trashed() ? 'fa-trash-restore-alt' : 'fa-trash-alt' }}"></i>
                                             </button>
                                         </div>
@@ -167,36 +168,6 @@
         </div>
     </div>
 </div>
-
-@can('gestionar_tallas')
-<!-- MODAL -->
-<div class="modal fade" id="modalConfirmStatus" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content border-0 shadow-lg rounded-4">
-            <div class="modal-header border-0 pb-0">
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-            </div>
-            <div class="modal-body text-center p-4 pb-5">
-                <div id="modalIconContainer" class="mb-4">
-                    <i id="modalIcon" class="fas fa-ban fa-4x opacity-75"></i>
-                </div>
-                <h4 id="modalTitle" class="fw-bold text-dark mb-3">¿Cambiar estado?</h4>
-                <p id="modalMessage" class="text-muted mb-4"></p>
-                <div class="d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-light fw-bold px-4 rounded-pill border shadow-sm" data-bs-dismiss="modal">Cancelar</button>
-                    <form id="formToggleStatus" action="" method="post">
-                        @method('DELETE')
-                        @csrf
-                        <button type="submit" id="btnSubmitModal" class="btn fw-bold px-4 rounded-pill shadow-sm">
-                            Confirmar
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endcan
 @endsection
 
 @push('js')
@@ -216,45 +187,6 @@
                 form.submit();
             }, 500);
         });
-
-        const modalStatusEl = document.getElementById('modalConfirmStatus');
-        if (modalStatusEl) {
-            const modalStatus = new bootstrap.Modal(modalStatusEl);
-            document.querySelectorAll('.btn-toggle-status').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = this.dataset.id;
-                    const name = this.dataset.name;
-                    const isTrashed = this.dataset.trashed === '1';
-
-                    document.getElementById('formToggleStatus').action = `/tallas/${id}`;
-                    
-                    const title = document.getElementById('modalTitle');
-                    const message = document.getElementById('modalMessage');
-                    const btnSubmit = document.getElementById('btnSubmitModal');
-                    const icon = document.getElementById('modalIcon');
-                    const iconContainer = document.getElementById('modalIconContainer');
-
-                    if (isTrashed) {
-                        title.textContent = '¿Habilitar medida?';
-                        message.innerHTML = `La medida <strong>${name}</strong> podrá ser utilizada nuevamente para registrar ingresos.`;
-                        btnSubmit.className = 'btn btn-success fw-bold px-4 rounded-pill shadow-sm';
-                        icon.className = 'fas fa-check-circle fa-3x text-success';
-                        iconContainer.className = 'bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                    } else {
-                        title.textContent = '¿Dar de baja medida?';
-                        message.innerHTML = `La variante <strong>${name}</strong> será bloqueada y no aparecerá al asociar SKUs.`;
-                        btnSubmit.className = 'btn btn-danger fw-bold px-4 rounded-pill shadow-sm';
-                        icon.className = 'fas fa-trash-alt fa-3x text-danger';
-                        iconContainer.className = 'bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-2';
-                    }
-                    
-                    iconContainer.style.width = '80px';
-                    iconContainer.style.height = '80px';
-                    
-                    modalStatus.show();
-                });
-            });
-        }
     });
 </script>
 @endpush

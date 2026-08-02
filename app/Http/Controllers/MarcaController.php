@@ -91,24 +91,33 @@ class MarcaController extends Controller implements HasMiddleware
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Marca $marca)
     {
         try {
-            $marca = Marca::withTrashed()->findOrFail($id);
+            $marca->delete();
+            return back()->with('success', 'Marca eliminada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al eliminar la marca: ' . $e->getMessage());
+        }
+    }
 
-            if ($marca->trashed()) {
-                $marca->restore();
-                $message = 'Marca restaurada correctamente';
-            } else {
-                $marca->delete();
-                $message = 'Marca eliminada correctamente';
-            }
+    public function restore(Marca $marca)
+    {
+        try {
+            $marca->restore();
+            return back()->with('success', 'Marca restaurada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al restaurar la marca.');
+        }
+    }
 
-            return redirect()
-                ->route('marcas.index')
-                ->with('success', $message);
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al modificar la marca: ' . $e->getMessage()]);
+    public function forceDelete(Marca $marca)
+    {
+        try {
+            $marca->forceDelete();
+            return back()->with('success', 'Marca eliminada permanentemente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar: ' . $e->getMessage());
         }
     }
 }
