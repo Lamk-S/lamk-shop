@@ -101,4 +101,15 @@ class CajaController extends Controller implements HasMiddleware
             return back()->withErrors(['error' => 'Error al modificar la caja: ' . $e->getMessage()]);
         }
     }
+    public function restore(Caja $caja)
+    {
+        $caja->restore();
+        return back()->with('success', 'Terminal de caja restaurada correctamente.');
+    }
+
+    public function forceDelete(Caja $caja)
+    {
+        $caja->forceDelete();
+        return back()->with('success', 'Terminal de caja eliminada permanentemente.');
+    }
 }

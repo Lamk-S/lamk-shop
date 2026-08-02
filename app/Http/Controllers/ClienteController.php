@@ -122,4 +122,17 @@ class ClienteController extends Controller implements HasMiddleware
             return back()->withErrors(['error' => 'Error al modificar el cliente: ' . $e->getMessage()]);
         }
     }
+
+    public function restore(Cliente $cliente)
+    {
+        $cliente->persona()->restore();
+        $cliente->restore();
+        return back()->with('success', 'Cliente restaurado correctamente.');
+    }
+
+    public function forceDelete(Cliente $cliente)
+    {
+        $cliente->forceDelete();
+        return back()->with('success', 'Cliente eliminado permanentemente del sistema.');
+    }
 }

@@ -199,6 +199,18 @@ class ProductoVarianteController extends Controller implements HasMiddleware
         }
     }
 
+    public function restore(ProductoVariante $producto_variante)
+    {
+        $producto_variante->restore();
+        return back()->with('success', 'Variante de producto restaurada correctamente.');
+    }
+
+    public function forceDelete(ProductoVariante $producto_variante)
+    {
+        $producto_variante->forceDelete();
+        return back()->with('success', 'Variante de producto eliminada permanentemente.');
+    }
+
     private function validarCompatibilidadProductoTalla(Producto $producto, Talla $talla): void
     {
         if ($producto->tipo_producto === TipoProducto::ACCESORIO && $talla->tipo_talla !== TipoTalla::UNICA) {

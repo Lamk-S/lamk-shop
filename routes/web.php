@@ -58,8 +58,13 @@ Route::middleware('auth')->group(function () {
 
     // MÓDULO: Catálogo Deportivo (Ropa, Calzado, Accesorios)
     Route::resource('categorias', CategoriaController::class)->except(['show']);
+    Route::softDeletes('categorias', CategoriaController::class);
+
     Route::resource('marcas', MarcaController::class)->except(['show']);
+    Route::softDeletes('marcas', MarcaController::class);
+
     Route::resource('tallas', TallaController::class)->except(['show']);
+    Route::softDeletes('tallas', TallaController::class);
 
     // --- DIVISIÓN DE PRODUCTOS Y VARIANTES (Lectura vs Escritura) ---
     // 1. Mutaciones (Solo Almacén y Admin)
@@ -68,17 +73,18 @@ Route::middleware('auth')->group(function () {
         Route::post('productos', [ProductoController::class, 'store'])->name('productos.store');
         Route::get('productos/{producto}/edit', [ProductoController::class, 'edit'])->name('productos.edit');
         Route::patch('productos/{producto}', [ProductoController::class, 'update'])->name('productos.update');
-        Route::patch('/productos/{producto}/restore', [ProductoController::class, 'restore'])->name('productos.restore');
+        Route::softDeletes('productos', ProductoController::class);
         Route::delete('productos/{producto}', [ProductoController::class, 'destroy'])->name('productos.destroy');
 
         Route::get('producto-variantes/create', [ProductoVarianteController::class, 'create'])->name('producto-variantes.create');
         Route::post('producto-variantes', [ProductoVarianteController::class, 'store'])->name('producto-variantes.store');
         Route::get('producto-variantes/{producto_variante}/edit', [ProductoVarianteController::class, 'edit'])->name('producto-variantes.edit');
         Route::patch('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'update'])->name('producto-variantes.update');
+        Route::softDeletes('producto-variantes', ProductoVarianteController::class, 'producto_variante');
         Route::delete('producto-variantes/{producto_variante}', [ProductoVarianteController::class, 'destroy'])->name('producto-variantes.destroy');
     });
 
-    // 2. Solo Lectura (Vendedores, Cajeros, Almacén, Admin)
+    // 2. Solo Lectura (Vendedores, C<ajeros, Almacén, Admin)
     Route::middleware(['permission:gestionar_productos|ver_productos'])->group(function () {
         Route::get('productos', [ProductoController::class, 'index'])->name('productos.index');
         
@@ -110,6 +116,7 @@ Route::middleware('auth')->group(function () {
 
     // MÓDULO: Finanzas (Cajas y Tesorería)
     Route::resource('cajas', CajaController::class)->except(['show']);
+    Route::softDeletes('cajas', CajaController::class);
     Route::resource('sesiones-caja', SesionCajaController::class)
         ->only(['index', 'create', 'store', 'show', 'destroy'])
         ->parameters(['sesiones-caja' => 'sesion_caja']);
@@ -118,10 +125,13 @@ Route::middleware('auth')->group(function () {
 
     // MÓDULO: Directorio (Clientes y Proveedores)
     Route::resource('clientes', ClienteController::class)->except(['show']);
+    Route::softDeletes('clientes', ClienteController::class);
     Route::post('/clientes/quick-store', [ClienteQuickController::class, 'store'])->name('clientes.quick-store');
     
     Route::resource('proveedores', ProveedorController::class)
-        ->except(['show'])->parameters(['proveedores' => 'proveedor']);
+        ->except(['show'])
+        ->parameters(['proveedores' => 'proveedor']);
+    Route::softDeletes('proveedores', ProveedorController::class, 'proveedor');
     Route::post('/proveedores/quick-store', [ProveedorQuickController::class, 'store'])->name('proveedores.quick-store');
 
     // MÓDULO: Configuración y Seguridad
@@ -132,5 +142,6 @@ Route::middleware('auth')->group(function () {
     Route::resource('auditoria-operaciones', AuditoriaOperacionController::class)
         ->only(['index', 'show'])->parameters(['auditoria-operaciones' => 'auditoriaOperacion']);
     Route::resource('users', UserController::class)->except(['show']);
+    Route::softDeletes('users', UserController::class);
     Route::resource('roles', RoleController::class)->except(['show']);
 });

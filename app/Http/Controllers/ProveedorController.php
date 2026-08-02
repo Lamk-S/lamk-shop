@@ -122,4 +122,17 @@ class ProveedorController extends Controller implements HasMiddleware
             return back()->withErrors(['error' => 'Error al modificar el proveedor: ' . $e->getMessage()]);
         }
     }
+
+    public function restore(Proveedor $proveedor)
+    {
+        $proveedor->persona()->restore();
+        $proveedor->restore();
+        return back()->with('success', 'Proveedor restaurado correctamente.');
+    }
+
+    public function forceDelete(Proveedor $proveedor)
+    {
+        $proveedor->forceDelete();
+        return back()->with('success', 'Proveedor eliminado permanentemente del sistema.');
+    }
 }

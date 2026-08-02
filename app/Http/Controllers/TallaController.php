@@ -113,24 +113,33 @@ class TallaController extends Controller implements HasMiddleware
         }
     }
 
-    public function destroy(string $id)
+    public function destroy(Talla $talla)
     {
         try {
-            $talla = Talla::withTrashed()->findOrFail($id);
+            $talla->delete();
+            return back()->with('success', 'Talla eliminada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al eliminar la talla.');
+        }
+    }
 
-            if ($talla->trashed()) {
-                $talla->restore();
-                $message = 'Talla restaurada correctamente';
-            } else {
-                $talla->delete();
-                $message = 'Talla eliminada correctamente';
-            }
+    public function restore(Talla $talla)
+    {
+        try {
+            $talla->restore();
+            return back()->with('success', 'Talla restaurada correctamente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al restaurar la talla.');
+        }
+    }
 
-            return redirect()
-                ->route('tallas.index')
-                ->with('success', $message);
-        } catch (Exception $e) {
-            return back()->withErrors(['error' => 'Error al modificar la talla: ' . $e->getMessage()]);
+    public function forceDelete(Talla $talla)
+    {
+        try {
+            $talla->forceDelete();
+            return back()->with('success', 'Talla eliminada permanentemente.');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar: ' . $e->getMessage());
         }
     }
 }
