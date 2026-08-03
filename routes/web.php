@@ -103,6 +103,7 @@ Route::middleware('auth')->group(function () {
     // Rutas de Pagos de Ventas
     Route::get('/pagos-venta', [PagoVentaController::class, 'index'])->name('pagos-venta.index');
     Route::post('/ventas/{venta}/pagos', [PagoVentaController::class, 'store'])->name('ventas.pagos.store');
+    Route::get('ventas/{venta}/ticket', [VentaController::class, 'ticket'])->name('ventas.ticket');
 
     // MÓDULO: Abastecimiento y Compras
     Route::resource('compras', CompraController::class)->only(['index', 'create', 'store', 'show']);

@@ -17,7 +17,7 @@
             <a href="{{ route('ventas.index') }}" class="btn btn-light border shadow-sm fw-medium">
                 <i class="fas fa-arrow-left me-2"></i>Volver
             </a>
-            <button onclick="window.print()" class="btn btn-secondary shadow-sm fw-medium">
+            <button type="button" onclick="imprimirTicketSilencioso('{{ route('ventas.ticket', $venta->id) }}')" class="btn btn-secondary shadow-sm fw-medium">
                 <i class="fas fa-print me-2"></i>Imprimir
             </button>
             @can('anular_ventas')
@@ -35,7 +35,7 @@
     <!-- Tarjeta Principal del Recibo -->
     <div class="card border-0 shadow-sm rounded-4 w-100 mx-auto" style="max-width: 1100px;">
         <div class="card-body p-4 p-md-5 border-bottom">
-            <div class="row align-items-center mb-4">
+            <div class="row align-items-center mb-5">
                 <div class="col-sm-6 text-center text-sm-start mb-3 mb-sm-0">
                     <h3 class="fw-bolder text-primary mb-0">Recibo de Venta</h3>
                     <span class="badge bg-{{ $venta->estado_documento === 'ANULADA' ? 'danger' : 'success' }} bg-opacity-10 text-{{ $venta->estado_documento === 'ANULADA' ? 'danger' : 'success' }} border border-{{ $venta->estado_documento === 'ANULADA' ? 'danger' : 'success' }} border-opacity-25 mt-2 px-3 py-2 rounded-pill">
@@ -232,3 +232,26 @@
     @endif
 @endcan
 @endsection
+
+@push('js')
+<script>
+    function imprimirTicketSilencioso(url) {
+        let iframeViejo = document.getElementById('iframeTicketSilencioso');
+        if (iframeViejo) {
+            iframeViejo.remove();
+        }
+
+        let iframe = document.createElement('iframe');
+        iframe.id = 'iframeTicketSilencioso';
+        iframe.style.display = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+
+        iframe.onload = function() {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        };
+    }
+</script>
+@endpush

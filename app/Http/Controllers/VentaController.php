@@ -9,6 +9,7 @@ use App\Http\Requests\StoreVentaRequest;
 use App\Models\Cliente;
 use App\Models\Comprobante;
 use App\Models\Documento;
+use App\Models\EmpresaConfiguracion;
 use App\Models\ProductoVariante;
 use App\Models\SesionCaja;
 use App\Models\Venta;
@@ -177,5 +178,13 @@ class VentaController extends Controller implements HasMiddleware
                 'error' => 'Error al anular la venta: ' . $e->getMessage(),
             ]);
         }
+    }
+
+    public function ticket(Venta $venta)
+    {
+        $venta->load(['detalles', 'pagos', 'user', 'sesionCaja.caja']);
+        $empresa = EmpresaConfiguracion::where('estado', 1)->first();
+
+        return view('venta.ticket', compact('venta', 'empresa'));
     }
 }
