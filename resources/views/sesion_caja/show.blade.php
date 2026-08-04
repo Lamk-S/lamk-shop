@@ -1,18 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Arqueo de Caja')
 
-@push('css')
-<style>
-    @media print {
-        body { background: #fff !important; font-size: 10pt; color: #000; }
-        .card { box-shadow: none !important; border: 1px solid #ddd !important; margin-bottom: 1rem !important; }
-        .badge { border: 1px solid #000 !important; color: #000 !important; background: transparent !important; }
-        .page-title { font-size: 16pt; text-align: center; margin-bottom: 15px; }
-        .container-fluid { padding: 0 !important; }
-    }
-</style>
-@endpush
-
 @section('content')
 @php
     $saldoInicial = $sesionCaja->saldo_inicial;
@@ -38,7 +26,7 @@
             <a href="{{ route('sesiones-caja.index') }}" class="btn btn-light shadow-sm border rounded-pill px-3 fw-medium">
                 <i class="fas fa-arrow-left me-2"></i>Regresar
             </a>
-            <button onclick="window.print()" class="btn btn-dark shadow-sm rounded-pill px-4 fw-bold">
+            <button type="button" onclick="imprimirTicketSilencioso('{{ route('sesiones-caja.ticket', $sesionCaja->id) }}')" class="btn btn-dark shadow-sm rounded-pill px-4 fw-bold">
                 <i class="fas fa-print me-2"></i>Imprimir Ticket
             </button>
         </div>
@@ -279,21 +267,28 @@
             </div>
         </div>
     </div>
-    
-    <!-- Firmas (Solo visible en impresión) -->
-    <div class="row mt-5 pt-5 d-none d-print-flex">
-        <div class="col-6 text-center">
-            <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
-                <strong>Firma del Cajero</strong><br>
-                <span class="small">{{ $sesionCaja->user?->name ?? '_____________________' }}</span>
-            </div>
-        </div>
-        <div class="col-6 text-center">
-            <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
-                <strong>Administración / Tesorería</strong><br>
-                <span class="small">{{ $sesionCaja->userCierre?->name ?? '_____________________' }}</span>
-            </div>
-        </div>
-    </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    function imprimirTicketSilencioso(url) {
+        let iframeViejo = document.getElementById('iframeTicketSilencioso');
+        if (iframeViejo) {
+            iframeViejo.remove();
+        }
+
+        let iframe = document.createElement('iframe');
+        iframe.id = 'iframeTicketSilencioso';
+        iframe.style.display = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+
+        iframe.onload = function() {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        };
+    }
+</script>
+@endpush
