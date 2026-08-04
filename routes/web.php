@@ -93,6 +93,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::resource('kardex', KardexController::class)->only(['index', 'show']);
+    Route::get('kardex/{kardex}/ticket', [KardexController::class, 'ticket'])->name('kardex.ticket');
 
     // MÓDULO: Ventas y Punto de Venta
     Route::resource('ventas', VentaController::class)->only(['index', 'create', 'store', 'show']);
@@ -121,6 +122,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('sesiones-caja', SesionCajaController::class)
         ->only(['index', 'create', 'store', 'show', 'destroy'])
         ->parameters(['sesiones-caja' => 'sesion_caja']);
+    Route::get('sesiones-caja/{sesion_caja}/ticket', [SesionCajaController::class, 'ticket'])->name('sesiones-caja.ticket');
     Route::resource('movimientos-caja', MovimientoCajaController::class)->only(['index', 'create', 'store']);
     Route::resource('tesorerias', TesoreriaController::class)->only(['index']);
 

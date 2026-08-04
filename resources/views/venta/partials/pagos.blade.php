@@ -88,7 +88,7 @@
                     </div>
                     <div class="col-sm-6">
                         <label class="form-label fw-bold text-dark fs-7">Recibido (S/)</label>
-                        <input type="number" id="monto_recibido" class="form-control font-monospace fw-bold text-primary shadow-none border" value="{{ old('monto_recibido', 0) }}" min="0" step="0.01">
+                        <input type="number" id="monto_recibido" name="monto_recibido" class="form-control font-monospace fw-bold text-primary shadow-none border" value="{{ old('monto_recibido', 0) }}" min="0" step="0.01">
                     </div>
                     <div class="col-sm-6">
                         <label class="form-label fw-bold text-dark fs-7">Vuelto (S/)</label>
@@ -96,7 +96,7 @@
                     </div>
                     <div class="col-sm-6">
                         <label class="form-label fw-bold text-dark fs-7">Referencia (Opcional)</label>
-                        <input type="text" id="referencia_operacion" class="form-control shadow-none border" placeholder="N° Operación">
+                        <input type="text" id="referencia_operacion" name="referencia_operacion" class="form-control shadow-none border">
                     </div>
                 </div>
             </div>
@@ -327,7 +327,17 @@
         });
 
         window.syncPaymentTotals = function () {
-            DOM.payMode.value === 'MIXTO' ? updateMixedTotals() : (DOM.montoRecibido.value = DOM.totalInput.value, updateSimpleChange());
+            if (DOM.payMode.value === 'MIXTO') {
+                updateMixedTotals();
+            } else {
+                const recibido = Number(DOM.montoRecibido.value) || 0;
+                const total = Number(DOM.totalInput.value) || 0;
+                
+                if (recibido < total) {
+                    DOM.montoRecibido.value = total.toFixed(2);
+                }
+                updateSimpleChange();
+            }
         };
 
         DOM.form.addEventListener('submit', function (e) {

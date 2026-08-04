@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\EmpresaConfiguracion;
 use App\Models\Kardex;
 use App\Models\Producto;
 use Illuminate\Http\Request;
@@ -86,5 +87,18 @@ class KardexController extends Controller implements HasMiddleware
         ]);
 
         return view('kardex.show', compact('kardex'));
+    }
+
+    public function ticket(Kardex $kardex)
+    {
+        $kardex->load([
+            'productoVariante.producto.marca',
+            'productoVariante.talla',
+            'user',
+        ]);
+
+        $empresa = EmpresaConfiguracion::where('estado', 1)->first();
+
+        return view('kardex.ticket', compact('kardex', 'empresa'));
     }
 }

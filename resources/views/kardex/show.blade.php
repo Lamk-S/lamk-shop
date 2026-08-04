@@ -1,15 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Certificado de Kardex')
 
-@push('css')
-<style>
-    @media print {
-        body { background-color: #fff !important; color: #000 !important; font-size: 11pt; }
-        .page-break-avoid { page-break-inside: avoid; }
-    }
-</style>
-@endpush
-
 @section('content')
 @php
     $variante = $kardex->productoVariante;
@@ -42,22 +33,14 @@
             <a href="{{ route('kardex.index') }}" class="btn btn-outline-secondary shadow-sm">
                 <i class="fas fa-arrow-left me-2"></i>Volver
             </a>
-            <button onclick="window.print()" class="btn btn-dark shadow-sm">
-                <i class="fas fa-print me-2"></i>Generar Comprobante
+            <button type="button" onclick="imprimirTicketSilencioso('{{ route('kardex.ticket', $kardex->id) }}')" class="btn btn-dark shadow-sm">
+                <i class="fas fa-print me-2"></i>Imprimir Voucher
             </button>
         </div>
     </div>
 
-    <!-- Documento a imprimir / visualizar -->
     <div class="card border-0 shadow-sm rounded-3 mx-auto border-print" style="max-width: 900px;">
         <div class="card-body p-4 p-md-5">
-            <!-- Cabecera Impresión (Oculta en UI normal) -->
-            <div class="d-none d-print-block text-center border-bottom border-dark pb-3 mb-4">
-                <h1 class="fw-bold mb-1">LAMK SPORTS</h1>
-                <p class="text-uppercase small mb-0">Certificado Oficial de Movimiento de Almacén</p>
-                <div class="text-end small mt-2">Impreso: {{ now()->format('d/m/Y H:i') }}</div>
-            </div>
-
             <!-- Ficha Técnica -->
             <div class="row align-items-center pb-4 border-bottom mb-4 g-4">
                 <div class="col-md-6 text-center text-md-start">
@@ -137,21 +120,30 @@
                     </table>
                 </div>
             </div>
-
-            <!-- Firmas (Solo visibles al imprimir) -->
-            <div class="row mt-5 pt-5 d-none d-print-flex page-break-avoid">
-                <div class="col-6 text-center">
-                    <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
-                        <strong class="small text-uppercase">Almacén / Logística</strong>
-                    </div>
-                </div>
-                <div class="col-6 text-center">
-                    <div style="border-top: 1px solid #000; margin: 0 40px; padding-top: 10px;">
-                        <strong class="small text-uppercase">Auditor / Supervisor</strong>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    function imprimirTicketSilencioso(url) {
+        let iframeViejo = document.getElementById('iframeTicketSilencioso');
+        if (iframeViejo) {
+            iframeViejo.remove();
+        }
+
+        let iframe = document.createElement('iframe');
+        iframe.id = 'iframeTicketSilencioso';
+        iframe.style.display = 'none';
+        iframe.src = url;
+        
+        document.body.appendChild(iframe);
+
+        iframe.onload = function() {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+        };
+    }
+</script>
+@endpush
