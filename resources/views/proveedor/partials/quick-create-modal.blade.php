@@ -1,3 +1,10 @@
+@php
+    $shouldOpenQuickProveedorModal = session('quickProveedorError') || $errors->hasAny([
+        'tipo_persona', 'documento_id', 'numero_documento', 'nombres',
+        'apellidos', 'razon_social', 'direccion', 'telefono', 'email',
+    ]);
+@endphp
+
 <div class="modal fade" id="quickProveedorModal" tabindex="-1" aria-labelledby="quickProveedorModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
         <div class="modal-content border-0 shadow">
@@ -12,16 +19,21 @@
                 </div>
 
                 <div class="modal-body p-4">
+                    @if (session('quickProveedorError'))
+                        <div class="alert alert-danger mb-3">
+                            {{ session('quickProveedorError') }}
+                        </div>
+                    @endif
+
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="modal_tipo_persona" class="form-label fw-bold text-secondary small text-uppercase">
                                 Tipo de persona <span class="text-danger">*</span>
                             </label>
-                            <select name="tipo_persona" id="modal_tipo_persona" class="form-select shadow-sm" required>
+                            <select name="tipo_persona" id="modal_tipo_persona" class="form-select" required>
                                 <option value="">Seleccione...</option>
-                                @foreach(\App\Enums\TipoPersona::opciones() as $value => $label)
-                                    <option value="{{ $value }}" @selected(old('tipo_persona') === $value)>{{ $label }}</option>
-                                @endforeach
+                                <option value="natural" @selected(old('tipo_persona') === 'natural')>Natural</option>
+                                <option value="juridica" @selected(old('tipo_persona') === 'juridica')>Jurídica</option>
                             </select>
                             @error('tipo_persona') <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                         </div>
@@ -99,47 +111,16 @@
     </div>
 </div>
 
+@push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const modalTipoSelect = document.getElementById('modal_tipo_persona');
-        const modalForm = document.getElementById('formQuickProveedor');
-        
-        if (modalTipoSelect && modalForm) {
-            const inputsNatural = modalForm.querySelectorAll('.quick-proveedor-natural-field');
-            const inputsJuridica = modalForm.querySelectorAll('.quick-proveedor-juridica-field');
-            const docSelect = document.getElementById('modal_documento_id');
-
-            function toggleModalFields() {
-                const isNatural = modalTipoSelect.value === 'natural';
-                const isJuridica = modalTipoSelect.value === 'juridica';
-
-                inputsNatural.forEach(el => {
-                    el.classList.toggle('d-none', !isNatural);
-                    const input = el.querySelector('input');
-                    if (input) input.required = isNatural;
-                });
-
-                inputsJuridica.forEach(el => {
-                    el.classList.toggle('d-none', !isJuridica);
-                    const input = el.querySelector('input');
-                    if (input) input.required = isJuridica;
-                });
-
-                if (docSelect) {
-                    const options = Array.from(docSelect.options);
-                    if (isJuridica) {
-                        const rucOption = options.find(o => o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'RUC');
-                        if (rucOption) docSelect.value = rucOption.value;
-                    } else if (isNatural) {
-                        const dniOption = options.find(o => o.dataset.codigo && o.dataset.codigo.toUpperCase() === 'DNI');
-                        if (dniOption) docSelect.value = dniOption.value;
-                    }
-                }
+        @if ($shouldOpenQuickProveedorModal)
+            const modalEl = document.getElementById('quickProveedorModal');
+            if (modalEl && window.bootstrap) {
+                const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                modal.show();
             }
-
-            modalTipoSelect.addEventListener('change', toggleModalFields);
-            
-            if (modalTipoSelect.value) toggleModalFields(); 
-        }
+        @endif
     });
 </script>
+@endpush
