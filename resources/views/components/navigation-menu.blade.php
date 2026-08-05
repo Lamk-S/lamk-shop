@@ -1,16 +1,16 @@
 <div id="layoutSidenav_nav">
     <nav class="sb-sidenav accordion sb-sidenav-dark bg-dark border-end border-secondary" id="sidenavAccordion">
         <div class="sb-sidenav-menu custom-scrollbar">
-            <div class="nav pt-3">
+            <div class="nav">
                 
-                <div class="sb-sidenav-menu-heading">Gestión Principal</div>
+                <div class="sb-sidenav-menu-heading pt-1">Gestión Principal</div>
                 <a class="nav-link {{ request()->routeIs('panel') ? 'active text-info' : '' }}" href="{{ route('panel') }}">
                     <div class="sb-nav-link-icon"><i class="fas fa-chart-pie"></i></div>
                     Panel de Control
                 </a>
 
                 @canany(['registrar_compras', 'registrar_ventas'])
-                    <div class="sb-sidenav-menu-heading">Operaciones Comerciales</div>
+                    <div class="sb-sidenav-menu-heading pt-1">Op. Comerciales</div>
                 @endcanany
 
                 @can('registrar_ventas')
@@ -48,7 +48,7 @@
                 @endcan
 
                 @canany(['gestionar_cajas', 'abrir_caja', 'cerrar_caja', 'movimientos_caja', 'gestionar_tesoreria'])
-                    <div class="sb-sidenav-menu-heading">Finanzas</div>
+                    <div class="sb-sidenav-menu-heading pt-1">Finanzas</div>
                 @endcanany
 
                 @can('gestionar_cajas')
@@ -76,7 +76,7 @@
                 @endcan
 
                 @canany(['ver_kardex', 'gestionar_productos', 'gestionar_categorias', 'gestionar_marcas', 'gestionar_tallas'])
-                    <div class="sb-sidenav-menu-heading">Inventario Deportivo</div>
+                    <div class="sb-sidenav-menu-heading pt-1">Inventario Deportivo</div>
                 @endcanany
 
                 @can('ver_kardex')
@@ -113,7 +113,7 @@
                 @endcan
 
                 @canany(['gestionar_clientes', 'gestionar_proveedores'])
-                    <div class="sb-sidenav-menu-heading">Contactos</div>
+                    <div class="sb-sidenav-menu-heading pt-1">Contactos</div>
                 @endcanany
 
                 @can('gestionar_clientes')
@@ -129,7 +129,7 @@
                 @endcan
 
                 @canany(['gestionar_configuracion', 'ver_auditoria', 'gestionar_usuarios', 'gestionar_roles_permisos'])
-                    <div class="sb-sidenav-menu-heading">Sistema</div>
+                    <div class="sb-sidenav-menu-heading pt-1">Sistema</div>
                 @endcanany
 
                 @can('gestionar_comprobantes')
