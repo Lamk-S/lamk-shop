@@ -67,7 +67,7 @@
                 <div class="col-lg-7 col-md-10 mx-auto mx-md-0">
                     <span class="badge bg-info text-dark px-3 py-2 rounded-pill mb-4 fw-bold">v2.0 Especializada en Retail Deportivo</span>
                     <h1 class="display-3 fw-bold text-white mb-4 lh-sm">
-                        Potencia tu Tienda con <br> <span class="gradient-text">Lamk Sports POS</span>
+                        Potencia tu Tienda con <br> <span class="gradient-text">Lamk Sports</span>
                     </h1>
                     <p class="fs-4 text-light mb-5 opacity-75 fw-light">
                         El sistema definitivo para gestionar zapatillas, ropa y accesorios. Controla tallas, marcas, cajas y fideliza a tus clientes deportivos en tiempo real.
