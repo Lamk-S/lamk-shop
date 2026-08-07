@@ -12,22 +12,22 @@ class UserSeeder extends Seeder
     {
         $users = [
             [
-                'name' => 'Administrador Lamk',
+                'name' => 'Melvin López',
                 'email' => 'admin@lamksports.test',
                 'role' => 'administrador',
             ],
             [
-                'name' => 'Vendedor Principal',
+                'name' => 'Tafarel Martínez',
                 'email' => 'vendedor@lamksports.test',
                 'role' => 'vendedor',
             ],
             [
-                'name' => 'Cajero Principal',
+                'name' => 'Beatriz Castillo',
                 'email' => 'cajero@lamksports.test',
                 'role' => 'cajero',
             ],
             [
-                'name' => 'Encargado de Almacén',
+                'name' => 'Erson Rosas',
                 'email' => 'almacen@lamksports.test',
                 'role' => 'encargado_almacen',
             ],
