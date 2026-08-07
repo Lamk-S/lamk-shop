@@ -14,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
-        View::composer('components.navigation-menu', NavigationComposer::class);
+        View::composer(['panel.index', 'components.navigation-menu'], NavigationComposer::class);
 
         Route::macro('softDeletes', function ($uri, $controller, $parameterName = null) {
             $parameterName = $parameterName ?: Str::singular($uri);
